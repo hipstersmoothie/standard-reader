@@ -132,12 +132,27 @@ export const basicScope = [
 
 /**
  * Collections-authoring scope — basic plus app-owned collections state
- * (`authCollections`) and full standard.site record access (`authFull`,
- * replacing `authSocial` so publication/document writes are allowed).
+ * (`authCollections`) and full standard.site record access (`authFull`, which
+ * adds the publication/document writes `authSocial` does not cover).
+ *
+ * `authSocial` is kept alongside `authFull`, not replaced by it. On paper
+ * `authFull` is a superset — it lists all four `site.standard.*` collections —
+ * but a permission set is expanded by the reader's PDS at grant time, and that
+ * expansion is whatever the *upstream* set said when the token was issued. A
+ * collections-tier reader whose grant predates `graph.recommend` being added to
+ * `authFull` therefore ends up able to write publications, documents and
+ * subscriptions while every like is rejected with `ScopeMissingError` — which
+ * is exactly how likes silently stopped working for collections authors while
+ * every basic-tier reader (who keeps `authSocial`) kept liking fine.
+ *
+ * We do not control the upstream set, so we do not depend on one set alone for
+ * follows and likes: requesting both means the pair standard.site publishes
+ * *for* subscription + recommend is always in the grant, whatever `authFull`
+ * happened to expand to. Both tokens are already in `clientMetadataScope`, so
+ * this costs no metadata change and no extra consent surface.
  */
 export const collectionsScope = [
-  // basicScope minus the site.standard.authSocial set (replaced by authFull).
-  ...basicScope.filter((s) => s !== SITE_AUTH_SOCIAL),
+  ...basicScope,
   AUTH_COLLECTIONS,
   SITE_AUTH_FULL,
 ];

@@ -923,15 +923,27 @@ splits each capability tier across a set we publish (`app.standard-reader.auth*`
 upstream `site.standard.auth*` sets (published by standard.site — see
 [standard.site/docs/permissions](https://standard.site/docs/permissions/)):
 
-| Tier                                | App-owned set (we publish)                      | site.standard set (we reference)         | Covers                                                                               |
-| ----------------------------------- | ----------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
-| **Basic** (default sign-in)         | `include:app.standard-reader.authBasicFeatures` | `include:site.standard.authSocial`       | bookmark, read, list, listSave, labelerSubscription, graph.mute + follows + likes    |
-| **Collections authoring** (upgrade) | `+ include:app.standard-reader.authCollections` | swap to `include:site.standard.authFull` | collection, collectionsPublication, publicationTheme + publication + document writes |
-| **Subscribe embed**                 | —                                               | `include:site.standard.authSocial`       | subscription write (also covers recommend)                                           |
+| Tier                                | App-owned set (we publish)                      | site.standard set (we reference)                                 | Covers                                                                               |
+| ----------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **Basic** (default sign-in)         | `include:app.standard-reader.authBasicFeatures` | `include:site.standard.authSocial`                               | bookmark, read, list, listSave, labelerSubscription, graph.mute + follows + likes    |
+| **Collections authoring** (upgrade) | `+ include:app.standard-reader.authCollections` | `+ include:site.standard.authFull` (kept alongside `authSocial`) | collection, collectionsPublication, publicationTheme + publication + document writes |
+| **Subscribe embed**                 | —                                               | `include:site.standard.authSocial`                               | subscription write (also covers recommend)                                           |
 
 `blob:*/*` (image upload) is requested as a granular scope alongside the basic tier — it
 cannot live inside a permission set. The OAuth client metadata `scope` field declares the
 union of all three tiers so any may be requested at authorize time.
+
+**The collections tier adds `authFull`, it does not swap `authSocial` out.** `authFull` lists
+all four `site.standard.*` collections and so looks like a strict superset, but a permission set
+is expanded by the reader's PDS _at grant time_ and the grant keeps whatever the upstream set
+said then. A collections author whose token was issued before `graph.recommend` joined
+`authFull` could still write publications, documents and subscriptions while every like came
+back `ScopeMissingError` — likes quietly stopped working for authors while every basic-tier
+reader kept liking fine. We don't own the upstream set, so follows and likes never rest on a
+single one: both tokens are requested, and both are already declared in client metadata, so
+this costs no extra consent surface. A reader holding an older grant is recovered by the
+existing reconnect prompt (`showReauthToast`, wired to the PDS scope rejection through the
+mutation cache) — re-authorizing now asks for `authSocial` too.
 
 **ATStore reviews** use a separate, progressive ATStore reviewer authorization flow.
 That external scope is requested only from the review modal's **Create** action and is
