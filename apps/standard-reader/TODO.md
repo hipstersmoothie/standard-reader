@@ -1356,6 +1356,21 @@ Backend/API exists; UI or copy is missing.
       tag-first `MATERIALIZED` query (`selectTagArticleUris`) because the ordinary
       date-index walk discards ~200k rows to fill a page on mirror-dominated tags — 3.2s–19.2s
       before, 225ms–2.6s after. Everything else lands within ~35ms of unfiltered.
+- [x] **Signed out shows no bridged accounts** — a request with no reader session now hides
+      _every_ `*.brid.gy` repo (the opt-in `*.ap.brid.gy` bridge included) across the same
+      network-wide surfaces the setting above covers. Signed in is untouched: the setting keeps
+      its default (off) and its web-bridge-only meaning, so signing in adds the bridges back
+      rather than taking anything away. The read-model's boolean became a three-state
+      `BridgeExclusion` (`false` / `"web"` / `"all"`) in
+      [`bridged-repo.ts`](src/lib/atproto/bridged-repo.ts); only the `ILIKE` suffix differs
+      (`bridgeHandlePattern`), so every query shape and its measured cost is unchanged.
+      `resolveReaderSessionPreferences` decides the scope once and reports `hasReaderSession`
+      alongside it, so the XRPC AppView can keep the signed-in default for a DID-token caller
+      whose cookie it cannot see (`effectiveBridgeExclusion`). Discover's rails and the digest
+      keep their unconditional web-bridge floor via `curatedBridgeExclusion`, which never
+      narrows `"all"`. Still reachable signed out, deliberately: a bridged page opened by link
+      and a handle/URL searched by name. Topic pages are unchanged — `topic_publications` is a
+      precomputed, reader-independent table, so `*.ap.brid.gy` members still appear there.
 - [x] **Reading typography preferences** — font size / measure (and optional sans body) on the
       article wrapper; cookie + optional `user` column (same pattern as [`open-links.ts`](src/lib/open-links.ts));
       menu item alongside [`OpenLinksMenuItem`](src/components/OpenLinksMenuItem.tsx)

@@ -86,7 +86,9 @@ export async function runWeeklyDigest(): Promise<DigestRunSummary> {
     const digest = await buildDigestForUser(db, schema, {
       did: reader.did,
       sections,
-      excludeWebBridge: dbValueToExcludeWebBridge(reader.excludeWebBridge),
+      excludeBridged: dbValueToExcludeWebBridge(reader.excludeWebBridge)
+        ? "web"
+        : false,
     });
     // Skip when there's no real reading content to send. Recommendations alone
     // (which cold-start to popular publications) aren't enough to justify a

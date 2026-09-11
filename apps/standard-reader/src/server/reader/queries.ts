@@ -50,9 +50,10 @@ import {
   toArticleCard,
   toPublicationCard,
 } from "#/integrations/tanstack-query/api-shapes";
+import type { BridgeExclusion } from "#/lib/atproto/bridged-repo";
 import {
-  isWebBridgeHandle,
-  WEB_BRIDGE_HANDLE_PATTERN,
+  bridgeHandlePattern,
+  isExcludedBridgeHandle,
 } from "#/lib/atproto/bridged-repo";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
 import { atUriAuthoritySql, notBlockedByViewer } from "#/server/blocks/blocks";
@@ -61,9 +62,9 @@ import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
 import {
   discoverEligibleArticleWhere,
   discoverEligiblePublicationWhere,
-  notWebBridgeArticleWhere,
-  notWebBridgePublicationOwnerWhere,
-  notWebBridgePublicationWhere,
+  notBridgedArticleWhere,
+  notBridgedPublicationOwnerWhere,
+  notBridgedPublicationWhere,
 } from "#/server/reader/publication-filters";
 import {
   publicationSearchMatchSql,
@@ -146,7 +147,7 @@ export interface ArticleCardQuery {
    * surfaces only: callers pass it alongside `discoverOnly` / `tag`, never on
    * the follow feed, where every source is one the reader chose.
    */
-  excludeWebBridge?: boolean;
+  excludeBridged?: BridgeExclusion;
   /** Match documents whose `tags` array includes this label (case-insensitive). */
   tag?: string;
   /**
@@ -832,7 +833,7 @@ export async function selectArticleCards(
   // client entries it cannot download.
   if (
     opts.tag &&
-    opts.excludeWebBridge &&
+    opts.excludeBridged &&
     !opts.unreadForDid &&
     !opts.renderableOnly
   ) {
@@ -841,6 +842,7 @@ export async function selectArticleCards(
       sort: opts.sort,
       limit: opts.limit,
       offset: opts.offset ?? 0,
+      excludeBridged: opts.excludeBridged,
     });
     return selectArticleCardsByUris(db, schema, pageUris, {
       readForDid: opts.readForDid,
@@ -869,8 +871,8 @@ export async function selectArticleCards(
     // `p.uri IS NULL` and pass the `or(isNull(p.uri), …)` clause.
     conds.push(discoverEligibleArticleWhere(p));
   }
-  if (opts.excludeWebBridge) {
-    conds.push(notWebBridgeArticleWhere(schema));
+  if (opts.excludeBridged) {
+    conds.push(notBridgedArticleWhere(schema, opts.excludeBridged));
   }
   if (opts.tag) {
     conds.push(documentCarriesTagWhere(d, opts.tag));
@@ -1551,7 +1553,7 @@ export async function countFollowedDocuments(
  * {@link countNetworkDocumentsLive} is the fallback for the window before the
  * first sweep populates the row.
  *
- * `excludeWebBridge` reads the parallel scalar the same sweep maintains for
+ * `excludeBridged` reads the parallel scalar the same sweep maintains for
  * readers hiding the web-bridge mirrors — never a filtered live count, which
  * measured **26.5s** against production because the anti-joins discard ~86% of
  * the corpus row by row.
@@ -1559,9 +1561,9 @@ export async function countFollowedDocuments(
 export async function countNetworkDocuments(
   db: Db,
   schema: Schema,
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  { excludeBridged = false }: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<number> {
-  const key = excludeWebBridge
+  const key = excludeBridged
     ? NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY
     : NETWORK_DOCUMENT_COUNT_KEY;
   const [row] = await db
@@ -1573,7 +1575,7 @@ export async function countNetworkDocuments(
   // expensive path runs for minutes, not indefinitely.
   return (
     row?.value ??
-    (await countNetworkDocumentsLive(db, schema, { excludeWebBridge }))
+    (await countNetworkDocumentsLive(db, schema, { excludeBridged }))
   );
 }
 
@@ -1585,7 +1587,7 @@ export async function countNetworkDocuments(
 export async function countNetworkDocumentsLive(
   db: Db,
   schema: Schema,
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  { excludeBridged = false }: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<number> {
   const d = schema.documents;
   const p = schema.publications;
@@ -1598,7 +1600,9 @@ export async function countNetworkDocumentsLive(
         eq(d.deleted, false),
         documentPublishedNotInFuture(d),
         discoverEligibleArticleWhere(p),
-        ...(excludeWebBridge ? [notWebBridgeArticleWhere(schema)] : []),
+        ...(excludeBridged
+          ? [notBridgedArticleWhere(schema, excludeBridged)]
+          : []),
       ),
     );
   return row?.count ?? 0;
@@ -1750,8 +1754,8 @@ export interface TrendingArticlesQuery {
   offset?: number;
   readForDid?: string;
   scope?: TrendingArticlesScope;
-  /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
-  excludeWebBridge?: boolean;
+  /** Hide bridged repos — see {@link ArticleCardQuery.excludeBridged}. */
+  excludeBridged?: BridgeExclusion;
   /** See {@link ArticleCardQuery.viewerDid}. */
   viewerDid?: string;
   /** See {@link ArticleCardQuery.muterDid}. */
@@ -1762,7 +1766,7 @@ function trendingArticleWhere(
   schema: Schema,
   scope: TrendingArticlesScope,
   excludeUris: Array<string> = [],
-  excludeWebBridge = false,
+  excludeBridged: BridgeExclusion = false,
   viewerDid?: string,
   muterDid?: string,
 ) {
@@ -1779,8 +1783,8 @@ function trendingArticleWhere(
     sql`${d.publishedAt} > now() - (${TRENDING_MAX_AGE_DAYS}::text || ' days')::interval`,
   ];
 
-  if (excludeWebBridge) {
-    conds.push(notWebBridgeArticleWhere(schema));
+  if (excludeBridged) {
+    conds.push(notBridgedArticleWhere(schema, excludeBridged));
   }
 
   if (scope === "rail") {
@@ -1835,7 +1839,7 @@ export async function trendingArticles(
   limit: number,
   {
     excludeUris = [],
-    excludeWebBridge = false,
+    excludeBridged = false,
     offset = 0,
     readForDid,
     scope = "rail",
@@ -1861,7 +1865,7 @@ export async function trendingArticles(
             schema,
             scope,
             excludeUris,
-            excludeWebBridge,
+            excludeBridged,
             viewerDid,
             muterDid,
           ),
@@ -1889,7 +1893,7 @@ export async function trendingArticles(
           schema,
           scope,
           excludeUris,
-          excludeWebBridge,
+          excludeBridged,
           viewerDid,
           muterDid,
         ),
@@ -1979,15 +1983,15 @@ export async function topNetworkArticles(
     limit,
     excludeUris = [],
     excludeReadForDid,
-    excludeWebBridge = false,
+    excludeBridged = false,
   }: {
     sinceDays: number;
     limit: number;
     excludeUris?: Array<string>;
     /** Omit documents this reader has already read (weekly digest). */
     excludeReadForDid?: string;
-    /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
-    excludeWebBridge?: boolean;
+    /** Hide bridged repos — see {@link ArticleCardQuery.excludeBridged}. */
+    excludeBridged?: BridgeExclusion;
   },
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -2007,8 +2011,8 @@ export async function topNetworkArticles(
   if (excludeReadForDid) {
     conds.push(documentUnreadWhere(schema, excludeReadForDid));
   }
-  if (excludeWebBridge) {
-    conds.push(notWebBridgeArticleWhere(schema));
+  if (excludeBridged) {
+    conds.push(notBridgedArticleWhere(schema, excludeBridged));
   }
 
   const rows = await db
@@ -2108,7 +2112,7 @@ export async function weekInReviewArticles(
     limit,
     excludeUris = [],
     excludeReadForDid,
-    excludeWebBridge = false,
+    excludeBridged = false,
   }: {
     sinceDays: number;
     limit: number;
@@ -2116,8 +2120,8 @@ export async function weekInReviewArticles(
     excludeUris?: Array<string>;
     /** Omit documents this reader has already read (weekly digest). */
     excludeReadForDid?: string;
-    /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
-    excludeWebBridge?: boolean;
+    /** Hide bridged repos — see {@link ArticleCardQuery.excludeBridged}. */
+    excludeBridged?: BridgeExclusion;
   },
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -2161,8 +2165,8 @@ export async function weekInReviewArticles(
   if (excludeReadForDid) {
     conds.push(documentUnreadWhere(schema, excludeReadForDid));
   }
-  if (excludeWebBridge) {
-    conds.push(notWebBridgeArticleWhere(schema));
+  if (excludeBridged) {
+    conds.push(notBridgedArticleWhere(schema, excludeBridged));
   }
 
   const rows = await db
@@ -2188,7 +2192,7 @@ export async function countTrendingDocuments(
   db: Db,
   schema: Schema,
   scope: TrendingArticlesScope = "rail",
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  { excludeBridged = false }: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<number> {
   const d = schema.documents;
   const p = schema.publications;
@@ -2197,7 +2201,7 @@ export async function countTrendingDocuments(
     .select({ count: sql<number>`count(*)`.mapWith(Number) })
     .from(d)
     .leftJoin(p, eq(p.uri, d.publicationUri))
-    .where(and(...trendingArticleWhere(schema, scope, [], excludeWebBridge)));
+    .where(and(...trendingArticleWhere(schema, scope, [], excludeBridged)));
   return row?.count ?? 0;
 }
 
@@ -2212,7 +2216,7 @@ export async function trendingPublications(
   db: Db,
   _schema: Schema,
   limit: number,
-  opts: { excludeWebBridge?: boolean } = {},
+  opts: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<Array<PublicationCard>> {
   const rows = await selectTrendingPublicationRows(db, limit, opts);
   return rows.map((row) => toPublicationCard(row));
@@ -2223,7 +2227,7 @@ export async function trendingPublicationUris(
   db: Db,
   _schema: Schema,
   limit: number,
-  opts: { excludeWebBridge?: boolean } = {},
+  opts: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<Array<string>> {
   const rows = await selectTrendingPublicationRows(db, limit, opts);
   return rows.map((row) => row.uri);
@@ -2234,12 +2238,14 @@ type TrendingPublicationRow = Parameters<typeof toPublicationCard>[0];
 async function selectTrendingPublicationRows(
   db: Db,
   limit: number,
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  { excludeBridged = false }: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<Array<TrendingPublicationRow>> {
   // `pr` is LEFT JOINed, so the NULL branch is load-bearing: an unresolved
-  // handle keeps the publication (see `notWebBridgePublicationWhere`).
-  const webBridgeFilter = excludeWebBridge
-    ? sql`AND (pr.handle IS NULL OR pr.handle NOT ILIKE ${WEB_BRIDGE_HANDLE_PATTERN})`
+  // handle keeps the publication (see `notBridgedPublicationWhere`).
+  const bridgeFilter = excludeBridged
+    ? sql`AND (pr.handle IS NULL OR pr.handle NOT ILIKE ${bridgeHandlePattern(
+        excludeBridged,
+      )})`
     : sql``;
   const result = await db.execute(sql`
     SELECT
@@ -2264,7 +2270,7 @@ async function selectTrendingPublicationRows(
       AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
       AND coalesce(st.document_count, 0) > 0
       AND coalesce(st.subscriber_count, 0) > 0
-      ${webBridgeFilter}
+      ${bridgeFilter}
     ORDER BY
       coalesce(st.trending_score, 0) DESC,
       coalesce(st.subscriber_count, 0) DESC,
@@ -2329,13 +2335,13 @@ function publicationTagMatchSql(
  */
 export async function countKnownPublications(
   db: Db,
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  { excludeBridged = false }: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<number> {
-  const webBridgeFilter = excludeWebBridge
+  const bridgeFilter = excludeBridged
     ? sql`AND NOT EXISTS (
         SELECT 1 FROM profiles wb
         WHERE wb.did = publications.did
-          AND wb.handle ILIKE ${WEB_BRIDGE_HANDLE_PATTERN}
+          AND wb.handle ILIKE ${bridgeHandlePattern(excludeBridged)}
       )`
     : sql``;
   const result = await db.execute(sql`
@@ -2343,7 +2349,7 @@ export async function countKnownPublications(
     FROM publications
     WHERE deleted = false
       AND url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
-      ${webBridgeFilter}
+      ${bridgeFilter}
   `);
   const row = result.rows[0] as { count?: number } | undefined;
   return row?.count ?? 0;
@@ -2403,7 +2409,7 @@ export async function discoverDirectoryPublications(
     limit,
     offset,
     query = null,
-    excludeWebBridge = false,
+    excludeBridged = false,
     viewerDid,
     muterDid,
   }: {
@@ -2414,8 +2420,8 @@ export async function discoverDirectoryPublications(
     limit: number;
     offset: number;
     query?: string | null;
-    /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
-    excludeWebBridge?: boolean;
+    /** Hide bridged repos — see {@link ArticleCardQuery.excludeBridged}. */
+    excludeBridged?: BridgeExclusion;
     /** See {@link ArticleCardQuery.viewerDid}. */
     viewerDid?: string;
     /** See {@link ArticleCardQuery.muterDid}. */
@@ -2429,8 +2435,8 @@ export async function discoverDirectoryPublications(
   const effectiveTopic = publicationEffectiveTopicSql(p);
 
   const conds = [discoverEligiblePublicationWhere(p)];
-  if (excludeWebBridge) {
-    conds.push(notWebBridgePublicationOwnerWhere(schema));
+  if (excludeBridged) {
+    conds.push(notBridgedPublicationOwnerWhere(schema, excludeBridged));
   }
   if (viewerDid) {
     conds.push(notBlockedByViewer(schema, viewerDid, sql`${p.did}`));
@@ -2568,11 +2574,13 @@ async function selectTagArticleUris(
     sort = "recent",
     limit,
     offset,
+    excludeBridged,
   }: {
     tag: string;
     sort?: ArticleCardSort;
     limit: number;
     offset: number;
+    excludeBridged: Exclude<BridgeExclusion, false>;
   },
 ): Promise<Array<string>> {
   const orderBy =
@@ -2608,11 +2616,13 @@ async function selectTagArticleUris(
       )
       and not exists (
         select 1 from ${schema.profiles} wba
-        where wba.did = t.did and wba.handle ilike ${WEB_BRIDGE_HANDLE_PATTERN}
+        where wba.did = t.did
+          and wba.handle ilike ${bridgeHandlePattern(excludeBridged)}
       )
       and not exists (
         select 1 from ${schema.profiles} wbp
-        where wbp.did = p.did and wbp.handle ilike ${WEB_BRIDGE_HANDLE_PATTERN}
+        where wbp.did = p.did
+          and wbp.handle ilike ${bridgeHandlePattern(excludeBridged)}
       )
     order by ${orderBy}
     limit ${limit} offset ${offset}
@@ -2683,7 +2693,7 @@ export async function countTagArticles(
   db: Db,
   schema: Schema,
   tag: string,
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  { excludeBridged = false }: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<number> {
   const d = schema.documents;
   const p = schema.publications;
@@ -2698,7 +2708,9 @@ export async function countTagArticles(
         documentPublishedNotInFuture(d),
         discoverEligibleArticleWhere(p),
         documentCarriesTagWhere(d, tag),
-        ...(excludeWebBridge ? [notWebBridgeArticleWhere(schema)] : []),
+        ...(excludeBridged
+          ? [notBridgedArticleWhere(schema, excludeBridged)]
+          : []),
       ),
     );
 
@@ -2756,7 +2768,7 @@ export async function tagDirectoryPublications(
     sort,
     limit,
     offset,
-    excludeWebBridge = false,
+    excludeBridged = false,
     viewerDid,
     muterDid,
   }: {
@@ -2764,8 +2776,8 @@ export async function tagDirectoryPublications(
     sort: TagDirectorySort;
     limit: number;
     offset: number;
-    /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
-    excludeWebBridge?: boolean;
+    /** Hide bridged repos — see {@link ArticleCardQuery.excludeBridged}. */
+    excludeBridged?: BridgeExclusion;
     /** See {@link ArticleCardQuery.viewerDid}. */
     viewerDid?: string;
     /** See {@link ArticleCardQuery.muterDid}. */
@@ -2783,7 +2795,9 @@ export async function tagDirectoryPublications(
   const conds = [
     discoverEligiblePublicationWhere(p),
     publicationHasTaggedDocumentSql(p, d, tag),
-    ...(excludeWebBridge ? [notWebBridgePublicationOwnerWhere(schema)] : []),
+    ...(excludeBridged
+      ? [notBridgedPublicationOwnerWhere(schema, excludeBridged)]
+      : []),
   ];
   if (viewerDid) {
     conds.push(notBlockedByViewer(schema, viewerDid, sql`${p.did}`));
@@ -2856,7 +2870,7 @@ export async function countTagPublications(
   db: Db,
   schema: Schema,
   tag: string,
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  { excludeBridged = false }: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<number> {
   const p = schema.publications;
   const d = schema.documents;
@@ -2868,8 +2882,8 @@ export async function countTagPublications(
       and(
         discoverEligiblePublicationWhere(p),
         publicationHasTaggedDocumentSql(p, d, tag),
-        ...(excludeWebBridge
-          ? [notWebBridgePublicationOwnerWhere(schema)]
+        ...(excludeBridged
+          ? [notBridgedPublicationOwnerWhere(schema, excludeBridged)]
           : []),
       ),
     );
@@ -2882,7 +2896,7 @@ export async function selectTagPublicationUris(
   db: Db,
   schema: Schema,
   tag: string,
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  { excludeBridged = false }: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<Array<string>> {
   const p = schema.publications;
   const d = schema.documents;
@@ -2894,8 +2908,8 @@ export async function selectTagPublicationUris(
       and(
         discoverEligiblePublicationWhere(p),
         publicationHasTaggedDocumentSql(p, d, tag),
-        ...(excludeWebBridge
-          ? [notWebBridgePublicationOwnerWhere(schema)]
+        ...(excludeBridged
+          ? [notBridgedPublicationOwnerWhere(schema, excludeBridged)]
           : []),
       ),
     )
@@ -2921,10 +2935,10 @@ export interface PublicationRailOpts {
   seed?: string;
   /**
    * Drop Bridgy Fed's bulk web-bridge mirrors (`*.web.brid.gy`) from the rail —
-   * see {@link notWebBridgePublicationWhere}. Filtered in SQL (not after the
+   * see {@link notBridgedPublicationWhere}. Filtered in SQL (not after the
    * fact) so the rail still fills to `limit`.
    */
-  excludeWebBridge?: boolean;
+  excludeBridged?: BridgeExclusion;
 }
 
 function mergeExcludeUris(...groups: Array<Array<string>>): Array<string> {
@@ -2952,7 +2966,7 @@ async function publicationCardsByOrderedUris(
   db: Db,
   schema: Schema,
   uris: Array<string>,
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  { excludeBridged = false }: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<Array<PublicationCard>> {
   if (uris.length === 0) {
     return [];
@@ -2972,7 +2986,9 @@ async function publicationCardsByOrderedUris(
         eq(p.deleted, false),
         discoverEligiblePublicationWhere(p),
         hasIndexedDocuments(db, schema, p.uri),
-        ...(excludeWebBridge ? [notWebBridgePublicationWhere(pr)] : []),
+        ...(excludeBridged
+          ? [notBridgedPublicationWhere(pr, excludeBridged)]
+          : []),
       ),
     );
 
@@ -3121,7 +3137,7 @@ async function backfillPublicationRail(
   limit: number,
   excludeUris: Array<string>,
   seed?: string,
-  opts: { excludeWebBridge?: boolean } = {},
+  opts: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<Array<PublicationCard>> {
   if (primary.length >= limit) {
     return primary.slice(0, limit);
@@ -3156,7 +3172,7 @@ export async function popularPublications(
   limit: number,
   excludeUris: Array<string> = [],
   seed?: string,
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  { excludeBridged = false }: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<Array<PublicationCard>> {
   const p = schema.publications;
   const st = schema.publicationStats;
@@ -3169,8 +3185,8 @@ export async function popularPublications(
   if (excludeUris.length > 0) {
     conds.push(notInArray(p.uri, excludeUris));
   }
-  if (excludeWebBridge) {
-    conds.push(notWebBridgePublicationWhere(pr));
+  if (excludeBridged) {
+    conds.push(notBridgedPublicationWhere(pr, excludeBridged));
   }
 
   const poolSize = seed ? limit * ROTATION_POOL_MULTIPLIER : limit;
@@ -3204,7 +3220,7 @@ export async function recommendedPublications(
 ): Promise<Array<PublicationCard>> {
   const excludeUris = opts.excludeUris ?? [];
   const seed = opts.seed ?? rotationSeed("recommended", did);
-  const railOpts = { excludeWebBridge: opts.excludeWebBridge ?? false };
+  const railOpts = { excludeBridged: opts.excludeBridged ?? false };
   const followUris =
     opts.followUris ?? (await selectFollowUris(db, schema, did));
   if (followUris.length === 0) {
@@ -3312,7 +3328,7 @@ export async function followedByPeopleYouFollow(
     db,
     schema,
     ranked.slice(0, limit * ROTATION_POOL_MULTIPLIER).map((row) => row.uri),
-    { excludeWebBridge: opts.excludeWebBridge ?? false },
+    { excludeBridged: opts.excludeBridged ?? false },
   );
   return rotateRail(pool, limit, seed);
 }
@@ -3717,8 +3733,8 @@ export async function relatedArticles(
     documentUri: string;
     publicationUri: string | null;
     limit: number;
-    /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
-    excludeWebBridge?: boolean;
+    /** Hide bridged repos — see {@link ArticleCardQuery.excludeBridged}. */
+    excludeBridged?: BridgeExclusion;
   },
 ): Promise<Array<ArticleCard>> {
   const [coRead, tagOverlap] = await Promise.all([
@@ -3735,23 +3751,25 @@ export async function relatedArticles(
     return [];
   }
 
-  // Web-bridge mirrors are dropped after hydration rather than inside the two
+  const exclusion = opts.excludeBridged ?? false;
+
+  // Bridged repos are dropped after hydration rather than inside the two
   // scoring queries: the tag-overlap scan is the query that once accounted for
   // 27% of all database time (see `buildTagOverlapScoresSql`), and it is not
   // worth another predicate. Both scorers cap at 30 URIs, so hydrating the whole
   // merged pool and taking the first `limit` survivors still fills the rail —
   // and the cards already carry both handles.
   const uris = ranked
-    .slice(0, opts.excludeWebBridge ? ranked.length : opts.limit)
+    .slice(0, exclusion ? ranked.length : opts.limit)
     .map((row) => row.uri);
   const cards = await selectArticleCardsByUris(db, schema, uris);
-  if (!opts.excludeWebBridge) return cards;
+  if (!exclusion) return cards;
 
   return cards
     .filter(
       (card) =>
-        !isWebBridgeHandle(card.authorHandle) &&
-        !isWebBridgeHandle(card.publicationOwnerHandle),
+        !isExcludedBridgeHandle(card.authorHandle, exclusion) &&
+        !isExcludedBridgeHandle(card.publicationOwnerHandle, exclusion),
     )
     .slice(0, opts.limit);
 }

@@ -19,7 +19,7 @@ import { getPublicUrl } from "#/lib/public-url";
 import { getAtprotoSessionForRequest } from "#/middleware/auth-session.server";
 import { loadApiDocsFixturesAsync } from "#/server/api-docs/fixtures.server";
 import type { XrpcAuthContext } from "#/server/xrpc/auth";
-import { getXrpcDbContext } from "#/server/xrpc/db";
+import { effectiveBridgeExclusion, getXrpcDbContext } from "#/server/xrpc/db";
 import { dispatchXrpc } from "#/server/xrpc/dispatch";
 import { handleXrpcError, xrpcJsonResponse } from "#/server/xrpc/errors";
 import { XRPC_REGISTRY } from "#/server/xrpc/registry";
@@ -158,7 +158,8 @@ async function runWithSessionAuth(
       schema,
       trackReadingEnabled,
       countOldPostsAsUnreadEnabled,
-      excludeWebBridgeEnabled,
+      excludeBridged,
+      hasReaderSession,
     } = await getXrpcDbContext();
     const auth: XrpcAuthContext = {
       did: session.did as Did,
@@ -173,7 +174,10 @@ async function runWithSessionAuth(
       schema,
       trackReadingEnabled,
       countOldPostsAsUnreadEnabled,
-      excludeWebBridgeEnabled,
+      excludeBridged: effectiveBridgeExclusion(
+        { excludeBridged, hasReaderSession },
+        auth,
+      ),
       params,
       body: body ?? null,
     });

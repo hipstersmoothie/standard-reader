@@ -50,7 +50,7 @@ export const Route = createFileRoute("/api/digest/preview")({
         const digest = await buildDigestForUser(db, schema, {
           did: reader.did,
           sections: digestSectionsFromUser(prefsRow ?? {}),
-          excludeWebBridge: prefsRow?.excludeWebBridge === true,
+          excludeBridged: prefsRow?.excludeWebBridge === true ? "web" : false,
         });
         const rendered = await renderDigestEmail(digest, {
           baseUrl: getPublicUrl(),

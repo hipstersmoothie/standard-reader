@@ -22,6 +22,7 @@ import type {
   PublicationCard,
   Schema,
 } from "#/integrations/tanstack-query/api-shapes";
+import type { BridgeExclusion } from "#/lib/atproto/bridged-repo";
 import { filterBlockedCards } from "#/server/blocks/blocks";
 import {
   bestOfFollows,
@@ -105,7 +106,7 @@ export async function buildDigestForUser(
   {
     did,
     sections = ALL_DIGEST_SECTIONS,
-    excludeWebBridge = false,
+    excludeBridged = false,
   }: {
     did: string;
     sections?: DigestSections;
@@ -114,7 +115,7 @@ export async function buildDigestForUser(
      * Only the network section is network-wide, so only it is filtered — the
      * subscriptions and saved sections are made of sources the reader chose.
      */
-    excludeWebBridge?: boolean;
+    excludeBridged?: BridgeExclusion;
   },
 ): Promise<DigestData> {
   // Needed by the subscriptions section directly, and by the recommendations
@@ -143,7 +144,7 @@ export async function buildDigestForUser(
           limit: DIGEST_NETWORK_ARTICLE_LIMIT,
           excludeUris: articleUris,
           excludeReadForDid: did,
-          excludeWebBridge,
+          excludeBridged,
         })
       : Promise.resolve([]),
     sections.saved
@@ -155,7 +156,7 @@ export async function buildDigestForUser(
       : Promise.resolve([]),
     sections.recommendations
       ? recommendedPublications(db, schema, did, DIGEST_RECOMMENDATION_LIMIT, {
-          excludeWebBridge,
+          excludeBridged,
           followUris,
           seed: rotationSeed("digest", did),
         })
