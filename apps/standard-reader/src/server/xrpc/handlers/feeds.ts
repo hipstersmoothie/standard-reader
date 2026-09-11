@@ -34,8 +34,9 @@ export async function handleGetLatestFeed(ctx: XrpcRequestContext) {
   const trackReading = subjectDid == null ? false : ctx.trackReadingEnabled;
   const countOldPostsAsUnread =
     subjectDid == null ? true : ctx.countOldPostsAsUnreadEnabled;
-  const excludeWebBridge =
-    subjectDid == null ? false : ctx.excludeWebBridgeEnabled;
+  // Not gated on `subjectDid`: an anonymous caller is exactly who `"all"` is
+  // for, and `ctx.excludeBridged` already reflects how this caller signed in.
+  const excludeBridged = ctx.excludeBridged;
   const followUris = subjectDid
     ? await effectiveFollowUris(ctx.db, ctx.schema, subjectDid)
     : [];
@@ -52,14 +53,14 @@ export async function handleGetLatestFeed(ctx: XrpcRequestContext) {
             offset,
             readForDid: trackReading && subjectDid ? subjectDid : undefined,
             scope: "page",
-            excludeWebBridge,
+            excludeBridged,
             viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
             muterDid: await muteFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
           })
         : []
       : await selectArticleCards(ctx.db, ctx.schema, {
           ...(!subjectDid || filter === "all"
-            ? { discoverOnly: true, excludeWebBridge }
+            ? { discoverOnly: true, excludeBridged }
             : {
                 publicationUris: followUris,
                 unreadForDid:
@@ -103,7 +104,7 @@ export async function handleGetTrendingPublications(ctx: XrpcRequestContext) {
       ctx.schema,
       ctx.auth?.did,
       await trendingPublications(ctx.db, ctx.schema, limit, {
-        excludeWebBridge: ctx.excludeWebBridgeEnabled,
+        excludeBridged: ctx.excludeBridged,
       }),
     ),
   );
@@ -118,7 +119,7 @@ export async function handleGetTrendingDocuments(ctx: XrpcRequestContext) {
   const items = await trendingArticles(ctx.db, ctx.schema, limit, {
     scope,
     readForDid,
-    excludeWebBridge: ctx.excludeWebBridgeEnabled,
+    excludeBridged: ctx.excludeBridged,
     viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
     muterDid: await muteFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
   });
@@ -138,7 +139,7 @@ export async function handleGetTagFeed(ctx: XrpcRequestContext) {
       sort,
       limit,
       offset,
-      excludeWebBridge: ctx.excludeWebBridgeEnabled,
+      excludeBridged: ctx.excludeBridged,
       viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
       muterDid: await muteFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
     });
@@ -157,7 +158,7 @@ export async function handleGetTagFeed(ctx: XrpcRequestContext) {
   const rows = await selectArticleCards(ctx.db, ctx.schema, {
     tag,
     discoverOnly: true,
-    excludeWebBridge: ctx.excludeWebBridgeEnabled,
+    excludeBridged: ctx.excludeBridged,
     limit,
     offset,
     readForDid,

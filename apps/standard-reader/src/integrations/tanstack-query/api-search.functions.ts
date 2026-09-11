@@ -16,6 +16,7 @@ import {
 import { alias, union } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
+import type { BridgeExclusion } from "#/lib/atproto/bridged-repo";
 import { STANDARD_NSID } from "#/lib/atproto/nsids";
 import { parseInternalRoute } from "#/lib/internal-route";
 import { getPublicUrl } from "#/lib/public-url";
@@ -61,8 +62,8 @@ import {
 import {
   discoverEligiblePublicationWhere,
   notExcludedPublicationArticleWhere,
-  notWebBridgeArticleWhere,
-  notWebBridgePublicationOwnerWhere,
+  notBridgedArticleWhere,
+  notBridgedPublicationOwnerWhere,
 } from "#/server/reader/publication-filters";
 import {
   PUBLICATION_COUNT_CAP,
@@ -152,7 +153,7 @@ const searchPublications = createServerFn({ method: "GET" })
   .validator(searchPageInput)
   .handler(
     observe("search.publications", async ({ data, context }, span) => {
-      const { db, schema, excludeWebBridgeEnabled } = context;
+      const { db, schema, excludeBridged } = context;
       span.set("q", data.q);
       span.set("offset", data.offset);
       const did = await attachReaderSpanContext(span, getRequest());
@@ -166,7 +167,7 @@ const searchPublications = createServerFn({ method: "GET" })
         data.q,
         data.limit,
         data.offset,
-        { excludeWebBridge: excludeWebBridgeEnabled },
+        { excludeBridged },
       );
 
       let items = page.items;
@@ -220,7 +221,7 @@ const searchArticles = createServerFn({ method: "GET" })
   .validator(searchPageInput)
   .handler(
     observe("search.articles", async ({ data, context }, span) => {
-      const { db, schema, excludeWebBridgeEnabled } = context;
+      const { db, schema, excludeBridged } = context;
       const d = schema.documents;
       const p = schema.publications;
       const pr = schema.profiles;
@@ -283,7 +284,9 @@ const searchArticles = createServerFn({ method: "GET" })
       const baseWhere = and(
         eq(d.deleted, false),
         notExcludedPublicationArticleWhere(p),
-        ...(excludeWebBridgeEnabled ? [notWebBridgeArticleWhere(schema)] : []),
+        ...(excludeBridged
+          ? [notBridgedArticleWhere(schema, excludeBridged)]
+          : []),
         // Search is paginated, so blocked authors are excluded in SQL rather
         // than dropped from the page — see `notBlockedByViewer`.
         ...(blockDid
@@ -544,7 +547,7 @@ async function searchIndexedPublications(
   q: string,
   limit: number,
   offset: number,
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  { excludeBridged = false }: { excludeBridged?: BridgeExclusion } = {},
 ): Promise<{ items: Array<PublicationCard>; total: number }> {
   const p = schema.publications;
   const st = schema.publicationStats;
@@ -558,7 +561,9 @@ async function searchIndexedPublications(
   const pubWhere = and(
     discoverEligiblePublicationWhere(p),
     publicationSearchMatchSql(p, pr, terms, armOptions),
-    ...(excludeWebBridge ? [notWebBridgePublicationOwnerWhere(schema)] : []),
+    ...(excludeBridged
+      ? [notBridgedPublicationOwnerWhere(schema, excludeBridged)]
+      : []),
   );
 
   // Bound the count instead of counting the whole match set on every keystroke:

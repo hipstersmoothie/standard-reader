@@ -43,6 +43,51 @@ export const WEB_BRIDGE_HANDLE_SUFFIX = ".web.brid.gy";
  */
 export const WEB_BRIDGE_HANDLE_PATTERN = `%${WEB_BRIDGE_HANDLE_SUFFIX}`;
 
+/** SQL `ILIKE` pattern matching *every* Bridgy bridge, web and ActivityPub. */
+export const BRIDGE_HANDLE_PATTERN = `%${BRIDGE_HANDLE_SUFFIX}`;
+
+/**
+ * How much of Bridgy Fed a network-wide read-model query hides.
+ *
+ * - `false` — nothing. The signed-in default: both bridges are indexed and a
+ *   reader who has not said otherwise sees them.
+ * - `"web"` — the bulk mirrors only (`*.web.brid.gy`). What the reader-facing
+ *   "Hide mirrored websites" setting turns on, and all it has ever meant:
+ *   `*.ap.brid.gy` authors chose to be here, so the setting keeps them.
+ * - `"all"` — every `*.brid.gy` repo, both bridges. The **signed-out** app:
+ *   a reader with no account has expressed no preferences and subscribed to
+ *   nobody, so the network surfaces they land on show only writing published
+ *   natively to AT Protocol. Signing in restores the bridges, and the setting
+ *   above then governs the mirrors.
+ *
+ * Scoped per request rather than baked into the filters because the two
+ * audiences want different corpora out of the same queries.
+ */
+export type BridgeExclusion = false | "web" | "all";
+
+/**
+ * The exclusion a **curated** surface uses — the Discover rails and the digest,
+ * which drop the bulk mirrors for everybody because "here is a suggestion" and
+ * "nobody at this site asked to be suggested" do not go together.
+ *
+ * Never narrows: a signed-out reader hiding every bridge keeps hiding every
+ * bridge on those surfaces too.
+ */
+export function curatedBridgeExclusion(
+  exclusion: BridgeExclusion,
+): Exclude<BridgeExclusion, false> {
+  return exclusion === "all" ? "all" : "web";
+}
+
+/** The `ILIKE` pattern an active {@link BridgeExclusion} filters on. */
+export function bridgeHandlePattern(
+  exclusion: Exclude<BridgeExclusion, false>,
+): string {
+  return exclusion === "all"
+    ? BRIDGE_HANDLE_PATTERN
+    : WEB_BRIDGE_HANDLE_PATTERN;
+}
+
 function endsWithSuffix(
   handle: string | null | undefined,
   suffix: string,
@@ -60,4 +105,20 @@ function endsWithSuffix(
  */
 export function isWebBridgeHandle(handle: string | null | undefined): boolean {
   return endsWithSuffix(handle, WEB_BRIDGE_HANDLE_SUFFIX);
+}
+
+/** True for any Bridgy Fed repo — both bridges. */
+export function isBridgeHandle(handle: string | null | undefined): boolean {
+  return endsWithSuffix(handle, BRIDGE_HANDLE_SUFFIX);
+}
+
+/** True when `exclusion` would hide `handle`. `false` hides nothing. */
+export function isExcludedBridgeHandle(
+  handle: string | null | undefined,
+  exclusion: BridgeExclusion,
+): boolean {
+  if (!exclusion) return false;
+  return exclusion === "all"
+    ? isBridgeHandle(handle)
+    : isWebBridgeHandle(handle);
 }

@@ -3,16 +3,14 @@ import { eq } from "drizzle-orm";
 
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
 import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
+import type { BridgeExclusion } from "#/lib/atproto/bridged-repo";
 import {
   COUNT_OLD_POSTS_AS_UNREAD_COOKIE,
   DEFAULT_COUNT_OLD_POSTS_AS_UNREAD,
   dbValueToCountOldPostsAsUnread,
   parseCountOldPostsAsUnreadCookie,
 } from "#/lib/count-old-posts-as-unread";
-import {
-  DEFAULT_EXCLUDE_WEB_BRIDGE,
-  dbValueToExcludeWebBridge,
-} from "#/lib/exclude-web-bridge";
+import { dbValueToExcludeWebBridge } from "#/lib/exclude-web-bridge";
 import {
   TRACK_READING_HISTORY_COOKIE,
   dbValueToTrackReadingHistory,
@@ -23,11 +21,36 @@ export interface ReaderSessionPreferences {
   trackReadingEnabled: boolean;
   countOldPostsAsUnreadEnabled: boolean;
   /**
-   * "Hide mirrored websites" — see `#/lib/exclude-web-bridge`. Account-level
-   * only (no cookie mirror), so guests and expired sessions get the default.
+   * How much of Bridgy Fed this request hides — see {@link BridgeExclusion}.
+   *
+   * `"all"` for anyone without a reader session: the signed-out app shows no
+   * bridged accounts at all. A signed-in reader gets their own "Hide mirrored
+   * websites" setting (`#/lib/exclude-web-bridge`) instead, which covers the
+   * web bridge only, is account-level with no cookie mirror, and is off by
+   * default — so signing in *adds* the bridges back rather than taking
+   * anything away.
    */
-  excludeWebBridgeEnabled: boolean;
+  excludeBridged: BridgeExclusion;
+  /**
+   * Whether a live reader session backed the preferences above. Callers that
+   * authenticate some *other* way — the XRPC AppView, whose clients carry a
+   * DID token and no cookie — use it to tell a genuine signed-out reader from
+   * a signed-in caller this resolver cannot see.
+   */
+  hasReaderSession: boolean;
 }
+
+/**
+ * What a request with no reader session sees: every `*.brid.gy` repo hidden,
+ * both the bulk web mirrors and the opt-in ActivityPub bridge.
+ *
+ * Signed out there is nothing of the reader's own on the page — no
+ * subscriptions, no preferences, no history — so the network-wide surfaces are
+ * the whole product, and what they should show is writing published natively to
+ * AT Protocol. The bridges come back on sign-in, where the reader's own setting
+ * governs them.
+ */
+const SIGNED_OUT_EXCLUDE_BRIDGED: BridgeExclusion = "all";
 
 function readSessionTokenCookie(
   cookieHeader: string | null,
@@ -53,7 +76,8 @@ function preferencesFromCookies(): ReaderSessionPreferences {
     countOldPostsAsUnreadEnabled: parseCountOldPostsAsUnreadCookie(
       getCookie(COUNT_OLD_POSTS_AS_UNREAD_COOKIE),
     ),
-    excludeWebBridgeEnabled: DEFAULT_EXCLUDE_WEB_BRIDGE,
+    excludeBridged: SIGNED_OUT_EXCLUDE_BRIDGED,
+    hasReaderSession: false,
   };
 }
 
@@ -80,7 +104,10 @@ export async function resolveReaderSessionPreferences(
     return {
       trackReadingEnabled: false,
       countOldPostsAsUnreadEnabled: DEFAULT_COUNT_OLD_POSTS_AS_UNREAD,
-      excludeWebBridgeEnabled: DEFAULT_EXCLUDE_WEB_BRIDGE,
+      // Not a page view: scripts and the digest resolve the reader they run
+      // for themselves, so nothing here is "signed out".
+      excludeBridged: false,
+      hasReaderSession: false,
     };
   }
 
@@ -111,9 +138,12 @@ export async function resolveReaderSessionPreferences(
         countOldPostsAsUnreadEnabled: dbValueToCountOldPostsAsUnread(
           sessionRow.user.countOldPostsAsUnread ?? null,
         ),
-        excludeWebBridgeEnabled: dbValueToExcludeWebBridge(
+        excludeBridged: dbValueToExcludeWebBridge(
           sessionRow.user.excludeWebBridge ?? null,
-        ),
+        )
+          ? "web"
+          : false,
+        hasReaderSession: true,
       };
     }
   }

@@ -1,4 +1,5 @@
 import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
+import type { BridgeExclusion } from "#/lib/atproto/bridged-repo";
 import { resolveReaderSessionPreferences } from "#/server/reader/session-preferences.server";
 
 export type XrpcDbContext = {
@@ -6,7 +7,14 @@ export type XrpcDbContext = {
   schema: Schema;
   trackReadingEnabled: boolean;
   countOldPostsAsUnreadEnabled: boolean;
-  excludeWebBridgeEnabled: boolean;
+  /**
+   * The cookie session's bridge exclusion — `"all"` when no reader session
+   * backed this request. `dispatch` narrows it for callers who authenticated
+   * with a DID token instead; see {@link XrpcRequestContext.excludeBridged}.
+   */
+  excludeBridged: BridgeExclusion;
+  /** Whether a reader session (cookie) backed the preferences above. */
+  hasReaderSession: boolean;
 };
 
 let cachedDb: Pick<XrpcDbContext, "db" | "schema"> | null = null;
@@ -22,14 +30,33 @@ export async function getXrpcDbContext(): Promise<XrpcDbContext> {
   const {
     trackReadingEnabled,
     countOldPostsAsUnreadEnabled,
-    excludeWebBridgeEnabled,
+    excludeBridged,
+    hasReaderSession,
   } = await resolveReaderSessionPreferences(cachedDb.db, cachedDb.schema);
   return {
     ...cachedDb,
     trackReadingEnabled,
     countOldPostsAsUnreadEnabled,
-    excludeWebBridgeEnabled,
+    excludeBridged,
+    hasReaderSession,
   };
+}
+
+/**
+ * The bridge exclusion an XRPC caller actually gets.
+ *
+ * {@link getXrpcDbContext} can only read a cookie session, and resolves `"all"`
+ * when it finds none — right for an anonymous caller, who should see what the
+ * signed-out app shows, and wrong for one who authenticated with a DID token
+ * this resolver cannot see. Those keep the signed-in default until their own
+ * preference can be read.
+ */
+export function effectiveBridgeExclusion(
+  ctx: Pick<XrpcDbContext, "excludeBridged" | "hasReaderSession">,
+  auth: unknown,
+): BridgeExclusion {
+  if (ctx.hasReaderSession) return ctx.excludeBridged;
+  return auth ? false : ctx.excludeBridged;
 }
 
 export function encodeCursor(offset: number): string {

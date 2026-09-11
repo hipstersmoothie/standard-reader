@@ -66,7 +66,7 @@ export async function handleGetHomeFeed(ctx: XrpcRequestContext) {
       }
     : {
         discoverOnly: true as const,
-        excludeWebBridge: ctx.excludeWebBridgeEnabled,
+        excludeBridged: ctx.excludeBridged,
         viewerDid: blockDid,
         muterDid: muteDid,
       };
@@ -125,11 +125,11 @@ export async function handleGetRecommendedPublications(
     ctx.db,
     ctx.schema,
     limit,
-    { excludeWebBridge: ctx.excludeWebBridgeEnabled },
+    { excludeBridged: ctx.excludeBridged },
   );
   const items = await recommendedPublications(ctx.db, ctx.schema, did, limit, {
     excludeUris: trendingExclude,
-    excludeWebBridge: ctx.excludeWebBridgeEnabled,
+    excludeBridged: ctx.excludeBridged,
     followUris,
   });
   return { items: items.map((item) => toPublicationView(item)) };
@@ -149,7 +149,7 @@ export async function handleGetFollowedByPeopleYouFollow(
     ctx.db,
     ctx.schema,
     limit,
-    { excludeWebBridge: ctx.excludeWebBridgeEnabled },
+    { excludeBridged: ctx.excludeBridged },
   );
   const items = await followedByPeopleYouFollow(
     ctx.db,
@@ -158,7 +158,7 @@ export async function handleGetFollowedByPeopleYouFollow(
     limit,
     {
       excludeUris: trendingExclude,
-      excludeWebBridge: ctx.excludeWebBridgeEnabled,
+      excludeBridged: ctx.excludeBridged,
       followUris,
     },
   );

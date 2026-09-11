@@ -3,7 +3,7 @@ import { getClientIp, rateLimitHeaders } from "#/server/rate-limit";
 import { checkRateLimit, checkRateLimitByIp } from "#/server/rate-limit-policy";
 
 import { authenticateRequest, requireScopes } from "./auth";
-import { getXrpcDbContext } from "./db";
+import { effectiveBridgeExclusion, getXrpcDbContext } from "./db";
 import {
   AuthRequiredError,
   InvalidRequestError,
@@ -117,7 +117,8 @@ export async function dispatchXrpc(request: Request): Promise<Response> {
         schema,
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
-        excludeWebBridgeEnabled,
+        excludeBridged: sessionExcludeBridged,
+        hasReaderSession,
       },
       auth,
     ] = await Promise.all([
@@ -149,6 +150,11 @@ export async function dispatchXrpc(request: Request): Promise<Response> {
       requireScopes(auth, entry.scopes);
     }
 
+    const excludeBridged = effectiveBridgeExclusion(
+      { excludeBridged: sessionExcludeBridged, hasReaderSession },
+      auth,
+    );
+
     const params = parseQueryParams(url);
     const body =
       entry.method === "procedure"
@@ -162,7 +168,7 @@ export async function dispatchXrpc(request: Request): Promise<Response> {
       schema,
       trackReadingEnabled,
       countOldPostsAsUnreadEnabled,
-      excludeWebBridgeEnabled,
+      excludeBridged,
       params,
       body: body ?? null,
     };
