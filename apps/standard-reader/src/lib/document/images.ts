@@ -3,8 +3,14 @@
  *
  * `lead-image.ts` answers "what is this article's hero?" and stops at the first
  * block. This module answers "what are this document's pages?" — the comic
- * reader flips through exactly this list, and `recomputeSerialKinds` counts it
+ * reader flips through exactly this list, and `recomputeSerialKinds` reads it
  * to tell a comic serial apart from a prose one.
+ *
+ * The same walk also counts how many blocks the body renders in total
+ * ({@link documentBody}), because the image list on its own cannot say whether
+ * the art *is* the post or merely sits inside it — a conference newsletter
+ * announcing a sponsor has one logo and twenty blocks of prose, and looks
+ * exactly like a comic page to anything that only counts images.
  *
  * Every format is walked through the same block parsers the renderers use, so
  * the page list matches what the article view would have drawn. Formats whose
@@ -58,6 +64,29 @@ export type ImageSourceDocument = Pick<
   "contentFormat" | "contentJson" | "did"
 >;
 
+/**
+ * A document body, measured the way the comic classifier reads it.
+ */
+export interface DocumentBody {
+  /** Every image the body renders, in reading order, deduplicated by URL. */
+  images: Array<DocumentImage>;
+  /**
+   * Renderable blocks in the body — art, paragraphs, headings, embeds, rules.
+   *
+   * A comic page is one or two of these (the page, and maybe the author's note
+   * under it). An article that carries an illustration is a dozen or more. That
+   * difference is the only thing that separates the two, since both post short
+   * text and at least one image.
+   */
+  blockCount: number;
+}
+
+/** A body under construction, before its images are deduplicated. */
+interface BodyAccumulator {
+  images: Array<DocumentImage>;
+  blocks: number;
+}
+
 const DEFAULT_ASPECT_RATIO = 16 / 9;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -75,16 +104,26 @@ function resolveContentType(article: ImageSourceDocument): string | null {
   return null;
 }
 
-function pushLeafletImages(
+function pushLeafletBlocks(
   blocks: Array<LeafletRenderableBlock>,
   did: string,
-  out: Array<DocumentImage>,
+  out: BodyAccumulator,
 ): void {
   for (const entry of blocks) {
+    // A referenced page renders inline, so its images are pages here too — and
+    // its blocks are this body's blocks. The embed itself draws nothing, so it
+    // is not counted on top of what it expands to.
+    if (entry.kind === "pageEmbed") {
+      pushLeafletBlocks(entry.blocks, did, out);
+      continue;
+    }
+
+    out.blocks += 1;
+
     if (entry.kind === "image") {
       const url = leafletImageUrl(entry.block, did);
       if (url) {
-        out.push({
+        out.images.push({
           url,
           alt: normalizeImageAlt(entry.block.alt),
           aspectRatio: leafletImageAspectRatio(entry.block),
@@ -96,32 +135,35 @@ function pushLeafletImages(
       for (const image of entry.block.images ?? []) {
         const url = leafletImageUrl(image, did);
         if (!url) continue;
-        out.push({
+        out.images.push({
           url,
           alt: normalizeImageAlt(image.alt),
           aspectRatio: leafletImageAspectRatio(image),
         });
       }
-      continue;
-    }
-    // A referenced page renders inline, so its images are pages here too.
-    if (entry.kind === "pageEmbed") {
-      pushLeafletImages(entry.blocks, did, out);
     }
   }
 }
 
-function pushStructuredImages(
+function pushStructuredBlocks(
   blocks: Array<StructuredRenderableBlock>,
   did: string,
-  out: Array<DocumentImage>,
+  out: BodyAccumulator,
 ): void {
   for (const block of blocks) {
+    // A quote is a wrapper around the blocks it holds; those are what render.
+    if (block.kind === "blockquote") {
+      pushStructuredBlocks(block.blocks, did, out);
+      continue;
+    }
+
+    out.blocks += 1;
+
     if (block.kind === "image") {
       if (!structuredImageHasSource(block)) continue;
       const url = structuredImageUrl(block, did);
       if (!url) continue;
-      out.push({
+      out.images.push({
         url,
         alt: normalizeImageAlt(block.alt, block.caption),
         aspectRatio: structuredImageAspectRatio(block),
@@ -133,16 +175,12 @@ function pushStructuredImages(
         if (!structuredImageHasSource(image)) continue;
         const url = structuredImageUrl(image, did);
         if (!url) continue;
-        out.push({
+        out.images.push({
           url,
           alt: normalizeImageAlt(image.alt),
           aspectRatio: structuredImageAspectRatio(image),
         });
       }
-      continue;
-    }
-    if (block.kind === "blockquote") {
-      pushStructuredImages(block.blocks, did, out);
     }
   }
 }
@@ -181,21 +219,45 @@ export function markupImages(text: string): Array<DocumentImage> {
   return out;
 }
 
+/** Paragraph boundary in a markdown or HTML body — a blank line. */
+const MARKUP_PARAGRAPH_BREAK = /\n{2,}/;
+
 /**
- * Every image the document body renders, in reading order.
- *
- * Deduplicated by URL: a document that opens with its cover image and repeats it
- * later shouldn't page through the same art twice, and the markdown/HTML
- * fallback scans the same body with two patterns.
+ * Blocks a markdown or HTML body renders, for formats with no block structure
+ * to walk. The images are already known; what is left is counted as the prose
+ * around them, one block per paragraph.
  */
-export function documentImages(
-  article: ImageSourceDocument,
-): Array<DocumentImage> {
+function markupProseBlocks(markup: string): number {
+  return markup
+    .replaceAll(MARKDOWN_IMAGE, "")
+    .replaceAll(HTML_IMAGE, "")
+    .split(MARKUP_PARAGRAPH_BREAK)
+    .filter((paragraph) => paragraph.trim()).length;
+}
+
+/** Drop repeats of an image already in the list, keeping the first. */
+function dedupeByUrl(images: Array<DocumentImage>): Array<DocumentImage> {
+  const seen = new Set<string>();
+  return images.filter((image) => {
+    if (seen.has(image.url)) return false;
+    seen.add(image.url);
+    return true;
+  });
+}
+
+/**
+ * The document body's art and its bulk, in one walk.
+ *
+ * Images are deduplicated by URL: a document that opens with its cover image and
+ * repeats it later shouldn't page through the same art twice, and the
+ * markdown/HTML fallback scans the same body with two patterns.
+ */
+export function documentBody(article: ImageSourceDocument): DocumentBody {
   const contentType = resolveContentType(article);
   const { contentJson, did } = article;
-  if (!contentType || !contentJson) return [];
+  if (!contentType || !contentJson) return { images: [], blockCount: 0 };
 
-  const images: Array<DocumentImage> = [];
+  const out: BodyAccumulator = { images: [], blocks: 0 };
 
   if (
     contentType === LEAFLET_CONTENT ||
@@ -205,38 +267,47 @@ export function documentImages(
       contentType === LEAFLET_DOCUMENT_FORMAT
         ? leafletDocumentContent(contentJson)
         : contentJson;
-    pushLeafletImages(leafletBlocks(content), did, images);
+    pushLeafletBlocks(leafletBlocks(content), did, out);
   } else if (contentType === PCKT_CONTENT) {
     for (const entry of pcktBlocks(contentJson)) {
+      out.blocks += 1;
       if (entry.kind !== "image" || !pcktImageHasSource(entry.block)) continue;
       const url = pcktImageUrl(entry.block, did);
       if (!url) continue;
-      images.push({
+      out.images.push({
         url,
         alt: pcktImageAlt(entry.block),
         aspectRatio: pcktImageAspectRatio(entry.block),
       });
     }
   } else if (contentType === OFFPRINT_CONTENT) {
-    pushStructuredImages(offprintBlocks(contentJson), did, images);
+    pushStructuredBlocks(offprintBlocks(contentJson), did, out);
   } else {
     const structured = structuredFormatBlocks(contentJson, contentType);
     if (structured) {
-      pushStructuredImages(structured, did, images);
+      pushStructuredBlocks(structured, did, out);
     } else {
       const markup =
         markdownPlaintext(contentJson) ??
         altMarkdownText(contentJson) ??
         prepareMarkpubMarkdown(contentJson)?.body ??
         htmlContentBody(contentJson);
-      if (markup) images.push(...markupImages(markup));
+      if (markup) {
+        // Deduplicated here rather than at the end, so the two patterns finding
+        // the same image can't be counted as two blocks of art.
+        const found = dedupeByUrl(markupImages(markup));
+        out.images.push(...found);
+        out.blocks += found.length + markupProseBlocks(markup);
+      }
     }
   }
 
-  const seen = new Set<string>();
-  return images.filter((image) => {
-    if (seen.has(image.url)) return false;
-    seen.add(image.url);
-    return true;
-  });
+  return { images: dedupeByUrl(out.images), blockCount: out.blocks };
+}
+
+/** Every image the document body renders, in reading order. */
+export function documentImages(
+  article: ImageSourceDocument,
+): Array<DocumentImage> {
+  return documentBody(article).images;
 }

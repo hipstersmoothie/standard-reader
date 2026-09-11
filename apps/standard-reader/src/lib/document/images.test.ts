@@ -6,7 +6,7 @@ import {
   LEAFLET_PAGE,
 } from "#/lib/leaflet/types";
 
-import { documentImages, markupImages } from "./images";
+import { documentBody, documentImages, markupImages } from "./images";
 
 const did = "did:plc:author";
 
@@ -144,5 +144,61 @@ describe("documentImages — empty input", () => {
     expect(
       documentImages({ did, contentFormat: null, contentJson: null }),
     ).toEqual([]);
+  });
+});
+
+describe("documentBody — block count", () => {
+  it("counts every rendered block, not just the art", () => {
+    const body = documentBody({
+      did,
+      contentFormat: LEAFLET_CONTENT,
+      contentJson: leafletContent([
+        leafletImage("bafpage1"),
+        leafletBlock({ $type: LEAFLET_BLOCK.text, plaintext: "Author notes" }),
+      ]) as never,
+    });
+
+    expect(body.images).toHaveLength(1);
+    expect(body.blockCount).toBe(2);
+  });
+
+  it("counts a gallery as one block however many pages it holds", () => {
+    const body = documentBody({
+      did,
+      contentFormat: LEAFLET_CONTENT,
+      contentJson: leafletContent([
+        leafletBlock({
+          $type: LEAFLET_BLOCK.imageGallery,
+          images: [
+            { image: { $type: "blob", ref: { $link: "bafa" } } },
+            { image: { $type: "blob", ref: { $link: "bafb" } } },
+          ],
+        }),
+      ]) as never,
+    });
+
+    expect(body.images).toHaveLength(2);
+    expect(body.blockCount).toBe(1);
+  });
+
+  it("counts the prose around a markdown body's images", () => {
+    const body = documentBody({
+      did,
+      contentFormat: "site.standard.content.markdown",
+      contentJson: {
+        $type: "site.standard.content.markdown",
+        text: "Intro\n\n![One](https://cdn.example/1.png)\n\nOutro\n\nMore",
+      } as never,
+    });
+
+    expect(body.images).toHaveLength(1);
+    // One image, three paragraphs of prose around it.
+    expect(body.blockCount).toBe(4);
+  });
+
+  it("has nothing to measure without content", () => {
+    expect(
+      documentBody({ did, contentFormat: null, contentJson: null }),
+    ).toEqual({ images: [], blockCount: 0 });
   });
 });

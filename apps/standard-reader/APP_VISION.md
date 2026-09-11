@@ -421,10 +421,22 @@ A publisher who sets `preferences.prevNextDirection = "ltr"` on their
 `site.standard.publication` is saying the publication **reads forwards from its first post**
 rather than newest-first — a serial. That one flag is the whole signal; the lexicon has no
 field for what _kind_ of serial it is, so the kind is app-derived (`recomputeSerialKinds`, in
-the hourly sweep): a publication whose recent posts each render at least one image and carry
-only a short note of prose is a **comic**, anything else a **book**. Both are mirrored on the
-read-model row (`publications.prev_next_direction`, `publications.serial_kind`) and travel to
-the UI as `PublicationCard.serial` (see `#/lib/publication/serial`).
+the hourly sweep): a publication whose recent posts are mostly **pages of art** is a **comic**,
+anything else a **book**. Both are mirrored on the read-model row
+(`publications.prev_next_direction`, `publications.serial_kind`) and travel to the UI as
+`PublicationCard.serial` (see `#/lib/publication/serial`).
+
+A post reads as a page of art (`readsAsComicPage`, `#/server/reader/series`) when its body
+renders an image, the prose beside it is a note rather than a chapter, **and the art is most of
+what the body renders** — at least `COMIC_PAGE_MIN_ART_SHARE` of its blocks. That last test is
+what separates a comic from an illustrated newsletter, and it is not optional: "has an image and
+isn't very long" describes a conference announcement carrying a sponsor logo exactly as well as
+it describes a comic page, and atmosphereconf.org classified as a comic on that basis — opening
+on a shelf of logos, with each post's actual writing demoted to a note over the art. Counting
+blocks tells them apart with room to spare: a comic page is the art plus maybe a note (a share
+of 0.5–1.0), while an announcement buries one picture among twenty blocks of headings, links and
+paragraphs (0.05–0.17). The block count rides along with the image list in one walk of the body
+(`documentBody`, `#/lib/document/images`), so it costs nothing extra to ask.
 
 Both are filled **on demand** as well as by the sweep. The ingester only writes
 `prev_next_direction` when a publication record is created or updated, so a publication indexed
