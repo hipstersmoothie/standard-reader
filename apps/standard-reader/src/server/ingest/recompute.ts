@@ -1,6 +1,7 @@
 import {
   and,
   asc,
+  desc,
   eq,
   gt,
   inArray,
@@ -20,6 +21,7 @@ import {
 } from "#/lib/document/search-text";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
 import { SERIAL_DIRECTION } from "#/lib/publication/serial";
+import { detectDocumentLanguage } from "#/server/lang/detect";
 import { deriveSerialKind } from "#/server/reader/series";
 import {
   ARTICLE_BLEND,
@@ -37,8 +39,10 @@ import {
   documents,
   NETWORK_DOCUMENT_COUNT_KEY,
   NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY,
+  networkStats,
   profiles,
   publications,
+  UNTAGGED_LANGUAGE_KEY,
 } from "../../db/schema.ts";
 import { getBacklinkCountForTarget } from "../atproto/constellation.ts";
 import {
@@ -49,6 +53,17 @@ import {
 import { logEvent } from "../observability/log.ts";
 import { replayDeadLetters } from "./consumer.ts";
 import { reconcileDocumentDup, reconcilePublicationGroup } from "./handlers.ts";
+
+/**
+ * How many documents one sweep will language-tag before stopping.
+ *
+ * At ~2 ms a document this is roughly two seconds of CPU per sweep — enough to
+ * absorb an hour of ingest many times over, and small enough that a corpus
+ * that has never been tagged degrades into "this takes a while" rather than
+ * "the ingest worker stops keeping up". See
+ * {@link backfillDocumentLanguages}.
+ */
+const LANGUAGE_SWEEP_CAP = 2000;
 
 /**
  * Recompute the derived per-publication aggregates (subscriber/document/
@@ -722,11 +737,14 @@ export async function recomputeDiscoverTopicCounts(): Promise<void> {
  * what the "All" tab actually lists, and this is only its cardinality.
  */
 export async function recomputeNetworkStats(): Promise<void> {
+  const recomputedAt = new Date();
   await db.execute(sql`
     INSERT INTO network_stats (key, value, recomputed_at)
-    SELECT stat.key, stat.value, now()
+    SELECT stat.key, stat.value, ${recomputedAt}
     FROM (
       SELECT
+        coalesce(d.lang, ${UNTAGGED_LANGUAGE_KEY}) AS lang,
+        GROUPING(d.lang) AS is_total,
         count(*) AS all_documents,
         count(*) FILTER (
           WHERE wba.did IS NULL AND wbp.did IS NULL
@@ -749,14 +767,45 @@ export async function recomputeNetworkStats(): Promise<void> {
             AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
           )
         )
+      -- One scan, two levels: the grand total (the two headline scalars) and
+      -- the per-language breakdown the language filter's badge sums. GROUPING()
+      -- is 1 for the rollup row and 0 for the per-language ones.
+      GROUP BY GROUPING SETS ((), (d.lang))
     ) totals
     CROSS JOIN LATERAL (VALUES
-      (${NETWORK_DOCUMENT_COUNT_KEY}, totals.all_documents),
-      (${NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY}, totals.documents_without_web_bridge)
+      (
+        CASE WHEN totals.is_total = 1
+          THEN ${NETWORK_DOCUMENT_COUNT_KEY}
+          ELSE ${NETWORK_DOCUMENT_COUNT_KEY} || '_lang:' || totals.lang
+        END,
+        totals.all_documents
+      ),
+      (
+        CASE WHEN totals.is_total = 1
+          THEN ${NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY}
+          ELSE ${NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY} || '_lang:' || totals.lang
+        END,
+        totals.documents_without_web_bridge
+      )
     ) AS stat(key, value)
     ON CONFLICT (key) DO UPDATE
       SET value = excluded.value, recomputed_at = excluded.recomputed_at
   `);
+
+  // A language whose last document was deleted stops appearing in the scan, and
+  // its row would otherwise sit there forever asserting a count that is no
+  // longer true. Anything this run did not touch no longer exists.
+  await db.delete(networkStats).where(
+    and(
+      // `starts_with`, not LIKE: every one of these keys is full of
+      // underscores, and LIKE would read each as a single-character wildcard.
+      or(
+        sql`starts_with(${networkStats.key}, ${`${NETWORK_DOCUMENT_COUNT_KEY}_lang:`})`,
+        sql`starts_with(${networkStats.key}, ${`${NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY}_lang:`})`,
+      ),
+      sql`${networkStats.recomputedAt} < ${recomputedAt}`,
+    ),
+  );
 }
 
 /**
@@ -937,6 +986,106 @@ export async function backfillRenderableBody(): Promise<number> {
   }
 
   return toTrue.length + toFalse.length;
+}
+
+/**
+ * Tag documents the language detector has never looked at.
+ *
+ * `upsertDocument` detects on write, so in steady state this pass finds almost
+ * nothing: it exists for the rows that predate language tagging, and for the
+ * handful ingest can still leave behind (a body that arrived out of order, a
+ * write that raced a deploy). The work queue is
+ * `lang_detected_at IS NULL`, served by the partial
+ * `documents_lang_pending_idx`, so the query cost shrinks toward zero as the
+ * corpus is covered rather than scanning 3.4M rows every hour.
+ *
+ * **Bounded on purpose.** Detection is ~2 ms of CPU per document, which is
+ * nothing for a page of them and two hours for the whole corpus — and this runs
+ * in the ingest worker, in front of the live tap. {@link LANGUAGE_SWEEP_CAP} is
+ * what keeps a cold corpus from monopolising a sweep; the initial pass over an
+ * existing corpus belongs in `scripts/backfill-document-languages.ts`, which
+ * can take as long as it likes. Once that has run this pass has a few hundred
+ * rows to do at most.
+ *
+ * Stamps `lang_detected_at` whether or not a language came out, so a document
+ * with nothing detectable in it is examined once and never again. Idempotent.
+ * Returns how many documents were examined.
+ */
+export async function backfillDocumentLanguages(
+  opts: {
+    /** Stop after this many documents. The sweep's cap by default. */
+    limit?: number;
+    /** Called after each batch, for the backfill script's progress line. */
+    onProgress?: (examined: number) => void;
+  } = {},
+): Promise<number> {
+  const limit = opts.limit ?? LANGUAGE_SWEEP_CAP;
+  const READ_BATCH = 500;
+  const WRITE_CHUNK = 250;
+  let examined = 0;
+
+  while (examined < limit) {
+    const rows = await db
+      .select({
+        description: documents.description,
+        textContent: documents.textContent,
+        title: documents.title,
+        uri: documents.uri,
+      })
+      .from(documents)
+      .where(
+        and(eq(documents.deleted, false), isNull(documents.langDetectedAt)),
+      )
+      .orderBy(desc(documents.publishedAt))
+      .limit(Math.min(READ_BATCH, limit - examined));
+
+    if (rows.length === 0) break;
+
+    // Group by outcome so a batch costs one UPDATE per distinct language plus
+    // one for the undetectable rows, rather than one per document. The
+    // undetectable group is by far the largest on this network — most bridged
+    // posts carry a headline and a link — and it is the group that most needs
+    // its `lang_detected_at` stamped, or the next sweep reads it all again.
+    const byOutcome = new Map<
+      string,
+      { confidence: number | null; uris: Array<string> }
+    >();
+    for (const row of rows) {
+      const detected = detectDocumentLanguage(row);
+      const key = detected?.code ?? "";
+      const bucket = byOutcome.get(key);
+      if (bucket) bucket.uris.push(row.uri);
+      else {
+        byOutcome.set(key, {
+          confidence: detected?.confidence ?? null,
+          uris: [row.uri],
+        });
+      }
+    }
+
+    const detectedAt = new Date();
+    for (const [code, bucket] of byOutcome) {
+      for (let i = 0; i < bucket.uris.length; i += WRITE_CHUNK) {
+        await db
+          .update(documents)
+          .set({
+            lang: code === "" ? null : code,
+            langConfidence: bucket.confidence,
+            langDetectedAt: detectedAt,
+          })
+          .where(inArray(documents.uri, bucket.uris.slice(i, i + WRITE_CHUNK)));
+      }
+    }
+
+    examined += rows.length;
+    opts.onProgress?.(examined);
+    if (rows.length < READ_BATCH) break;
+  }
+
+  if (examined > 0) {
+    logEvent("ingest.languageSweep", { examined });
+  }
+  return examined;
 }
 
 /**
@@ -1124,6 +1273,13 @@ export async function recomputeDerived(): Promise<void> {
   // 1.05M rows. Hourly bought nothing and put two minutes of scan in front of
   // live traffic every hour.
   await recomputeSerialKinds();
+  try {
+    await backfillDocumentLanguages();
+  } catch {
+    // Best-effort: an untagged document is shown to everyone rather than
+    // hidden from anyone, so falling behind here costs nothing a reader sees.
+    // The next sweep picks up the same queue.
+  }
   await recomputeDocumentTrending();
   // Last: dedup + the passes above are what change the eligible-document set,
   // so counting here records the sweep's final state rather than a mid-sweep one.

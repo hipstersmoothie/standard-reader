@@ -154,6 +154,7 @@ async function loadTopicArticles(
     schema: Parameters<typeof selectArticleCardsByUris>[1];
     trackReadingEnabled: boolean;
     countOldPostsAsUnreadEnabled: boolean;
+    feedLanguages: ReadonlyArray<string>;
   },
   did: string | null,
   tags: Array<string>,
@@ -176,6 +177,9 @@ async function loadTopicArticles(
       sort: articleSort,
       limit,
       offset,
+      // A topic page is the app choosing what to show, so the reader's
+      // language filter applies — same rule as Latest "All" and tag pages.
+      languages: did == null ? [] : context.feedLanguages,
     }),
     did ? effectiveFollowSets(db, schema, did) : Promise.resolve(null),
   ]);
