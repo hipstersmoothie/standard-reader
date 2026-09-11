@@ -1149,9 +1149,25 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
 
 - [x] **Recommended for you** — blends co-subscription, co-recommend (`publication_corecommends`), and likes from co-readers.
 - [x] **Followed by people you follow** — co-subscriptions + likes from co-readers.
-- [x] **Trending publications / Trending articles** — cron-precomputed normalized scores (decay,
-      velocity, z-score blend, Constellation backlinks, distinct recommenders excl. self); 4-day
-      recency gate; per-publication + per-author diversity caps on rail reads.
+- [x] **Trending publications** — cron-precomputed normalized score (decay, velocity, z-score
+      blend, Constellation backlinks, distinct recommenders excl. self).
+- [x] **Trending articles** — cron-precomputed score in **raw engagement units** (decay-weighted
+      distinct likers, like acceleration, `ln`-compressed Constellation backlinks + backlink
+      acceleration, freshness modulator, bounded parent-publication nudge); 4-day recency gate;
+      per-publication + per-author diversity caps on rail reads.
+- [x] **Trending no longer degrades into recency.** The score was a z-score blend behind a hard
+      `CASE` on the two-liker floor, so ~24.6k of ~24.6k eligible documents tied at exactly 0, and
+      the Trending _page_ — which dropped the floor so it had 100 rows to paginate — rendered the
+      dozen scored articles followed by the last four days of everything in publish order. Now the
+      whole candidate set is scored on raw engagement, so `trending_score > 0` means "something
+      engaged with this" and gates the page too; the rail keeps the strict floor and additionally
+      accepts Bluesky backlinks as corroboration, so an article being passed around on Bluesky is
+      no longer invisible until two readers happen to like it here. Unit-tested in
+      `src/server/reader/trending-scoring.test.ts`.
+- [ ] **Watch the trending page's length after the first recompute pass.** The page is now as long
+      as the network's real engagement — the `/latest` Trending tab badge reports the true count.
+      If it lands persistently short, the lever is scoring reads/comments as engagement, not
+      re-admitting unengaged articles.
 - [x] **Cold start** — popularity fallback (`trending_score` incl. likes) excluding the trending set (rails stay distinct).
 - [x] **Readers also follow** — co-subscription + co-recommend affinity on publication profiles.
 - [x] **Topics** — auto-derived topic clusters, so Discover stops being ranked by raw tag

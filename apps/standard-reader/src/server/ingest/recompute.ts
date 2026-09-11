@@ -1,3 +1,4 @@
+import type { SQL } from "drizzle-orm";
 import {
   and,
   asc,
@@ -23,8 +24,11 @@ import { SERIAL_DIRECTION } from "#/lib/publication/serial";
 import { deriveSerialKind } from "#/server/reader/series";
 import {
   ARTICLE_BLEND,
+  ARTICLE_FRESHNESS_WEIGHT,
   BACKLINK_SYNC_CONCURRENCY,
-  MIN_ARTICLE_RECOMMENDERS,
+  freshnessFromPublishedAtSql,
+  HALF_LIFE_HOURS,
+  halfLifeDecaySql,
   PUBLICATION_BLEND,
   PUBLICATION_PRIOR_WINDOW_DAYS,
   PUBLICATION_RECENT_WINDOW_DAYS,
@@ -271,7 +275,22 @@ export async function recomputeDocumentBacklinks(): Promise<number> {
 
 /**
  * Precompute per-document trending scores for the recency-gated candidate set.
- * Articles below the distinct-recommender floor get score 0.
+ * An article with **no** engagement at all scores exactly 0; an article with any
+ * engagement scores strictly above 0. See `articleTrendingScore` in
+ * `#/server/reader/trending-scoring` — the TS reference implementation this SQL
+ * mirrors term for term, and where the weights are documented and unit-tested.
+ *
+ * This used to be a z-score blend gated behind
+ * `CASE WHEN distinct_cnt < MIN_ARTICLE_RECOMMENDERS THEN 0`, which made the
+ * score binary in practice: of ~24.6k eligible documents only ~13 cleared the
+ * floor, and the other ~24.6k tied at exactly 0. The Trending *page* dropped the
+ * floor to have anything to paginate, so it rendered those ~13 followed by the
+ * zero-tie in `published_at DESC` order — the "then a lot of random articles"
+ * tail. Scoring the whole candidate set on raw engagement units instead means
+ * one like or a handful of Bluesky backlinks now ranks an article above one with
+ * nothing, and `trending_score > 0` is a predicate the page can actually gate
+ * on. The strict two-liker floor still exists — it just lives on the rail read
+ * (`trendingArticleWhere`) where it belongs, rather than destroying the score.
  *
  * **Only rows whose score actually moved are written.** This used to open with
  * a blanket `UPDATE ... SET trending_score = 0` over every eligible document,
@@ -284,45 +303,75 @@ export async function recomputeDocumentBacklinks(): Promise<number> {
  * That is expensive out of proportion to the row count because `trending_score`
  * is indexed (`documents_trending_idx`), so each write is a non-HOT update: a
  * new tuple version in *every* index on a 12GB table, including the tags GIN.
- * And of the 24,602 eligible documents only ~13 carry a non-zero score — the
- * rest were rewriting 0 over 0. The `IS DISTINCT FROM` guard on the scoring
- * update skips those; `trending_recomputed_at` stops advancing for skipped
- * rows, which is free because nothing reads that column.
+ * The overwhelming majority of eligible documents have no engagement at all and
+ * so still score 0 pass after pass; the `IS DISTINCT FROM` guard skips rewriting
+ * 0 over 0 for those. `trending_recomputed_at` stops advancing for skipped rows,
+ * which is free because nothing reads that column.
+ *
+ * Graded scoring does widen the written set — every article with a like or a
+ * backlink now has a score that moves as its likes decay, where before all but
+ * the ~13 above the floor were pinned at 0 and skipped. That is the cost of
+ * having a ranking below the floor at all, and it is bounded by how many
+ * documents carry engagement (hundreds), not by the candidate set (~24.6k).
  */
 export async function recomputeDocumentTrending(): Promise<void> {
   const maxAge = TRENDING_MAX_AGE_DAYS;
-  const minRecs = MIN_ARTICLE_RECOMMENDERS;
-  const wRec = ARTICLE_BLEND.recommends;
-  const wRecVel = ARTICLE_BLEND.recommendVelocity;
-  const wFresh = ARTICLE_BLEND.freshness;
-  const wBl = ARTICLE_BLEND.backlinks;
-  const wBlVel = ARTICLE_BLEND.backlinkVelocity;
-  const wPub = ARTICLE_BLEND.parentPublication;
+
+  // Weights are compile-time constants, so they go in as SQL literals rather
+  // than bind parameters: an untyped `$n` in the middle of float arithmetic
+  // leaves Postgres to infer a type it has no anchor for.
+  const lit = (value: number): SQL => sql.raw(String(value));
+  const wRec = lit(ARTICLE_BLEND.recommends);
+  const wRecVel = lit(ARTICLE_BLEND.recommendVelocity);
+  const wBl = lit(ARTICLE_BLEND.backlinks);
+  const wBlVel = lit(ARTICLE_BLEND.backlinkVelocity);
+  const wPub = lit(ARTICLE_BLEND.parentPublication);
+  const wFresh = lit(ARTICLE_FRESHNESS_WEIGHT);
+  const freshFloor = lit(1 - ARTICLE_FRESHNESS_WEIGHT);
+
+  const recommendDecay = sql.raw(
+    halfLifeDecaySql(
+      "extract(epoch from (now() - coalesce(rc.created_at, rc.indexed_at))) / 3600.0",
+      HALF_LIFE_HOURS,
+    ),
+  );
+  const freshness = sql.raw(freshnessFromPublishedAtSql("e.published_at"));
 
   await db.execute(sql`
     WITH eligible AS (
       SELECT d.uri,
+             d.did,
              d.published_at,
              d.backlink_count,
              d.backlink_count_prev,
              coalesce(st.trending_score, 0)::float8 AS pub_score
       FROM documents d
-      JOIN publications p ON p.uri = d.publication_uri
+      -- LEFT JOIN, mirroring the read path's discoverEligibleArticleWhere: a
+      -- loose document (no publication_uri) is trending-eligible. Under the old
+      -- INNER JOIN those were never scored, which was invisible while the page
+      -- padded itself out with unscored rows and would now silently drop them.
+      LEFT JOIN publications p ON p.uri = d.publication_uri
       LEFT JOIN publication_stats st ON st.publication_uri = p.uri
       WHERE d.deleted = false
-        AND p.deleted = false
-        AND p.show_in_discover = true
-        AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
+        AND (
+          p.uri IS NULL
+          OR (
+            p.deleted = false
+            AND p.show_in_discover = true
+            AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
+          )
+        )
         AND d.published_at > now() - (${maxAge}::text || ' days')::interval
         AND d.published_at <= now()
     ),
+    -- Aggregated against the eligible set rather than all of documents: the
+    -- join supplies the author DID for self-recommend exclusion exactly as the
+    -- old JOIN against documents did, while confining the grouping to the
+    -- candidate set instead of every recommend ever indexed.
     rec AS (
       SELECT rc.document_uri,
         count(DISTINCT rc.recommender_did) AS distinct_cnt,
-        coalesce(sum(
-          exp(-ln(2) * extract(epoch from (now() - coalesce(rc.created_at, rc.indexed_at)))
-              / 3600.0 / 30.0)
-        ) FILTER (
+        coalesce(sum(${recommendDecay}) FILTER (
           WHERE coalesce(rc.created_at, rc.indexed_at)
             > now() - (${maxAge}::text || ' days')::interval
         ), 0)::float8 AS decay_sum,
@@ -334,57 +383,47 @@ export async function recomputeDocumentTrending(): Promise<void> {
             AND coalesce(rc.created_at, rc.indexed_at) <= now() - interval '24 hours'
         ) AS prev24
       FROM recommends rc
-      JOIN documents doc ON doc.uri = rc.document_uri
+      JOIN eligible e ON e.uri = rc.document_uri
       WHERE rc.deleted = false
-        AND rc.recommender_did <> doc.did
+        AND rc.recommender_did <> e.did
       GROUP BY rc.document_uri
     ),
     raw AS (
       SELECT e.uri,
         coalesce(r.distinct_cnt, 0)::int AS distinct_cnt,
-        coalesce(r.decay_sum, 0)::float8 AS decay_sum,
-        (coalesce(r.recent24, 0) - coalesce(r.prev24, 0))::float8 AS rec_vel,
-        exp(-ln(2) * extract(epoch from (now() - e.published_at)) / 3600.0 / 30.0)::float8 AS freshness,
-        e.backlink_count::float8 AS bl,
+        greatest(coalesce(r.decay_sum, 0), 0)::float8 AS decay_sum,
+        greatest(coalesce(r.recent24, 0) - coalesce(r.prev24, 0), 0)::float8 AS rec_vel,
+        (${freshness})::float8 AS freshness,
+        greatest(e.backlink_count, 0)::float8 AS bl,
         greatest(e.backlink_count - e.backlink_count_prev, 0)::float8 AS bl_vel,
         e.pub_score
       FROM eligible e
       LEFT JOIN rec r ON r.document_uri = e.uri
     ),
-    stats AS (
-      SELECT
-        coalesce(avg(ln(1 + decay_sum)), 0) AS rec_avg,
-        coalesce(nullif(stddev_pop(ln(1 + decay_sum)), 0), 1) AS rec_std,
-        coalesce(avg(rec_vel), 0) AS rec_vel_avg,
-        coalesce(nullif(stddev_pop(rec_vel), 0), 1) AS rec_vel_std,
-        coalesce(avg(freshness), 0) AS fresh_avg,
-        coalesce(nullif(stddev_pop(freshness), 0), 1) AS fresh_std,
-        coalesce(avg(ln(1 + bl)), 0) AS bl_avg,
-        coalesce(nullif(stddev_pop(ln(1 + bl)), 0), 1) AS bl_std,
-        coalesce(avg(ln(1 + bl_vel)), 0) AS bl_vel_avg,
-        coalesce(nullif(stddev_pop(ln(1 + bl_vel)), 0), 1) AS bl_vel_std,
-        coalesce(avg(pub_score), 0) AS pub_avg,
-        coalesce(nullif(stddev_pop(pub_score), 0), 1) AS pub_std,
-        count(*) FILTER (WHERE distinct_cnt >= ${minRecs}) AS qualifying
-      FROM raw
-    ),
+    -- Raw engagement units, not z-scores: see articleTrendingScore(), which this
+    -- mirrors term for term. Zero engagement scores exactly 0 so the read path's
+    -- trending_score > 0 gate means "something engaged with this"; anything
+    -- else scores strictly above 0, because both factors applied to it are
+    -- strictly positive (freshness ∈ [1-wFresh, 1], publication boost
+    -- ∈ (1-wPub, 1+wPub)).
     scored AS (
       SELECT r.uri,
         r.distinct_cnt,
         CASE
-          WHEN r.distinct_cnt < ${minRecs} THEN 0
-          WHEN s.qualifying = 0 THEN 0
-          ELSE (
-            ((ln(1 + r.decay_sum) - s.rec_avg) / s.rec_std) * ${wRec}
-            + ((r.rec_vel - s.rec_vel_avg) / s.rec_vel_std) * ${wRecVel}
-            + ((r.freshness - s.fresh_avg) / s.fresh_std) * ${wFresh}
-            + ((ln(1 + r.bl) - s.bl_avg) / s.bl_std) * ${wBl}
-            + ((ln(1 + r.bl_vel) - s.bl_vel_avg) / s.bl_vel_std) * ${wBlVel}
-            + ((r.pub_score - s.pub_avg) / s.pub_std) * ${wPub}
-          )
+          WHEN engagement <= 0 THEN 0
+          ELSE engagement
+            * (${freshFloor} + ${wFresh} * least(greatest(r.freshness, 0), 1))
+            * (1 + ${wPub} * (r.pub_score / (1 + abs(r.pub_score))))
         END AS score
       FROM raw r
-      CROSS JOIN stats s
+      CROSS JOIN LATERAL (
+        SELECT (
+          ${wRec} * r.decay_sum
+          + ${wRecVel} * r.rec_vel
+          + ${wBl} * ln(1 + r.bl)
+          + ${wBlVel} * ln(1 + r.bl_vel)
+        )::float8 AS engagement
+      ) eng
     )
     UPDATE documents d
     SET trending_score = sc.score,
@@ -405,24 +444,39 @@ export async function recomputeDocumentTrending(): Promise<void> {
   // same recency gate — but leaving the column lying is a trap for the next
   // caller who trusts it without the gate.
   //
+  // The eligibility test has to match `eligible` above exactly, loose documents
+  // included. `eligible` LEFT JOINs publications and admits `p.uri IS NULL`, so
+  // "no publication row" — whether the document is loose or points at a
+  // publication we have not indexed — is eligible. Phrased as a bare
+  // `NOT EXISTS (SELECT 1 FROM publications …)` this pass would instead be true
+  // for exactly those documents and zero the score the scoring pass just wrote,
+  // every hour, forever. Inverting the predicate *inside* the subquery — "is
+  // there a publication row that FAILS the test" — reproduces the join
+  // semantics. Every column it reads is NOT NULL, so there is no three-valued
+  // gap between the two phrasings.
+  //
   // Cheap despite naming no candidate set: `documents_trending_idx` makes
-  // `trending_score <> 0` an index scan over the handful of scored rows, and
-  // the NOT EXISTS is a primary-key probe per row.
+  // `trending_score <> 0` an index scan over the scored rows, and the publication
+  // lookup is a primary-key probe per row.
   await db.execute(sql`
     UPDATE documents d
     SET trending_score = 0,
         distinct_recommender_count = 0,
         trending_recomputed_at = now()
     WHERE d.trending_score <> 0
-      AND NOT EXISTS (
-        SELECT 1 FROM publications p
-        WHERE p.uri = d.publication_uri
-          AND p.deleted = false
-          AND p.show_in_discover = true
-          AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
-          AND d.deleted = false
-          AND d.published_at > now() - (${maxAge}::text || ' days')::interval
-          AND d.published_at <= now()
+      AND NOT (
+        d.deleted = false
+        AND d.published_at > now() - (${maxAge}::text || ' days')::interval
+        AND d.published_at <= now()
+        AND NOT EXISTS (
+          SELECT 1 FROM publications p
+          WHERE p.uri = d.publication_uri
+            AND NOT (
+              p.deleted = false
+              AND p.show_in_discover = true
+              AND p.url NOT ILIKE ${EXCLUDED_PUBLICATION_URL_PATTERN}
+            )
+        )
       )
   `);
 }

@@ -1587,13 +1587,26 @@ hand-tuned lists:
   pubs _you_ follow also follow these. Subscribing to a publication is a strong taste signal for
   similar publications.
 - **Followed by people you follow** — direct social-graph query across your follows' follows.
-- **Trending publications / Trending articles** — precomputed on the recompute cron and cached on
-  rows (`publication_stats.trending_score`, `documents.trending_score`). Signals: distinct
-  in-app recommends (self-recommends excluded), subscriptions, new documents, Constellation Bluesky
-  backlink counts + velocity, half-life freshness/decay, and z-score normalization. Articles must be
-  published within the last **4 days**, meet a minimum distinct-recommender floor, and pass
-  per-publication + per-author diversity caps at read time. Rail reads are cheap indexed queries
-  only — no scoring per request.
+- **Trending publications** — precomputed on the recompute cron and cached on
+  `publication_stats.trending_score`. Signals: distinct in-app recommends (self-recommends
+  excluded), subscriptions, new documents, Constellation Bluesky backlink counts + velocity,
+  half-life freshness/decay, and z-score normalization.
+- **Trending articles** — precomputed on the same pass and cached on `documents.trending_score`,
+  but scored in **raw engagement units**, not z-scores (`src/server/reader/trending-scoring.ts`,
+  mirrored in SQL by `recomputeDocumentTrending`): decay-weighted distinct likers + like
+  acceleration + `ln`-compressed Bluesky backlinks and backlink acceleration, modulated by article
+  freshness and nudged by a bounded parent-publication factor. Articles must be published within
+  the last **4 days**. The contract the read path depends on is that **no engagement scores
+  exactly 0 and any engagement scores strictly above 0**, so `trending_score > 0` is what separates
+  the trending set from the rest of the window.
+  - The **rail** (home, Discover) additionally wants corroboration — a distinct-recommender floor
+    **or** enough Bluesky backlinks — and applies per-publication + per-author diversity caps at
+    read time.
+  - The **page** (`/latest?filter=trending`) takes the whole scored set, uncapped and paginated,
+    and is however long the network's actual engagement makes it. It is deliberately allowed to be
+    short: it previously dropped the score gate to fill 100 rows, which padded it out with every
+    unengaged article from the last four days in publish order.
+  - Rail and page reads are both cheap indexed queries — no scoring per request.
 - **Cold start (no follows yet)** — fall back to high-readership publications
   _outside_ the current trending set so Recommended stays distinct from Trending.
 - **No bulk web-bridge mirrors in Recommended** — Discover's Recommended rail (signed-in _and_

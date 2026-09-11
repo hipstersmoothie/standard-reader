@@ -19,6 +19,7 @@ import {
   desc,
   eq,
   exists,
+  gte,
   inArray,
   isNotNull,
   isNull,
@@ -76,6 +77,7 @@ import {
   rotationSeed,
 } from "#/server/reader/rail-rotation";
 import {
+  MIN_ARTICLE_BACKLINKS,
   MIN_ARTICLE_RECOMMENDERS,
   TRENDING_MAX_AGE_DAYS,
   WEEK_BACKLINK_WEIGHT,
@@ -1737,7 +1739,17 @@ export async function countUnreadByFollowedUser(
 
 // ── Discovery rails (reads over precomputed aggregates) ─────────────────────
 
-/** `rail` = strict engagement floor + diversity; `page` = score-ranked recency window. */
+/**
+ * `rail` = corroborated engagement (likes *or* backlinks) + diversity caps, for
+ * the handful of rows beside the main column. `page` = the whole scored set,
+ * uncapped and paginated.
+ *
+ * Both require `trending_score > 0`; they differ in how much engagement they
+ * insist on and whether one publication may repeat. `page` deliberately keeps no
+ * diversity caps — they are applied in TS over a fetched pool, which does not
+ * survive SQL `OFFSET` pagination, and a 100-row page has room for a publication
+ * that genuinely had a good week.
+ */
 export type TrendingArticlesScope = "rail" | "page";
 
 /**
@@ -1783,10 +1795,31 @@ function trendingArticleWhere(
     conds.push(notWebBridgeArticleWhere(schema));
   }
 
+  // Both scopes require a real score. `trending_score > 0` means "something
+  // engaged with this" (see `recomputeDocumentTrending`), so it is the line
+  // between the trending set and the rest of the last four days.
+  //
+  // The page scope used to skip this entirely. With the old binary score that
+  // was the only way it could fill 100 rows — but what it filled them with was
+  // every unengaged article published in the window, all tied at score 0 and
+  // therefore ordered by `published_at`. That is the "a few liked articles then
+  // a lot of random ones" tail: the tail was never ranked at all. A short,
+  // honestly-ranked page is the right answer, and the route already has a
+  // "Nothing trending yet" empty state for the degenerate case.
+  conds.push(sql`${d.trendingScore} > 0`);
+
   if (scope === "rail") {
+    // The rail is the stricter surface: it shows a handful of articles beside
+    // the main column, so it wants corroboration, not just any signal. Bluesky
+    // backlinks count as an alternative to in-app likes — most `site.standard`
+    // articles are passed around on Bluesky, and gating purely on likes made an
+    // article being actively shared there invisible until two readers happened
+    // to also like it here.
     conds.push(
-      sql`${d.trendingScore} > 0`,
-      sql`${d.distinctRecommenderCount} >= ${MIN_ARTICLE_RECOMMENDERS}`,
+      or(
+        gte(d.distinctRecommenderCount, MIN_ARTICLE_RECOMMENDERS),
+        gte(d.backlinkCount, MIN_ARTICLE_BACKLINKS),
+      ) as SQL,
     );
   }
 
@@ -1867,7 +1900,10 @@ export async function trendingArticles(
           ),
         ),
       )
-      .orderBy(desc(d.trendingScore), desc(d.publishedAt))
+      // `uri` breaks the remaining ties. This page paginates with SQL OFFSET,
+      // and an ORDER BY that is not a total order lets Postgres return a
+      // different permutation per page — the same article twice, another never.
+      .orderBy(desc(d.trendingScore), desc(d.publishedAt), desc(d.uri))
       .limit(limit)
       .offset(offset);
 
@@ -1895,7 +1931,7 @@ export async function trendingArticles(
         ),
       ),
     )
-    .orderBy(desc(d.trendingScore), desc(d.publishedAt))
+    .orderBy(desc(d.trendingScore), desc(d.publishedAt), desc(d.uri))
     .limit(poolSize);
 
   const cards = rows.map((row) => toArticleCard(row));
