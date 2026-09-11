@@ -7,10 +7,13 @@
  *     `site.standard.publication` record, which declares the publication reads
  *     forwards from its first post. Nothing else in the lexicon says "comic".
  *  2. **Content that reads as pages** — at least `COMIC_PAGE_SHARE` of the
- *     newest `SERIAL_SAMPLE_SIZE` posts render an image and carry no more than
- *     `COMIC_PAGE_MAX_TEXT_LENGTH` characters of prose. That is the app's own
+ *     newest `SERIAL_SAMPLE_SIZE` posts read as a page of art
+ *     (`readsAsComicPage`): they render an image, carry no more than
+ *     `COMIC_PAGE_MAX_TEXT_LENGTH` characters of prose, and are *mostly* that
+ *     art rather than an article it is dropped into — at least
+ *     `COMIC_PAGE_MIN_ART_SHARE` of the body's blocks. That is the app's own
  *     derivation (`classifySerialSample`), and it is what separates a comic from
- *     a serialized novel.
+ *     a serialized novel or an illustrated newsletter.
  *
  * This reports both halves for every publication, so a comic that is one setting
  * away from lighting up — or one whose stored `serial_kind` has drifted from
@@ -44,6 +47,7 @@ import type { PublicationRecord } from "../src/server/atproto/types.ts";
 import {
   classifySerialSample,
   COMIC_PAGE_MAX_TEXT_LENGTH,
+  COMIC_PAGE_MIN_ART_SHARE,
   COMIC_PAGE_SHARE,
   selectSerialSample,
   SERIAL_SAMPLE_SIZE,
@@ -99,7 +103,9 @@ const args = parseArgs(process.argv.slice(2));
  * `body_image_count` is derived at ingest but is NULL for anything indexed
  * before the column existed, so a NULL counts as a maybe here rather than a no —
  * this pass only has to avoid missing a comic, and the classification below
- * settles the maybes by opening the bodies.
+ * settles the maybes by opening the bodies. The art-share test lives there too,
+ * for the same reason: there is no column for it, and a shortlist that is too
+ * generous costs a body read where one that is too strict loses a comic.
  */
 interface Shortlisted {
   uri: string;
@@ -294,6 +300,7 @@ if (args.json) {
           sampleSize: SERIAL_SAMPLE_SIZE,
           comicPageShare: COMIC_PAGE_SHARE,
           maxTextLength: COMIC_PAGE_MAX_TEXT_LENGTH,
+          minArtShare: COMIC_PAGE_MIN_ART_SHARE,
         },
         scanned: all.length,
         shortlisted: candidates.length,
@@ -351,7 +358,9 @@ function section(title: string, rows: Array<Verdict>, note?: string): void {
 log(
   `Comic criteria: prevNextDirection="${SERIAL_DIRECTION}" on the publication ` +
     `record, and ≥${pct(COMIC_PAGE_SHARE)} of the newest ${SERIAL_SAMPLE_SIZE} ` +
-    `posts rendering an image with ≤${COMIC_PAGE_MAX_TEXT_LENGTH} chars of prose.\n`,
+    `posts reading as a page of art — an image, ≤${COMIC_PAGE_MAX_TEXT_LENGTH} ` +
+    `chars of prose, and ≥${pct(COMIC_PAGE_MIN_ART_SHARE)} of the body's blocks ` +
+    `being that art.\n`,
 );
 log(
   `Scanned ${all.length} publications with posts; ` +

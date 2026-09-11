@@ -1508,9 +1508,17 @@ Backend/API exists; UI or copy is missing.
       forwards from its first post. Mirrored as `publications.prev_next_direction`
       (`drizzle/0026_pale_thanos.sql`, ingest handler) and paired with an app-derived
       `publications.serial_kind` — comic vs book — from `recomputeSerialKinds` in the hourly sweep
-      ([`recompute.ts`](src/server/ingest/recompute.ts)): a publication whose recent posts each
-      render an image and carry only a short note of prose is a comic. Both travel to the UI as
+      ([`recompute.ts`](src/server/ingest/recompute.ts)): a publication whose recent posts are
+      mostly **pages of art** is a comic. Both travel to the UI as
       `PublicationCard.serial` ([`serial.ts`](src/lib/publication/serial.ts)).
+      A post reads as a page of art (`readsAsComicPage`, [`series.ts`](src/server/reader/series.ts))
+      when its body renders an image, the prose beside it is a note rather than a chapter, **and
+      the art is at least `COMIC_PAGE_MIN_ART_SHARE` of the blocks the body renders**. Without that
+      last test an illustrated newsletter is indistinguishable from a comic — atmosphereconf.org
+      classified as one and opened on a shelf of sponsor logos — because "has an image, isn't very
+      long" is true of both. The block count comes free from the same walk that lists the images
+      (`documentBody`, [`images.ts`](src/lib/document/images.ts)), and separates them with room to
+      spare: a comic page scores 0.5–1.0, an announcement 0.05–0.17.
       Serial publication pages list their archive **newest-first** like every other publication —
       an archive answers "what's new here?" far more often than "where does this start?" — with a
       per-publication cookie override for a reader who wants to start at the beginning, resolved

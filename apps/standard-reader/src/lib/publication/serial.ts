@@ -18,6 +18,11 @@
  * mostly pages of art is a `"comic"` and opens in the comic reader; everything
  * else is a `"book"` and reads as ordinary articles with an "Up next" link to
  * the following issue.
+ *
+ * "Pages of art" means the art *is* the post — see `readsAsComicPage` in
+ * `#/server/reader/series`. An illustrated newsletter is a serial book, not a
+ * comic: it has a picture in every post, but flipping through those pictures
+ * is not how anyone reads it.
  */
 
 /** `prevNextDirection` — a serial reads forwards from its first post. */

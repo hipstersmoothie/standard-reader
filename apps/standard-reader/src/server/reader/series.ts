@@ -16,7 +16,7 @@ import type {
   Schema,
 } from "#/integrations/tanstack-query/api-shapes";
 import { toIsoTimestamp } from "#/integrations/tanstack-query/api-shapes";
-import { documentImages } from "#/lib/document/images";
+import { documentBody, documentImages } from "#/lib/document/images";
 import type { SerialKind, SerialPublication } from "#/lib/publication/serial";
 import {
   BLOG_DIRECTION,
@@ -80,6 +80,24 @@ export const SERIAL_SAMPLE_SIZE = 40;
  */
 export const COMIC_PAGE_MAX_TEXT_LENGTH = 4000;
 
+/**
+ * Share of a post's rendered blocks that must be art before it reads as a page
+ * of comic rather than an article that happens to be illustrated.
+ *
+ * Counting images alone cannot tell the two apart: a newsletter announcing a
+ * conference sponsor is one logo and a few hundred words, which is also a
+ * description of a comic page. What separates them is everything *else* the
+ * body renders. A comic page is the art plus at most a short note — one or two
+ * blocks — while an illustrated article buries its one picture among headings,
+ * links, buttons, quotes and a dozen paragraphs.
+ *
+ * A quarter is deliberately generous: it still admits a page carrying three
+ * paragraphs of author's note, which real webcomics do post, while an
+ * illustrated article sits far below it (an announcement with one image among
+ * 20 blocks scores 0.05).
+ */
+export const COMIC_PAGE_MIN_ART_SHARE = 0.25;
+
 /** Share of sampled posts that must read as comic pages to call it a comic. */
 export const COMIC_PAGE_SHARE = 0.6;
 
@@ -133,10 +151,35 @@ export async function selectSerialSample(
 }
 
 /**
- * Judge a sample: comic, book, or nothing to say.
+ * Does this post read as a page of comic?
  *
- * A post whose body renders at least one image and carries only a short note of
- * prose is a page of comic; a post that is mostly writing is a chapter.
+ * Three things have to hold, and the third is the one that matters: the body
+ * renders art, the prose beside it is a note rather than a chapter, and the art
+ * is the *substance* of the post rather than an illustration inside an article.
+ *
+ * Without that last test an illustrated newsletter classifies as a comic — one
+ * sponsor logo and eight hundred words of announcement satisfies "has an image,
+ * isn't very long" exactly as a comic page does — and the publication opens in
+ * the page-flip reader, which shows the logo full-bleed and hides the post.
+ */
+export function readsAsComicPage(row: SerialSampleRow): boolean {
+  if (row.textLength > COMIC_PAGE_MAX_TEXT_LENGTH) return false;
+
+  const { images, blockCount } = documentBody({
+    did: row.did,
+    contentJson: row.contentJson as JsonValue,
+    contentFormat: row.contentFormat,
+  });
+  if (images.length === 0) return false;
+
+  // A body that renders images but reports no blocks is a format we can't
+  // measure, not an article — judge it on the art alone, as before.
+  if (blockCount === 0) return true;
+  return images.length / blockCount >= COMIC_PAGE_MIN_ART_SHARE;
+}
+
+/**
+ * Judge a sample: comic, book, or nothing to say.
  *
  * Pure, and separate from the write below, so the scan script
  * (`scripts/scan-comic-publications.ts`) can ask the same question of any
@@ -150,16 +193,7 @@ export function classifySerialSample(
     return { sampled: 0, comicPages: 0, share: 0, kind: null };
   }
 
-  const comicPages = sample.filter((row) => {
-    if (row.textLength > COMIC_PAGE_MAX_TEXT_LENGTH) return false;
-    return (
-      documentImages({
-        did: row.did,
-        contentJson: row.contentJson as JsonValue,
-        contentFormat: row.contentFormat,
-      }).length > 0
-    );
-  }).length;
+  const comicPages = sample.filter((row) => readsAsComicPage(row)).length;
 
   const share = comicPages / sample.length;
   return {
