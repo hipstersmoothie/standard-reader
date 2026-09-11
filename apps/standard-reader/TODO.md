@@ -260,6 +260,24 @@ Check items off as they land.
       typecheck), and several `repo-sync.ts` comments still describe `last_seen_rev` as the
       watermark. Delete the temp script if it has outlived its purpose; refresh the comments.
 
+- [x] **Collections authors could not like anything** (2026-09-11). The collections tier
+      _replaced_ `include:site.standard.authSocial` with `include:site.standard.authFull`
+      on the theory that `authFull` is a strict superset. It lists all four
+      `site.standard.*` collections, but a permission set is expanded by the reader's PDS
+      **at grant time**, and a grant keeps that expansion. Authors holding a token issued
+      before `graph.recommend` joined `authFull` kept writing publications, documents and
+      subscriptions while every like came back `ScopeMissingError` — a like wrote nothing to
+      the repo, the optimistic heart rolled back, and the failure looked like a dead button.
+      Basic-tier readers, who keep `authSocial`, were never affected, which is why this read
+      as one account rather than a broken feature. `collectionsScope` now **adds** `authFull`
+      to the basic tier instead of swapping `authSocial` out, so follows and likes never
+      depend on a single upstream set we don't control. Both tokens were already in
+      `clientMetadataScope`, so the client metadata string is byte-identical and no extra
+      consent surface appears. Existing sessions recover through the reconnect prompt that
+      already fires on a PDS scope rejection (`showReauthToast` via the mutation cache) —
+      re-authorizing now asks for `authSocial` too. Covered by
+      `src/integrations/auth/scope.test.ts`.
+
 - [x] **Personal state no longer waits on the ingest queue** (2026-08-01). With the ingest worker
       backlogged, a reader's own read/unread state — the one thing they watch change in the moment —
       queued behind everyone else's backfill, so articles stayed unread for hours after being read.
@@ -505,7 +523,7 @@ stores in `src/integrations/auth/`, session/user server fns in
       Three tiers in [`src/integrations/auth/scope.ts`](src/integrations/auth/scope.ts):
       **basic** (default sign-in: `app.standard-reader.authBasicFeatures` +
       `site.standard.authSocial`), **collections** (upgrade: adds
-      `app.standard-reader.authCollections` + swaps to `site.standard.authFull`),
+      `app.standard-reader.authCollections` + `site.standard.authFull`),
       and **subscribe** (embed-only: `site.standard.authSocial`). The
       `user.collections_authoring_enabled` flag
       ([`drizzle/0024_sturdy_living_lightning.sql`](drizzle/0024_sturdy_living_lightning.sql))
