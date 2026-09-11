@@ -3,6 +3,11 @@ import { eq } from "drizzle-orm";
 
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
 import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
+import type { ContentLanguageCode } from "#/lib/content-language";
+import {
+  DEFAULT_FEED_LANGUAGES,
+  parseFeedLanguages,
+} from "#/lib/content-language";
 import {
   COUNT_OLD_POSTS_AS_UNREAD_COOKIE,
   DEFAULT_COUNT_OLD_POSTS_AS_UNREAD,
@@ -27,6 +32,12 @@ export interface ReaderSessionPreferences {
    * only (no cookie mirror), so guests and expired sessions get the default.
    */
   excludeWebBridgeEnabled: boolean;
+  /**
+   * Languages the reader narrowed network-wide surfaces to. Empty = no filter,
+   * which is the default and what guests always get. Account-level only, like
+   * `excludeWebBridgeEnabled`. See `#/lib/content-language`.
+   */
+  feedLanguages: ReadonlyArray<ContentLanguageCode>;
 }
 
 function readSessionTokenCookie(
@@ -54,16 +65,17 @@ function preferencesFromCookies(): ReaderSessionPreferences {
       getCookie(COUNT_OLD_POSTS_AS_UNREAD_COOKIE),
     ),
     excludeWebBridgeEnabled: DEFAULT_EXCLUDE_WEB_BRIDGE,
+    feedLanguages: DEFAULT_FEED_LANGUAGES,
   };
 }
 
 /**
- * Both reader feed preferences in a single session lookup.
+ * Every reader feed preference in a single session lookup.
  *
- * These are two booleans on the same `user` row reached through the same
- * session token, so resolving them separately issued two identical
- * `session.findFirst` queries per request. Every caller wants the pair, so read
- * the row once and derive both.
+ * These all live on the same `user` row reached through the same session token,
+ * so resolving them separately issued one identical `session.findFirst` query
+ * each per request. Every caller wants the set, so read the row once and derive
+ * them together.
  *
  * Resolved from the DB row — **not** via `getAtprotoSessionForRequest()`, which
  * restores the PDS client (a network round trip). Neither preference needs it.
@@ -81,6 +93,7 @@ export async function resolveReaderSessionPreferences(
       trackReadingEnabled: false,
       countOldPostsAsUnreadEnabled: DEFAULT_COUNT_OLD_POSTS_AS_UNREAD,
       excludeWebBridgeEnabled: DEFAULT_EXCLUDE_WEB_BRIDGE,
+      feedLanguages: DEFAULT_FEED_LANGUAGES,
     };
   }
 
@@ -94,6 +107,7 @@ export async function resolveReaderSessionPreferences(
             trackReadingHistory: true,
             countOldPostsAsUnread: true,
             excludeWebBridge: true,
+            feedLanguages: true,
           },
         },
       },
@@ -114,6 +128,7 @@ export async function resolveReaderSessionPreferences(
         excludeWebBridgeEnabled: dbValueToExcludeWebBridge(
           sessionRow.user.excludeWebBridge ?? null,
         ),
+        feedLanguages: parseFeedLanguages(sessionRow.user.feedLanguages),
       };
     }
   }

@@ -271,11 +271,13 @@ async function resolveHomeFeedContext(
     trackReadingEnabled,
     countOldPostsAsUnreadEnabled,
     excludeWebBridgeEnabled,
+    feedLanguages,
   }: {
     trackReading?: boolean;
     trackReadingEnabled?: boolean;
     countOldPostsAsUnreadEnabled?: boolean;
     excludeWebBridgeEnabled?: boolean;
+    feedLanguages?: ReadonlyArray<string>;
   } = {},
 ) {
   const trackReading =
@@ -284,6 +286,10 @@ async function resolveHomeFeedContext(
     ? (countOldPostsAsUnreadEnabled ?? true)
     : true;
   const excludeWebBridge = did ? (excludeWebBridgeEnabled ?? false) : false;
+  // Same rule as the web-bridge preference: account-level, so a guest never
+  // carries one, and applied only on the network branch below — the follow feed
+  // is entirely sources this reader picked.
+  const languages = did ? (feedLanguages ?? []) : [];
 
   const [
     { publicationUris: rawFollowUris, userDids: rawFollowedUserDids },
@@ -335,6 +341,7 @@ async function resolveHomeFeedContext(
     : {
         discoverOnly: true,
         excludeWebBridge,
+        languages,
         ...(blockDid ? { viewerDid: blockDid } : {}),
         ...(muteDid ? { muterDid: muteDid } : {}),
       };
@@ -350,6 +357,7 @@ async function resolveHomeFeedContext(
     isTrending,
     personalized,
     excludeWebBridge,
+    languages,
     rowQuery,
   };
 }
@@ -376,6 +384,7 @@ async function buildHomeFeedCritical(
       trendingArticles(db, schema, HOME_TRENDING_ROW_LIMIT + 1, {
         readForDid: trackReading && ctx.did ? ctx.did : undefined,
         excludeWebBridge: ctx.excludeWebBridge,
+        languages: ctx.languages,
         viewerDid: ctx.blockDid,
         muterDid: ctx.muteDid,
       }),
@@ -592,6 +601,7 @@ async function loadHomeFeedCritical(
     trackReadingEnabled?: boolean;
     countOldPostsAsUnreadEnabled?: boolean;
     excludeWebBridgeEnabled?: boolean;
+    feedLanguages?: ReadonlyArray<string>;
   } = {},
 ): Promise<HomeFeed> {
   const ctx = await resolveHomeFeedContext(
@@ -616,6 +626,7 @@ async function loadHomeFeedExtras(
     trackReadingEnabled?: boolean;
     countOldPostsAsUnreadEnabled?: boolean;
     excludeWebBridgeEnabled?: boolean;
+    feedLanguages?: ReadonlyArray<string>;
   } = {},
 ): Promise<HomeFeedExtras> {
   const ctx = await resolveHomeFeedContext(
@@ -640,12 +651,14 @@ const getHomeFeed = createServerFn({ method: "GET" })
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
         excludeWebBridgeEnabled,
+        feedLanguages,
       } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       return loadHomeFeedCritical(db, schema, did, data.scope, span, {
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
         excludeWebBridgeEnabled,
+        feedLanguages,
       });
     }),
   );
@@ -666,6 +679,7 @@ const getHomePage = createServerFn({ method: "GET" })
         schema,
         countOldPostsAsUnreadEnabled,
         excludeWebBridgeEnabled,
+        feedLanguages,
       } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       const reader = did
@@ -694,6 +708,7 @@ const getHomePage = createServerFn({ method: "GET" })
       const feed = await loadHomeFeedCritical(db, schema, did, scope, span, {
         countOldPostsAsUnreadEnabled,
         excludeWebBridgeEnabled,
+        feedLanguages,
         ...(trackReading === undefined ? {} : { trackReading }),
       });
       return {
@@ -716,6 +731,7 @@ const getHomeExtras = createServerFn({ method: "GET" })
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
         excludeWebBridgeEnabled,
+        feedLanguages,
       } = context;
       const did = await attachReaderSpanContext(span, getRequest());
 
@@ -723,6 +739,7 @@ const getHomeExtras = createServerFn({ method: "GET" })
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
         excludeWebBridgeEnabled,
+        feedLanguages,
       });
     }),
   );
@@ -736,6 +753,7 @@ async function loadLatestFeedCritical(
   trackReadingEnabled: boolean,
   countOldPostsAsUnreadEnabled = true,
   excludeWebBridgeEnabled = false,
+  feedLanguages: ReadonlyArray<string> = [],
 ): Promise<LatestFeed> {
   span.set("filter", data.filter);
   span.set("offset", data.offset);
@@ -773,6 +791,7 @@ async function loadLatestFeedCritical(
   const countOldPostsAsUnread =
     did == null ? true : countOldPostsAsUnreadEnabled;
   const excludeWebBridge = did == null ? false : excludeWebBridgeEnabled;
+  const languages = did == null ? [] : feedLanguages;
 
   const trendingLimit =
     data.filter === "trending"
@@ -787,13 +806,14 @@ async function loadLatestFeedCritical(
             readForDid: trackReading && did ? did : undefined,
             scope: "page",
             excludeWebBridge,
+            languages,
             viewerDid: blockDid,
             muterDid: muteDid,
           })
         : []
       : await selectArticleCards(db, schema, {
           ...(!did || data.filter === "all"
-            ? { discoverOnly: true, excludeWebBridge }
+            ? { discoverOnly: true, excludeWebBridge, languages }
             : {
                 publicationUris: followUris,
                 followedUserDids,
@@ -866,6 +886,7 @@ async function loadLatestFeedCounts(
   trackReadingEnabled: boolean,
   countOldPostsAsUnreadEnabled = true,
   excludeWebBridgeEnabled = false,
+  feedLanguages: ReadonlyArray<string> = [],
 ): Promise<LatestFeedCounts> {
   const [
     { publicationUris: rawFollowUris, userDids: rawFollowedUserDids },
@@ -899,6 +920,7 @@ async function loadLatestFeedCounts(
   const countOldPostsAsUnread =
     did == null ? true : countOldPostsAsUnreadEnabled;
   const excludeWebBridge = did == null ? false : excludeWebBridgeEnabled;
+  const languages = did == null ? [] : feedLanguages;
 
   const [followCounts, networkCount, trendingCount] = await Promise.all([
     did
@@ -906,9 +928,12 @@ async function loadLatestFeedCounts(
           countOldPostsAsUnread,
         })
       : Promise.resolve({ all: 0, unread: 0 }),
-    countNetworkDocuments(db, schema, { excludeWebBridge }),
+    countNetworkDocuments(db, schema, { excludeWebBridge, languages }),
     did
-      ? countTrendingDocuments(db, schema, "page", { excludeWebBridge })
+      ? countTrendingDocuments(db, schema, "page", {
+          excludeWebBridge,
+          languages,
+        })
       : Promise.resolve(0),
   ]);
 
@@ -931,6 +956,7 @@ const getLatestFeed = createServerFn({ method: "GET" })
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
         excludeWebBridgeEnabled,
+        feedLanguages,
       } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       return loadLatestFeedCritical(
@@ -942,6 +968,7 @@ const getLatestFeed = createServerFn({ method: "GET" })
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
         excludeWebBridgeEnabled,
+        feedLanguages,
       );
     }),
   );
@@ -957,6 +984,7 @@ const getLatestFeedCounts = createServerFn({ method: "GET" })
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
         excludeWebBridgeEnabled,
+        feedLanguages,
       } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       return loadLatestFeedCounts(
@@ -967,6 +995,7 @@ const getLatestFeedCounts = createServerFn({ method: "GET" })
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
         excludeWebBridgeEnabled,
+        feedLanguages,
       );
     }),
   );

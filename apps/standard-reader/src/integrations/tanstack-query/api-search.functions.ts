@@ -53,6 +53,7 @@ import {
   shouldUseAuthorArm,
   TITLE_POOL_CAP,
 } from "#/server/reader/document-search";
+import { documentInLanguagesWhere } from "#/server/reader/language-filters";
 import {
   PEOPLE_RESULT_LIMIT,
   profileNameMatchSql,
@@ -220,7 +221,7 @@ const searchArticles = createServerFn({ method: "GET" })
   .validator(searchPageInput)
   .handler(
     observe("search.articles", async ({ data, context }, span) => {
-      const { db, schema, excludeWebBridgeEnabled } = context;
+      const { db, schema, excludeWebBridgeEnabled, feedLanguages } = context;
       const d = schema.documents;
       const p = schema.publications;
       const pr = schema.profiles;
@@ -284,6 +285,7 @@ const searchArticles = createServerFn({ method: "GET" })
         eq(d.deleted, false),
         notExcludedPublicationArticleWhere(p),
         ...(excludeWebBridgeEnabled ? [notWebBridgeArticleWhere(schema)] : []),
+        documentInLanguagesWhere(schema, feedLanguages),
         // Search is paginated, so blocked authors are excluded in SQL rather
         // than dropped from the page — see `notBlockedByViewer`.
         ...(blockDid

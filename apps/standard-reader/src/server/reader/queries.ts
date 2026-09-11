@@ -32,6 +32,8 @@ import { alias } from "drizzle-orm/pg-core";
 import {
   NETWORK_DOCUMENT_COUNT_KEY,
   NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY,
+  UNTAGGED_LANGUAGE_KEY,
+  networkDocumentCountLanguageKey,
 } from "#/db/schema/network-stats";
 import type {
   ArticleCard,
@@ -58,6 +60,10 @@ import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
 import { atUriAuthoritySql, notBlockedByViewer } from "#/server/blocks/blocks";
 import { notMutedByViewer } from "#/server/mutes/mutes";
 import { documentPublishedNotInFuture } from "#/server/reader/document-filters";
+import {
+  documentInLanguagesSql,
+  documentInLanguagesWhere,
+} from "#/server/reader/language-filters";
 import {
   discoverEligibleArticleWhere,
   discoverEligiblePublicationWhere,
@@ -147,6 +153,15 @@ export interface ArticleCardQuery {
    * the follow feed, where every source is one the reader chose.
    */
   excludeWebBridge?: boolean;
+  /**
+   * Restrict to documents written in one of these languages, for a reader who
+   * picked some in Settings → Feed → Languages (see
+   * `#/server/reader/language-filters`). Untagged documents always pass.
+   *
+   * Same rule as {@link excludeWebBridge}: network-wide surfaces only. Callers
+   * pass it alongside `discoverOnly` / `tag`, never on the follow feed.
+   */
+  languages?: ReadonlyArray<string>;
   /** Match documents whose `tags` array includes this label (case-insensitive). */
   tag?: string;
   /**
@@ -841,6 +856,7 @@ export async function selectArticleCards(
       sort: opts.sort,
       limit: opts.limit,
       offset: opts.offset ?? 0,
+      languages: opts.languages,
     });
     return selectArticleCardsByUris(db, schema, pageUris, {
       readForDid: opts.readForDid,
@@ -871,6 +887,10 @@ export async function selectArticleCards(
   }
   if (opts.excludeWebBridge) {
     conds.push(notWebBridgeArticleWhere(schema));
+  }
+  const languageWhere = documentInLanguagesWhere(schema, opts.languages);
+  if (languageWhere) {
+    conds.push(languageWhere);
   }
   if (opts.tag) {
     conds.push(documentCarriesTagWhere(d, opts.tag));
@@ -1555,12 +1575,40 @@ export async function countFollowedDocuments(
  * readers hiding the web-bridge mirrors — never a filtered live count, which
  * measured **26.5s** against production because the anti-joins discard ~86% of
  * the corpus row by row.
+ *
+ * `languages` sums the same sweep's per-language rows instead, plus the
+ * untagged bucket (untagged documents are always shown, so they are always in
+ * the total). Same reasoning: a live count with the language predicate on top
+ * is the 26.5s query with an extra clause, and this is one primary-key lookup.
  */
 export async function countNetworkDocuments(
   db: Db,
   schema: Schema,
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  {
+    excludeWebBridge = false,
+    languages,
+  }: { excludeWebBridge?: boolean; languages?: ReadonlyArray<string> } = {},
 ): Promise<number> {
+  if (languages && languages.length > 0) {
+    const keys = [...languages, UNTAGGED_LANGUAGE_KEY].map((lang) =>
+      networkDocumentCountLanguageKey(lang, excludeWebBridge),
+    );
+    const rows = await db
+      .select({ value: schema.networkStats.value })
+      .from(schema.networkStats)
+      .where(inArray(schema.networkStats.key, keys));
+    // No rows at all means the sweep has not run since language tagging
+    // shipped — a language with genuinely zero documents just contributes
+    // nothing to the sum. Fall back for the former only.
+    if (rows.length > 0) {
+      return rows.reduce((total, row) => total + row.value, 0);
+    }
+    return countNetworkDocumentsLive(db, schema, {
+      excludeWebBridge,
+      languages,
+    });
+  }
+
   const key = excludeWebBridge
     ? NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY
     : NETWORK_DOCUMENT_COUNT_KEY;
@@ -1585,7 +1633,10 @@ export async function countNetworkDocuments(
 export async function countNetworkDocumentsLive(
   db: Db,
   schema: Schema,
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  {
+    excludeWebBridge = false,
+    languages,
+  }: { excludeWebBridge?: boolean; languages?: ReadonlyArray<string> } = {},
 ): Promise<number> {
   const d = schema.documents;
   const p = schema.publications;
@@ -1599,6 +1650,7 @@ export async function countNetworkDocumentsLive(
         documentPublishedNotInFuture(d),
         discoverEligibleArticleWhere(p),
         ...(excludeWebBridge ? [notWebBridgeArticleWhere(schema)] : []),
+        documentInLanguagesWhere(schema, languages),
       ),
     );
   return row?.count ?? 0;
@@ -1752,6 +1804,8 @@ export interface TrendingArticlesQuery {
   scope?: TrendingArticlesScope;
   /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
   excludeWebBridge?: boolean;
+  /** See {@link ArticleCardQuery.languages}. */
+  languages?: ReadonlyArray<string>;
   /** See {@link ArticleCardQuery.viewerDid}. */
   viewerDid?: string;
   /** See {@link ArticleCardQuery.muterDid}. */
@@ -1763,6 +1817,7 @@ function trendingArticleWhere(
   scope: TrendingArticlesScope,
   excludeUris: Array<string> = [],
   excludeWebBridge = false,
+  languages?: ReadonlyArray<string>,
   viewerDid?: string,
   muterDid?: string,
 ) {
@@ -1781,6 +1836,11 @@ function trendingArticleWhere(
 
   if (excludeWebBridge) {
     conds.push(notWebBridgeArticleWhere(schema));
+  }
+
+  const languageWhere = documentInLanguagesWhere(schema, languages);
+  if (languageWhere) {
+    conds.push(languageWhere);
   }
 
   if (scope === "rail") {
@@ -1836,6 +1896,7 @@ export async function trendingArticles(
   {
     excludeUris = [],
     excludeWebBridge = false,
+    languages,
     offset = 0,
     readForDid,
     scope = "rail",
@@ -1862,6 +1923,7 @@ export async function trendingArticles(
             scope,
             excludeUris,
             excludeWebBridge,
+            languages,
             viewerDid,
             muterDid,
           ),
@@ -1890,6 +1952,7 @@ export async function trendingArticles(
           scope,
           excludeUris,
           excludeWebBridge,
+          languages,
           viewerDid,
           muterDid,
         ),
@@ -1980,6 +2043,7 @@ export async function topNetworkArticles(
     excludeUris = [],
     excludeReadForDid,
     excludeWebBridge = false,
+    languages,
   }: {
     sinceDays: number;
     limit: number;
@@ -1988,6 +2052,8 @@ export async function topNetworkArticles(
     excludeReadForDid?: string;
     /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
     excludeWebBridge?: boolean;
+    /** See {@link ArticleCardQuery.languages}. */
+    languages?: ReadonlyArray<string>;
   },
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -2009,6 +2075,10 @@ export async function topNetworkArticles(
   }
   if (excludeWebBridge) {
     conds.push(notWebBridgeArticleWhere(schema));
+  }
+  const languageWhere = documentInLanguagesWhere(schema, languages);
+  if (languageWhere) {
+    conds.push(languageWhere);
   }
 
   const rows = await db
@@ -2109,6 +2179,7 @@ export async function weekInReviewArticles(
     excludeUris = [],
     excludeReadForDid,
     excludeWebBridge = false,
+    languages,
   }: {
     sinceDays: number;
     limit: number;
@@ -2118,6 +2189,8 @@ export async function weekInReviewArticles(
     excludeReadForDid?: string;
     /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
     excludeWebBridge?: boolean;
+    /** See {@link ArticleCardQuery.languages}. */
+    languages?: ReadonlyArray<string>;
   },
 ): Promise<Array<ArticleCard>> {
   const d = schema.documents;
@@ -2164,6 +2237,10 @@ export async function weekInReviewArticles(
   if (excludeWebBridge) {
     conds.push(notWebBridgeArticleWhere(schema));
   }
+  const languageWhere = documentInLanguagesWhere(schema, languages);
+  if (languageWhere) {
+    conds.push(languageWhere);
+  }
 
   const rows = await db
     .select({
@@ -2188,7 +2265,10 @@ export async function countTrendingDocuments(
   db: Db,
   schema: Schema,
   scope: TrendingArticlesScope = "rail",
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  {
+    excludeWebBridge = false,
+    languages,
+  }: { excludeWebBridge?: boolean; languages?: ReadonlyArray<string> } = {},
 ): Promise<number> {
   const d = schema.documents;
   const p = schema.publications;
@@ -2197,7 +2277,11 @@ export async function countTrendingDocuments(
     .select({ count: sql<number>`count(*)`.mapWith(Number) })
     .from(d)
     .leftJoin(p, eq(p.uri, d.publicationUri))
-    .where(and(...trendingArticleWhere(schema, scope, [], excludeWebBridge)));
+    .where(
+      and(
+        ...trendingArticleWhere(schema, scope, [], excludeWebBridge, languages),
+      ),
+    );
   return row?.count ?? 0;
 }
 
@@ -2568,11 +2652,13 @@ async function selectTagArticleUris(
     sort = "recent",
     limit,
     offset,
+    languages,
   }: {
     tag: string;
     sort?: ArticleCardSort;
     limit: number;
     offset: number;
+    languages?: ReadonlyArray<string>;
   },
 ): Promise<Array<string>> {
   const orderBy =
@@ -2594,6 +2680,7 @@ async function selectTagArticleUris(
       where deleted = false
         and (published_at is null or published_at <= now())
         and immutable_normalized_tags(tags) @> array[${normalizedTagSql(tag)}]
+        ${documentInLanguagesSql(sql`lang`, languages)}
     )
     select t.uri
     from tagged t
@@ -2683,7 +2770,10 @@ export async function countTagArticles(
   db: Db,
   schema: Schema,
   tag: string,
-  { excludeWebBridge = false }: { excludeWebBridge?: boolean } = {},
+  {
+    excludeWebBridge = false,
+    languages,
+  }: { excludeWebBridge?: boolean; languages?: ReadonlyArray<string> } = {},
 ): Promise<number> {
   const d = schema.documents;
   const p = schema.publications;
@@ -2699,6 +2789,7 @@ export async function countTagArticles(
         discoverEligibleArticleWhere(p),
         documentCarriesTagWhere(d, tag),
         ...(excludeWebBridge ? [notWebBridgeArticleWhere(schema)] : []),
+        documentInLanguagesWhere(schema, languages),
       ),
     );
 
@@ -3719,6 +3810,8 @@ export async function relatedArticles(
     limit: number;
     /** Hide web-bridge mirrors — see {@link ArticleCardQuery.excludeWebBridge}. */
     excludeWebBridge?: boolean;
+    /** See {@link ArticleCardQuery.languages}. */
+    languages?: ReadonlyArray<string>;
   },
 ): Promise<Array<ArticleCard>> {
   const [coRead, tagOverlap] = await Promise.all([
@@ -3741,11 +3834,28 @@ export async function relatedArticles(
   // worth another predicate. Both scorers cap at 30 URIs, so hydrating the whole
   // merged pool and taking the first `limit` survivors still fills the rail —
   // and the cards already carry both handles.
-  const uris = ranked
-    .slice(0, opts.excludeWebBridge ? ranked.length : opts.limit)
+  const widePool = opts.excludeWebBridge || (opts.languages?.length ?? 0) > 0;
+  let uris = ranked
+    .slice(0, widePool ? ranked.length : opts.limit)
     .map((row) => row.uri);
+
+  // The language filter cannot be applied after hydration the way the
+  // web-bridge one is — an `ArticleCard` carries both handles but not `lang` —
+  // so narrow the pool first. Both scorers cap at 30 URIs, so this is a
+  // primary-key lookup over at most 60 rows, not a scan.
+  const languageWhere = documentInLanguagesWhere(schema, opts.languages);
+  if (languageWhere && uris.length > 0) {
+    const allowed = await db
+      .select({ uri: schema.documents.uri })
+      .from(schema.documents)
+      .where(and(inArray(schema.documents.uri, uris), languageWhere));
+    const keep = new Set(allowed.map((row) => row.uri));
+    uris = uris.filter((uri) => keep.has(uri));
+    if (uris.length === 0) return [];
+  }
+
   const cards = await selectArticleCardsByUris(db, schema, uris);
-  if (!opts.excludeWebBridge) return cards;
+  if (!opts.excludeWebBridge) return cards.slice(0, opts.limit);
 
   return cards
     .filter(

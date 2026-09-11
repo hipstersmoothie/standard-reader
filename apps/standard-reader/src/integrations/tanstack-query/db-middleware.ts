@@ -13,6 +13,7 @@ export const dbMiddleware = createMiddleware({ type: "function" }).server(
       trackReadingEnabled,
       countOldPostsAsUnreadEnabled,
       excludeWebBridgeEnabled,
+      feedLanguages,
     } = await resolveReaderSessionPreferences(db, schema);
 
     return next({
@@ -22,6 +23,7 @@ export const dbMiddleware = createMiddleware({ type: "function" }).server(
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
         excludeWebBridgeEnabled,
+        feedLanguages,
       },
     });
   },

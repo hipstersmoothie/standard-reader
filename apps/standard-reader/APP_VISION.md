@@ -1613,6 +1613,50 @@ hand-tuned lists:
   (`network_document_count_no_web_bridge`) rather than a live count, and the tag feed switches to a
   tag-first query shape (`selectTagArticleUris`) that the survival rate can't blow up.
 
+### Language tagging and the language filter
+
+The network publishes in far more languages than the app's ten UI locales, and nothing in
+`site.standard.document` records which one a post is in — the lexicon has no language field. So
+the language is **ours to derive**, and it is derived once, on the write path.
+
+- **The tagger** (`src/server/lang/`) reads a document's indexed text, strips the parts that are
+  not written in any language (code fences, URLs, markup, handles, digit runs), and refuses to
+  answer on too little prose. What survives is split into ~350-character windows, each is run
+  through trigram detection (`franc`) restricted to a **closed vocabulary** of ~66 languages
+  (`src/lib/content-language.ts`), and the winner is the majority. Two things are load-bearing:
+  the chunk vote — franc's normalized distance is always `1` for the winner and says nothing
+  about how close the runner-up was, so agreement across windows is the only honest confidence,
+  and a single call on long mixed text is actively wrong (560 characters of English followed by
+  190 of German comes back German) — and a **CJK pre-gate**, because franc's `jpn` pattern
+  covers Han as well as kana, so a Chinese article containing one katakana character outscores
+  `cmn`. Kana and Hangul decide those three languages before franc is asked.
+- **Where it runs** — `upsertDocument`, alongside `has_renderable_body` and `body_image_count`
+  and for the same reason: the text is already in hand, and re-reading the corpus later costs far
+  more. ~2 ms a document, which is what caps the sample at 2.5 kB. The hourly sweep
+  (`backfillDocumentLanguages`) mops up rows ingest never saw, bounded so a cold corpus can't
+  monopolise a sweep; the initial pass over an existing corpus is
+  `pnpm backfill:languages`.
+- **`documents.lang` is a closed vocabulary, and NULL is a real answer.** The detector only ever
+  emits a code the settings picker lists, so a reader can never be offered a filter for a language
+  nothing is tagged with. `lang_detected_at` is stamped whichever way it goes, which is what
+  separates "declined" from "never looked" and keeps the sweep's work queue shrinking.
+- **The filter** (`user.feed_languages`, default empty = every language;
+  `src/server/reader/language-filters.ts`) narrows the same network-wide surfaces
+  "Hide mirrored websites" does — Latest "All" and its badge counts, home network/trending,
+  search, topics, tag pages, trending, related articles, the digest's network section — and is
+  applied nowhere else, for the same reason: a preference about discovery must not quietly retract
+  a subscription. **Untagged documents always pass.** The filter narrows on positive evidence
+  only, so its failure mode is showing a post you did not ask for rather than silently hiding one
+  you did.
+- **Publications are not filtered.** A publication has no single language — a group blog can carry
+  three — so Discover's rails and the directory ignore the preference. Only documents are tagged
+  and only documents are filtered.
+- **The badge count** needed the same treatment as the web-bridge one, and then some: a filtered
+  live count is the 26.5s query with another clause, and there is one possible answer per subset
+  of 66 languages. The sweep's existing single scan now emits a per-language breakdown as well as
+  the two totals (one `GROUPING SETS` query), and the read path sums the rows the reader picked
+  plus the untagged bucket — one primary-key lookup.
+
 ### Web push delivery
 
 Split across two processes, and the split is the whole design:

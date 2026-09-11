@@ -13,6 +13,7 @@
 
 import { and, eq, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 
+import { parseFeedLanguages } from "#/lib/content-language";
 import { dbValueToExcludeWebBridge } from "#/lib/exclude-web-bridge";
 import { getPublicUrl } from "#/lib/public-url";
 
@@ -66,6 +67,7 @@ export async function runWeeklyDigest(): Promise<DigestRunSummary> {
       weeklyDigestSectionSaved: true,
       weeklyDigestSectionRecommendations: true,
       excludeWebBridge: true,
+      feedLanguages: true,
     },
     limit: maxPerRun,
   });
@@ -87,6 +89,7 @@ export async function runWeeklyDigest(): Promise<DigestRunSummary> {
       did: reader.did,
       sections,
       excludeWebBridge: dbValueToExcludeWebBridge(reader.excludeWebBridge),
+      feedLanguages: parseFeedLanguages(reader.feedLanguages),
     });
     // Skip when there's no real reading content to send. Recommendations alone
     // (which cold-start to popular publications) aren't enough to justify a

@@ -1356,6 +1356,32 @@ Backend/API exists; UI or copy is missing.
       tag-first `MATERIALIZED` query (`selectTagArticleUris`) because the ordinary
       date-index walk discards ~200k rows to fill a page on mirror-dominated tags — 3.2s–19.2s
       before, 225ms–2.6s after. Everything else lands within ~35ms of unfiltered.
+- [x] **Post language tagging + the "Languages" feed filter** — `documents.lang` /
+      `lang_confidence` / `lang_detected_at` (`drizzle/0045_*`), derived by
+      [`src/server/lang/`](src/server/lang/detect.ts) from the indexed text, since
+      `site.standard.document` has no language field. Trigram detection (`franc`) over a cleaned
+      prose sample, restricted to the closed ~66-language vocabulary in
+      [`content-language.ts`](src/lib/content-language.ts), with a chunk vote for confidence and a
+      CJK pre-gate for zh/ja/ko (franc's `jpn` pattern covers Han, so one katakana character in a
+      Chinese article flips it). Detected in `upsertDocument` (~2ms, alongside
+      `has_renderable_body`); the hourly sweep mops up stragglers under a cap, and
+      `pnpm backfill:languages` does the initial corpus. The reader preference
+      (`user.feed_languages`, default empty = all) narrows exactly the surfaces "Hide mirrored
+      websites" narrows, and nowhere else. **Untagged documents always pass** — the filter
+      narrows on positive evidence only, so a detector miss shows you a post you didn't ask for
+      rather than hiding one you did. The Latest badge needed per-language `network_stats` rows
+      (one `GROUPING SETS` scan, summed at read time) for the same reason the web-bridge badge
+      needed its own scalar.
+- [ ] **Publication-level language** — Discover's publication rails and the directory currently
+      ignore the language filter, because a publication has no single language and inferring one
+      needs a derivation of its own (dominant `documents.lang` per publication, recomputed with
+      `publication_stats`). Worth doing once there is evidence readers expect the filter to reach
+      the rails; a wrong publication-level language is worse than none, since it would hide a
+      whole source.
+- [ ] **Re-examine low-confidence language tags** — `lang_confidence` is stored but nothing reads
+      it. Once there is a corpus to look at, check whether the 0.6 floor is in the right place and
+      whether a sweep should re-run detection on the weak tags after a document's body grows (a
+      stub indexed before its content resolved keeps the language detected from its title).
 - [x] **Reading typography preferences** — font size / measure (and optional sans body) on the
       article wrapper; cookie + optional `user` column (same pattern as [`open-links.ts`](src/lib/open-links.ts));
       menu item alongside [`OpenLinksMenuItem`](src/components/OpenLinksMenuItem.tsx)

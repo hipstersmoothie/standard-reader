@@ -78,6 +78,8 @@ const getPublicationCount = createServerFn({ method: "GET" })
     observe("tag.getPublicationCount", async ({ data, context }, span) => {
       await attachReaderSpanContext(span, getRequest());
       span.set("tag", data.tag);
+      // Publications are not language-filtered — a publication has no single
+      // language. See `#/server/reader/language-filters`.
       const count = await countTagPublications(
         context.db,
         context.schema,
@@ -100,7 +102,10 @@ const getArticleCount = createServerFn({ method: "GET" })
         context.db,
         context.schema,
         data.tag,
-        { excludeWebBridge: context.excludeWebBridgeEnabled },
+        {
+          excludeWebBridge: context.excludeWebBridgeEnabled,
+          languages: context.feedLanguages,
+        },
       );
       span.set("count", count);
       return count;
@@ -118,6 +123,7 @@ const getArticles = createServerFn({ method: "GET" })
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
         excludeWebBridgeEnabled,
+        feedLanguages,
       } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       span.set("tag", data.tag);
@@ -128,6 +134,7 @@ const getArticles = createServerFn({ method: "GET" })
       const countOldPostsAsUnread =
         did == null ? true : countOldPostsAsUnreadEnabled;
       const excludeWebBridge = did == null ? false : excludeWebBridgeEnabled;
+      const languages = did == null ? [] : feedLanguages;
 
       // The tag rows and the reader's follow set are independent reads (the
       // follow set only needs `did`), so resolve them in one wave.
@@ -140,6 +147,7 @@ const getArticles = createServerFn({ method: "GET" })
           tag: data.tag,
           discoverOnly: true,
           excludeWebBridge,
+          languages,
           sort: data.articleSort,
           limit: data.limit,
           offset: data.offset,
@@ -249,6 +257,7 @@ const getTagPage = createServerFn({ method: "GET" })
         trackReadingEnabled,
         countOldPostsAsUnreadEnabled,
         excludeWebBridgeEnabled,
+        feedLanguages,
       } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       span.set("tag", data.tag);
@@ -264,6 +273,7 @@ const getTagPage = createServerFn({ method: "GET" })
       const countOldPostsAsUnread =
         did == null ? true : countOldPostsAsUnreadEnabled;
       const excludeWebBridge = did == null ? false : excludeWebBridgeEnabled;
+      const languages = did == null ? [] : feedLanguages;
 
       const [blockDid, muteDid] = await Promise.all([
         blockFilterDid(db, schema, did),
@@ -271,13 +281,17 @@ const getTagPage = createServerFn({ method: "GET" })
       ]);
       const [articleCount, publicationCount, content, followSets] =
         await Promise.all([
-          countTagArticles(db, schema, data.tag, { excludeWebBridge }),
+          countTagArticles(db, schema, data.tag, {
+            excludeWebBridge,
+            languages,
+          }),
           countTagPublications(db, schema, data.tag, { excludeWebBridge }),
           data.view === "feed"
             ? selectArticleCards(db, schema, {
                 tag: data.tag,
                 discoverOnly: true,
                 excludeWebBridge,
+                languages,
                 sort: data.articleSort,
                 limit: data.limit,
                 offset: data.offset,
