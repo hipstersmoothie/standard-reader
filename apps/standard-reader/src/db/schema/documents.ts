@@ -79,6 +79,36 @@ export const documents = pgTable(
     /** Free-form tags from the record. */
     tags: text("tags").array(),
 
+    /**
+     * App-derived: the language this document is written in, as a BCP-47
+     * primary subtag from the closed vocabulary in `#/lib/content-language`.
+     *
+     * `site.standard.document` has no language field — nothing in the lexicon
+     * records one — so this is detected from the indexed text by
+     * `#/server/lang/detect`, never read off the record. It backs the reader's
+     * "Languages" feed preference.
+     *
+     * NULL means the detector had no answer: too little prose, or a language
+     * outside the vocabulary. A NULL row is **never filtered out** — see
+     * `#/server/reader/language-filters`. A language filter narrows by positive
+     * evidence only.
+     */
+    lang: text("lang"),
+    /**
+     * 0–1, how much of the document agreed on {@link lang}. Not used to filter
+     * — a row is either tagged or it isn't — but kept so a later sweep can
+     * re-examine the weak tags without re-reading every document, and so a bad
+     * threshold is diagnosable after the fact rather than only in the abstract.
+     */
+    langConfidence: doublePrecision("lang_confidence"),
+    /**
+     * When detection last ran, whatever its outcome. Distinct from
+     * `lang IS NULL`, which cannot tell "detector declined" from "never looked"
+     * — and the backfill sweep needs exactly that difference, or it re-reads
+     * every undetectable document on every pass forever.
+     */
+    langDetectedAt: timestamp("lang_detected_at", { withTimezone: true }),
+
     /** App-derived: featured for the masthead lead. Lexicon has no featured
      * flag, so this is set by our derivation/editorial logic. */
     featured: boolean("featured").notNull().default(false),
@@ -148,6 +178,19 @@ export const documents = pgTable(
       table.publishedAt.desc(),
     ),
     index("documents_site_idx").on(table.siteUri),
+    // Language-filtered network surfaces (Latest "All", Discover, search, tag
+    // pages). The predicate is `lang IS NULL OR lang IN (…)`; btree indexes
+    // NULLs, so Postgres can serve both arms from here and BitmapOr them
+    // together rather than falling back to a seq scan.
+    index("documents_lang_published_idx")
+      .on(table.lang, sql`${table.publishedAt} desc nulls last`)
+      .where(sql`deleted = false`),
+    // The detection sweep's work queue. Partial on the undetected rows, so it
+    // shrinks to nothing as the backfill lands instead of carrying the whole
+    // corpus forever.
+    index("documents_lang_pending_idx")
+      .on(table.publishedAt.desc())
+      .where(sql`lang_detected_at is null and deleted = false`),
     index("documents_search_idx").using("gin", table.searchVector),
     index("documents_trending_idx").on(table.trendingScore.desc()),
     // Extension page-URL resolution: lookup live documents by canonical URL.

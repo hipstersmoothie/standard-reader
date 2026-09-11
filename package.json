@@ -51,6 +51,7 @@
     "backfill:mochott-articles": "pnpm --filter standard-reader backfill:mochott-articles",
     "backfill:repo-documents": "pnpm --filter standard-reader backfill:repo-documents",
     "backfill:lists": "pnpm --filter standard-reader backfill:lists",
+    "backfill:languages": "pnpm --filter standard-reader backfill:languages",
     "backfill:serial": "pnpm --filter standard-reader backfill:serial",
     "topics:cron": "pnpm --filter standard-reader topics:cron",
     "topics:derive": "pnpm --filter standard-reader topics:derive",
