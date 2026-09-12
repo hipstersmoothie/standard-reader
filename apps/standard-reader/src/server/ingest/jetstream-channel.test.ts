@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { IngestEvent } from "../atproto/types.ts";
 import type { ProcessResult } from "./consumer.ts";
-import { isStalled } from "./jetstream-channel.ts";
+import { isStalled, retryAfterStrippingFetch } from "./jetstream-channel.ts";
 
 /**
  * The cursor-commit rule, extracted from `startJetstreamChannel`.
@@ -169,5 +169,71 @@ describe("isStalled", () => {
 
   it("still halts a running channel that goes silent for an hour", () => {
     expect(isStalled(4210, RUNNING, COLD, RUNNING)).toBe(true);
+  });
+});
+
+describe("retryAfterStrippingFetch", () => {
+  /**
+   * The archive answers every 429 with `Retry-After: 1`, and the SDK applies
+   * that verbatim with no jitter. Leaving it in place is what pinned every
+   * in-flight block to the same one-second retry tick and wedged the channel.
+   */
+  it("strips Retry-After from a 429 so the SDK falls back to jittered backoff", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response("slow down", {
+        headers: { "content-type": "text/plain", "retry-after": "1" },
+        status: 429,
+        statusText: "Too Many Requests",
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await retryAfterStrippingFetch("https://example.test/b");
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("retry-after")).toBeNull();
+    // Everything else about the response has to survive: the SDK classifies
+    // retryability off the status and drains the body to free the socket.
+    expect(response.statusText).toBe("Too Many Requests");
+    expect(response.headers.get("content-type")).toBe("text/plain");
+    await expect(response.text()).resolves.toBe("slow down");
+
+    vi.unstubAllGlobals();
+  });
+
+  it("leaves Retry-After alone on other statuses", async () => {
+    // A 503 with Retry-After is the server naming a real outage window; only
+    // the 429 path is the one the SDK mishandles.
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(null, {
+        headers: { "retry-after": "30" },
+        status: 503,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await retryAfterStrippingFetch("https://example.test/b");
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get("retry-after")).toBe("30");
+
+    vi.unstubAllGlobals();
+  });
+
+  it("passes the request through untouched on success", async () => {
+    const ok = new Response("block bytes", { status: 200 });
+    const fetchMock = vi.fn().mockResolvedValue(ok);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const init = { headers: { range: "bytes=0-" } };
+    const response = await retryAfterStrippingFetch(
+      "https://example.test/b",
+      init,
+    );
+
+    expect(response).toBe(ok);
+    expect(fetchMock).toHaveBeenCalledWith("https://example.test/b", init);
+
+    vi.unstubAllGlobals();
   });
 });
