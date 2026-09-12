@@ -43,6 +43,14 @@ export const ingestConfig = {
    * the public instance and 64 gets nearly every request 429'd, so 16 is the
    * safe shoulder.
    *
+   * That shoulder is only real with jittered retries. Some 429s are expected
+   * here and always were — what matters is whether a retry backs off. When the
+   * channel honoured the archive's `Retry-After: 1` verbatim, every 429 retried
+   * on a flat one-second tick and the shoulder vanished: 16 wedged the channel
+   * outright, and dialling down to 4 and then 1 did not recover it either,
+   * because the retry rate never decayed. Do not read this number as the fix
+   * for a 429 storm — see `retryAfterStrippingFetch` in `jetstream-channel.ts`.
+   *
    * Per fold, not per process — the SDK applies this inside one snapshot
    * iterator (`block-source.ts`), so N folds running at once are N × this many
    * requests in flight. {@link jetstreamFoldConcurrency} is what keeps that

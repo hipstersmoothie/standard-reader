@@ -172,6 +172,41 @@ function toIngestEvent(event: RawEvent, now: number): IngestEvent | null {
 }
 
 /**
+ * `fetch` with `Retry-After` stripped from 429 responses.
+ *
+ * The archive rate-limits with `Retry-After: 1` on every 429, and the SDK's
+ * `backoffDelay` honours that header *verbatim* — `Math.min(maxDelayMs,
+ * retryAfterMs)`, no jitter — while its own exponential path is full-jitter
+ * (`Math.random() * ceil`). So every block in flight sleeps exactly one second
+ * and retries on the same tick, forever: the retry rate never decays under
+ * pressure, which is precisely backwards when the limiter is already drained.
+ * Production spent a day like that — `applied=0`, every `getBlock` burning all
+ * {@link DOWNLOAD_MAX_ATTEMPTS} attempts in twelve flat seconds, the segment
+ * re-planning, and the channel halting as wedged.
+ *
+ * Dropping the header puts those retries back on the SDK's jittered
+ * exponential: twelve attempts then span roughly two minutes, spread out, and
+ * back off *as* pressure builds. Only 429 is touched — a `Retry-After` on any
+ * other status still means what it says.
+ */
+export async function retryAfterStrippingFetch(
+  input: Parameters<typeof fetch>[0],
+  init?: Parameters<typeof fetch>[1],
+): Promise<Response> {
+  const response = await fetch(input, init);
+  if (response.status !== 429) {
+    return response;
+  }
+  const headers = new Headers(response.headers);
+  headers.delete("retry-after");
+  return new Response(response.body, {
+    headers,
+    status: response.status,
+    statusText: response.statusText,
+  });
+}
+
+/**
  * Consume Jetstream v2 into the read-model: replay the sealed archive from the
  * stored cursor, then cut over to the live tail — one iterator, no seam to
  * manage here.
@@ -199,6 +234,7 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
     // cannot replay history and will sit at the cursor's lookback floor.
     ...(apiKey ? { apiKey } : {}),
     blockConcurrency,
+    fetchImpl: retryAfterStrippingFetch,
     // Without this the SDK retries every download forever and tells no one
     // (`maxAttempts: Infinity`, no `onRetry`). `onRetry` is the part that
     // matters most: a retry storm against the archive is the single failure
