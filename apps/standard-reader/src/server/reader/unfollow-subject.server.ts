@@ -193,3 +193,33 @@ export async function unfollowUserForSession(
   });
   return rows.length;
 }
+
+/**
+ * The rkey of a subscription this reader already holds for `publicationUri`.
+ *
+ * Re-subscribing happens more than it should: the follow-status query resolves
+ * per row, so a publication you are already subscribed to can render its button
+ * as "Subscribe" until that lands. Passing this through to
+ * `putSubscriptionRecord` overwrites the existing record instead of leaving a
+ * second one behind at a fresh TID.
+ */
+export async function existingSubscriptionRkey(
+  dbArg: Db,
+  schemaArg: Schema,
+  did: string,
+  publicationUri: string,
+): Promise<string | undefined> {
+  const sub = schemaArg.subscriptions;
+  const [row] = await dbArg
+    .select({ rkey: sub.rkey })
+    .from(sub)
+    .where(
+      and(
+        eq(sub.subscriberDid, did),
+        eq(sub.publicationUri, publicationUri),
+        eq(sub.deleted, false),
+      ),
+    )
+    .limit(1);
+  return row?.rkey;
+}

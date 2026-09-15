@@ -266,17 +266,37 @@ async function repoHasRecord(
 
 // ── Domain helpers ──────────────────────────────────────────────────────────
 
-/** Write a `site.standard.graph.subscription` (a follow) for `publicationUri`. */
+/**
+ * Write a `site.standard.graph.subscription` (a follow) for `publicationUri`.
+ *
+ * The rkey is a TID, not {@link subjectRkey}. `site.standard.graph.subscription`
+ * declares `key: tid`, so a PDS validating against the published lexicon
+ * rejects a hash outright:
+ *
+ *     InvalidRequest > Invalid record key for site.standard.graph.subscription:
+ *     Invalid TID string (got "8f6b4b9f6a77ecd6fc0f5cf8937f2869")
+ *
+ * Every subscribe failed that way — the write never reached the repo, the
+ * optimistic row was rolled back by `onError`, and the publication appeared in
+ * the sidebar for under a second before vanishing. That is the bug readers
+ * reported; it is not recoverable by retrying, because the key is the problem.
+ *
+ * Pass `existingRkey` when the read-model already holds a record for this pair
+ * so a re-subscribe overwrites it. Minting a fresh TID every time would leave
+ * duplicate records behind, which `deleteSubscriptionRecords` then has to mop
+ * up one by one.
+ */
 export async function putSubscriptionRecord(
   client: Client,
   repo: string,
   publicationUri: string,
   createdAt: string,
+  existingRkey?: string,
 ): Promise<{ uri: string; cid: string }> {
   return repoPutRecord(client, {
     repo,
     collection: COLLECTION.subscription,
-    rkey: subjectRkey(publicationUri),
+    rkey: existingRkey ?? tidNow().toString(),
     record: {
       $type: COLLECTION.subscription,
       publication: publicationUri,
@@ -565,11 +585,16 @@ export async function putRecommendRecord(
   repo: string,
   documentUri: string,
   createdAt: string,
+  existingRkey?: string,
 ): Promise<{ uri: string; cid: string }> {
+  // TID, not `subjectRkey` — `site.standard.graph.recommend` is `key: tid` too,
+  // so this had the identical defect as {@link putSubscriptionRecord} and every
+  // recommend write was being rejected by the PDS. Nobody reported it, which
+  // says more about how often the button gets pressed than about the bug.
   return repoPutRecord(client, {
     repo,
     collection: COLLECTION.recommend,
-    rkey: subjectRkey(documentUri),
+    rkey: existingRkey ?? tidNow().toString(),
     record: {
       $type: COLLECTION.recommend,
       document: documentUri,
