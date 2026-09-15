@@ -12,8 +12,36 @@ import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+/**
+ * The `en-XA` pseudo-locale is a development tool: both language pickers filter
+ * it out unless `import.meta.env.DEV`, so in production nobody can select it —
+ * yet its catalog is ~260 KB of the client entry chunk that every visitor
+ * downloads and parses. The docs and guide pages feel this most, because they
+ * have no loader of their own and the entry chunk is nearly all they wait for.
+ *
+ * Catalogs are imported statically (`src/lib/i18n.ts` explains why: SSR renders
+ * translated markup synchronously), so the import cannot be made conditional in
+ * source. Aliasing it to an empty catalog for production builds is how it gets
+ * dropped; dev keeps the real one.
+ */
+const pseudoLocaleAlias =
+  process.env.NODE_ENV === "production"
+    ? [
+        {
+          // Anchored at both ends: Vite replaces the matched substring, so a
+          // partial match would splice the absolute path onto the specifier's
+          // leading `../` and produce `..//abs/path`.
+          find: /^.*locales\/en-XA\/messages\.po$/,
+          replacement: path.resolve(
+            import.meta.dirname,
+            "src/locales/pseudo-catalog-stub.ts",
+          ),
+        },
+      ]
+    : [];
+
 const config = defineConfig({
-  resolve: { tsconfigPaths: true },
+  resolve: { alias: pseudoLocaleAlias, tsconfigPaths: true },
   // `@resvg/resvg-js` is a server-only native module (ships a `.node` binary
   // used for OG image rendering). Vite's dependency optimizer tries to parse it
   // as JS and crashes ("stream did not contain valid UTF-8"), so keep it out of
