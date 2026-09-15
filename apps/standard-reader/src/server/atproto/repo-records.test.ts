@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   ApplyWritesUnacknowledgedError,
+  putRecommendRecord,
+  putSubscriptionRecord,
   repoApplyWrites,
 } from "#/server/atproto/repo-records";
 
@@ -94,5 +96,70 @@ describe("repoApplyWrites", () => {
     });
 
     expect(results).toEqual([result(0), null]);
+  });
+});
+
+/**
+ * `site.standard.graph.subscription` and `.recommend` both declare `key: tid`.
+ * A PDS validating against the published lexicon rejects anything else outright
+ * — `Invalid record key ...: Invalid TID string` — so every subscribe and
+ * recommend write failed, the optimistic row was rolled back, and the
+ * publication vanished from the sidebar a moment after appearing.
+ */
+describe("site.standard record keys are TIDs", () => {
+  /** 13 chars of the base32-sortable alphabet. */
+  const TID = /^[234567abcdefghijklmnopqrstuvwxyz]{13}$/;
+
+  function capturingClient() {
+    const calls: Array<{ rkey: string; collection: string }> = [];
+    const client = {
+      post: async (
+        _nsid: string,
+        options: { input: { rkey: string; collection: string } },
+      ) => {
+        calls.push({
+          collection: options.input.collection,
+          rkey: options.input.rkey,
+        });
+        return { ok: true as const, data: { uri: "at://x", cid: "cid" } };
+      },
+    } as unknown as Client;
+    return { calls, client };
+  }
+
+  it("mints a TID rkey for a subscription, never a subject hash", async () => {
+    const { calls, client } = capturingClient();
+    await putSubscriptionRecord(
+      client,
+      "did:plc:reader",
+      "at://did:plc:owner/site.standard.publication/abc",
+      new Date().toISOString(),
+    );
+    expect(calls[0].collection).toBe("site.standard.graph.subscription");
+    expect(calls[0].rkey).toMatch(TID);
+  });
+
+  it("mints a TID rkey for a recommend", async () => {
+    const { calls, client } = capturingClient();
+    await putRecommendRecord(
+      client,
+      "did:plc:reader",
+      "at://did:plc:owner/site.standard.document/abc",
+      new Date().toISOString(),
+    );
+    expect(calls[0].collection).toBe("site.standard.graph.recommend");
+    expect(calls[0].rkey).toMatch(TID);
+  });
+
+  it("overwrites the record it already has rather than minting a duplicate", async () => {
+    const { calls, client } = capturingClient();
+    await putSubscriptionRecord(
+      client,
+      "did:plc:reader",
+      "at://did:plc:owner/site.standard.publication/abc",
+      new Date().toISOString(),
+      "3mvkw36ilmk4u",
+    );
+    expect(calls[0].rkey).toBe("3mvkw36ilmk4u");
   });
 });

@@ -53,6 +53,7 @@ import {
 import { attachViewerRecommendedToArticles } from "#/server/reader/recommended-by";
 import { effectiveFollowSets } from "#/server/reader/saved-lists";
 import {
+  existingSubscriptionRkey,
   unfollowPublicationForSession,
   unfollowUserForSession,
 } from "#/server/reader/unfollow-subject.server";
@@ -517,7 +518,7 @@ const followPublication = createServerFn({ method: "POST" })
   .middleware([dbMiddleware])
   .validator(publicationInput)
   .handler(
-    observe("reader.followPublication", async ({ data }, span) => {
+    observe("reader.followPublication", async ({ context, data }, span) => {
       span.set("publicationUri", data.publicationUri);
       const session = await getAtprotoSessionForRequest(getRequest());
       if (!session) {
@@ -531,6 +532,12 @@ const followPublication = createServerFn({ method: "POST" })
         session.did,
         data.publicationUri,
         createdAt,
+        await existingSubscriptionRkey(
+          context.db,
+          context.schema,
+          session.did,
+          data.publicationUri,
+        ),
       );
       await upsertSubscription(
         uri,
