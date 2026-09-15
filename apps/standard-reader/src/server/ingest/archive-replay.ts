@@ -75,6 +75,20 @@ export interface RepoFold {
    * catalogue. Callers must refuse to prune when this is set.
    */
   empty: boolean;
+  /**
+   * True when a segment or block download failed during the fold.
+   *
+   * Load-bearing for the same reason as {@link empty}, and for a failure that
+   * is harder to see: the snapshot iterator skips events it could not download
+   * and keeps going, so a fold that read half a repo looks exactly like a fold
+   * that read all of it — non-empty, plausible, and wrong. Diffing the
+   * read-model against that live set deletes every record the fold missed.
+   *
+   * A rate-limited archive did precisely that: 53,410 live documents were
+   * pruned from one repo in sixteen minutes, each still present in its PDS.
+   * Callers must refuse to prune when this is set.
+   */
+  truncated: boolean;
 }
 
 function emptyFold(did: string): RepoFold {
@@ -86,6 +100,7 @@ function emptyFold(did: string): RepoFold {
     gone: false,
     lastSeq: 0,
     live: new Map(),
+    truncated: false,
   };
 }
 
@@ -211,6 +226,12 @@ export async function foldReposFromArchive(
 
   const started = performance.now();
   let events = 0;
+  /**
+   * Set by the snapshot's `onError`. The iterator recovers from a failed
+   * download by skipping it, so this is the only signal that the live set
+   * below is incomplete.
+   */
+  let downloadFailed = false;
 
   await acquireFoldSlot();
   // Separated from `ms` so a saturated sweep is legible: `ms` covers the whole
@@ -221,11 +242,13 @@ export async function foldReposFromArchive(
       afterSeq: opts.afterSeq ?? 0,
       collections: INGESTED_COLLECTIONS,
       dids: dids as ArchiveDids,
-      onError: (error) =>
+      onError: (error) => {
+        downloadFailed = true;
         logEvent("ingest.archiveReplayError", {
           ok: false,
           reason: error.message,
-        }),
+        });
+      },
       // Raw, not typed: typed decode drops every record without a `$type`, and on
       // this network that is ~0.05% of standard.site records — live publications
       // and documents included. See `toIngestRecordPayload`.
@@ -296,13 +319,24 @@ export async function foldReposFromArchive(
     releaseFoldSlot();
   }
 
+  // Per fold, not per failed DID: the planner is one-sided and a block can
+  // carry several repos' events, so a download that failed cannot be attributed
+  // to one of them. Marking every fold in the batch is the safe direction —
+  // it costs a skipped prune, where guessing wrong costs a repo's catalogue.
+  if (downloadFailed) {
+    for (const fold of folds.values()) {
+      fold.truncated = true;
+    }
+  }
+
   logEvent("ingest.archiveReplay", {
     dids: dids.length,
     events,
     empty: [...folds.values()].filter((f) => f.empty).length,
     gone: [...folds.values()].filter((f) => f.gone).length,
     ms: Math.round(performance.now() - started),
-    ok: true,
+    ok: !downloadFailed,
+    truncated: downloadFailed,
     waitMs,
   });
 

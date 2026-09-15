@@ -350,11 +350,19 @@ export async function reconcileRepoFromArchive(
   // plans to zero blocks exactly like one that has no records. Pruning on that
   // would delete a live publisher's whole catalogue, so an empty fold reports
   // "skipped" and changes nothing.
-  if (fold.empty) {
+  //
+  // A *truncated* fold is the same hazard wearing a better disguise: it has
+  // records, so it passes the `empty` gate, but it is missing every event whose
+  // block failed to download. Diffing against it prunes exactly those. This is
+  // not hypothetical — a rate-limited archive deleted 53,410 live documents
+  // from one repo this way, every one of them still in its PDS.
+  if (fold.empty || fold.truncated) {
     logEvent("ingest.reconcileSkippedEmpty", {
       did,
       ok: true,
-      reason: "archive-plan-matched-nothing",
+      reason: fold.truncated
+        ? "archive-fold-truncated"
+        : "archive-plan-matched-nothing",
     });
     if (!dryRun) {
       // Advance the round-robin past it; nothing here is a failure.
@@ -602,8 +610,9 @@ export async function repairRepoFromArchive(
     };
   }
 
-  // Nothing new. Touch `updated_at` so the round-robin advances past it.
-  if (fold.empty) {
+  // Nothing new, or nothing trustworthy. Touch `updated_at` so the round-robin
+  // advances past it — a truncated fold must not fall through to the diff.
+  if (fold.empty || fold.truncated) {
     await db
       .update(trackedRepos)
       .set({

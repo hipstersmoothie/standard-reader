@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { trackedRepos } from "../../db/schema.ts";
+import { Collections } from "../atproto/uri.ts";
 
 const { updateCalls, fakeRepos, fakeWebBridgeRepos, batchLimits, trackedRow } =
   vi.hoisted(() => ({
@@ -79,6 +80,7 @@ function fold(
     gone: boolean;
     lastSeq: number;
     live: Map<string, Set<string>>;
+    truncated: boolean;
   }> = {},
 ) {
   return {
@@ -89,6 +91,7 @@ function fold(
     gone: overrides.gone ?? false,
     lastSeq: overrides.lastSeq ?? 1000,
     live: overrides.live ?? new Map(),
+    truncated: overrides.truncated ?? false,
   };
 }
 
@@ -124,6 +127,29 @@ describe("reconcilePublisherReposBatch backoff", () => {
     // that would delete a live publisher's whole catalogue.
     fakeRepos.push({ did: "did:plc:unseen" });
     vi.mocked(foldRepoFromArchive).mockResolvedValue(fold({ empty: true }));
+
+    const result = await reconcilePublisherReposBatch(1);
+
+    expect(result.attempted).toBe(1);
+    expect(result.results[0]?.skipped).toBe(true);
+    expect(result.prunedDocuments).toBe(0);
+    expect(result.prunedPublications).toBe(0);
+  });
+
+  it("leaves a repo alone when the fold could not download every block", async () => {
+    // The regression this exists for: a truncated fold is non-empty, so it
+    // clears the `empty` gate, but it is missing every event whose block failed
+    // to download. Diffing the read-model against it prunes exactly those rows.
+    // A rate-limited archive deleted 53,410 live documents from one repo this
+    // way — each one still present in its PDS.
+    fakeRepos.push({ did: "did:plc:half-read" });
+    vi.mocked(foldRepoFromArchive).mockResolvedValue(
+      fold({
+        empty: false,
+        live: new Map([[Collections.document, new Set(["at://kept/doc/1"])]]),
+        truncated: true,
+      }),
+    );
 
     const result = await reconcilePublisherReposBatch(1);
 
