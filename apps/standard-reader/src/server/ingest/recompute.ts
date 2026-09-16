@@ -224,6 +224,22 @@ export async function recomputePublicationStats(): Promise<void> {
 /**
  * Sync Constellation backlink totals for recent discover-eligible documents.
  * Best-effort; failures are non-fatal.
+ *
+ * **Only rows whose count actually moves are written**, for the same reason
+ * `recomputeDocumentTrending` skips unchanged scores: `backlink_count` is read
+ * by the trending blend and the row lives in a 16GB table with a GIN index on
+ * tags, so every write is a non-HOT update that versions the tuple in *every*
+ * index. This ran unconditionally, one UPDATE per document per hour.
+ *
+ * Measured on prod, of 313,553 rows the sweep has ever synced, 224,494 (72%)
+ * already held `backlink_count = backlink_count_prev`, and 258,902 (83%) sat at
+ * zero — so the large majority of those writes rewrote a value over itself.
+ * Over a 9.75-day window the sweep was 3,517,982 updates and 7.5% of all
+ * database time, and the churn is a first-order contributor to the 510,139 dead
+ * tuples that keep autovacuum behind on `documents`.
+ *
+ * `backlink_synced_at` stops advancing for skipped rows, which is free —
+ * nothing reads that column.
  */
 export async function recomputeDocumentBacklinks(): Promise<number> {
   const rows = await db.execute<{ uri: string; canonical_url: string }>(sql`
@@ -252,15 +268,23 @@ export async function recomputeDocumentBacklinks(): Promise<number> {
     while (cursor < targets.length) {
       const row = targets[cursor++];
       const count = await getBacklinkCountForTarget(row.canonical_url);
-      await db.execute(sql`
+      // Only write rows the sync actually moves. The guard matches the
+      // post-state exactly: this update sets `prev` to the *current* count, so
+      // a row already sitting at (prev = count = C) with a fresh count of C is
+      // unchanged by it. Velocity still settles to zero the first time a
+      // growing document stops growing, because `prev` differing from the new
+      // count is itself enough to write.
+      const result = await db.execute(sql`
         UPDATE documents
         SET backlink_count_prev = backlink_count,
             backlink_count = ${count},
             backlink_synced_at = now(),
             updated_at = now()
         WHERE uri = ${row.uri}
+          AND (backlink_count IS DISTINCT FROM ${count}
+               OR backlink_count_prev IS DISTINCT FROM ${count})
       `);
-      updated++;
+      if ((result.rowCount ?? 0) > 0) updated++;
     }
   }
 
