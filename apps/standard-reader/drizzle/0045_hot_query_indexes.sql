@@ -1,4 +1,4 @@
--- Two indexes for the queries that dominate Neon compute.
+-- Index the `rtrim(url)` publication lookup.
 --
 -- Measured from `pg_stat_statements` over a 9.75-day window on prod (56.8h of
 -- total database time). The production compute never suspends — ingest runs
@@ -6,37 +6,24 @@
 -- is CU-seconds and the only lever is CPU per unit of work.
 --
 --   6.8%  3.88h  rtrim(url) publication lookup   1,782,155 calls @ 7.8ms
---   8.1%  4.63h  duplicate-CID scan                   186 calls @ 89.5s
---
--- 1. `rtrim(publications.url, '/')`
 --
 -- `publications_url_idx` exists on `url`, but every call site wraps the column
 -- in `rtrim` to tolerate legacy trailing-slash variants (handlers.ts:134 and
 -- :418 on the ingest upsert path, publication-mentions.ts, recompute.ts). That
 -- makes the predicate non-sargable, so each of 1.78M calls seq-scans the table.
--- Confirmed on prod:
+-- Before:
 --
 --   Seq Scan on publications  Buffers: shared hit=419
 --   Filter: (rtrim(url, '/') = '...')  Rows Removed by Filter: 3572
 --
--- and that was a LIMIT 1 that stopped early; a miss scans all 16,741 rows. An
--- expression index matching the call sites fixes all four without code changes.
+-- and that was a LIMIT 1 that stopped early; a miss scans all 16,741 rows.
+-- After, on prod:
 --
--- 2. `documents (did, cid)`
+--   Index Scan using publications_url_normalized_idx  Buffers: shared hit=2 read=1
 --
--- `reconcileDocumentDup` finds duplicate records with
---   select did, cid from documents where deleted = $1 and cid is not null
---   group by did, cid having count(*) > $2
--- There is no (did, cid) index, so this aggregates all 3.68M rows of a 16GB
--- table — 89.5 seconds per run, hourly. The index lets it group from an
--- index-only scan instead of the heap.
+-- 419 buffers to 3, and it fixes all four call sites without code changes.
 --
--- Deliberately not partial on `deleted`: the call passes it as a parameter, so
--- a generic plan cannot prove a `WHERE deleted = false` predicate and would
--- skip a partial index.
---
--- Both are created CONCURRENTLY on prod out-of-band (a plain CREATE INDEX takes
--- a long lock on `documents`); IF NOT EXISTS makes this a no-op there while
--- still building them on fresh/local/test databases. Same pattern as 0014/0003.
-CREATE INDEX IF NOT EXISTS "publications_url_normalized_idx" ON "publications" (rtrim("url", '/'));--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "documents_did_cid_idx" ON "documents" ("did", "cid");
+-- Created CONCURRENTLY on prod out-of-band; IF NOT EXISTS makes this a no-op
+-- there while still building it on fresh/local/test databases. Same pattern as
+-- 0014 and 0003.
+CREATE INDEX IF NOT EXISTS "publications_url_normalized_idx" ON "publications" (rtrim("url", '/'));
