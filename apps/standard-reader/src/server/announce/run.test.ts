@@ -154,13 +154,16 @@ describe("runWeeklyThread once-a-week guard", () => {
     expect(options).not.toHaveProperty("rkeys");
   });
 
-  it("stamps the real posting time, not a backdated week anchor", async () => {
+  // Each post is stamped by `postThread` as it writes it. The runner must not
+  // hoist a single `createdAt` for the whole thread: that is what hid five of
+  // every six posts from the bot's Bluesky profile.
+  it("leaves the posting time to postThread, one stamp per post", async () => {
     vi.setSystemTime(new Date("2026-08-16T09:30:00.000Z")); // Sunday catch-up
 
     await runWeeklyThread();
 
     const options = postThread.mock.calls[0][3] as PostThreadOptions;
-    expect(options.createdAt).toBe("2026-08-16T09:30:00.000Z");
+    expect(options).not.toHaveProperty("createdAt");
   });
 
   it("checks the repo for this week's thread before composing anything", async () => {

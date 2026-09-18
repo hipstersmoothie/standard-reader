@@ -40,7 +40,13 @@ Check items off as they land.
     "upsert" the thread, which silently mutated posts the network had already replied to and liked:
     their strongRefs pin a `cid`, so every overwrite orphaned them, and AppViews that had indexed an
     earlier version disagreed with the PDS about what the post said. A published post is immutable;
-    a duplicate is prevented before the write or not at all.
+    a duplicate is prevented before the write or not at all. That `putRecord` scheme also froze one
+    `createdAt` across the whole thread (so a rewrite was byte-identical), and the frozen clock
+    outlived the rkeys by five weeks: Bluesky's author feed sorts on `min(indexedAt, createdAt)`,
+    and every thread whose six posts shared a timestamp lost five of them from the bot's profile —
+    records written fine and hydratable by `getPosts`, but only the last-written post of the group
+    reached the feed, so the profile's Posts tab showed no thread at all. `postThread` now stamps
+    each post as it writes it; do not hoist that back out.
   - **Runbook gotcha:** Railway auto-detects only the root `railway.json`, so every non-web service
     in this monorepo needs its **Config File Path** set explicitly (Dashboard → service → Settings →
     Config-as-code, or `serviceInstanceUpdate{ railwayConfigFile }` via the GraphQL API) to

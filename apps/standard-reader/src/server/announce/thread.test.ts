@@ -6,6 +6,15 @@ import { buildPostRecord, findWeekThreadRoot, postThread } from "./thread.ts";
 const REPO = "did:plc:bot";
 const CREATED_AT = "2026-08-14T16:00:00.000Z";
 
+/**
+ * A clock that advances a millisecond per call, so each post in a thread gets
+ * its own `createdAt` the way the real one does.
+ */
+function tickingClock(start = CREATED_AT): () => string {
+  let t = Date.parse(start);
+  return () => new Date(t++).toISOString();
+}
+
 /** A client that records every `createRecord` call and hands back a strongRef. */
 function recordingClient() {
   const calls: Array<{
@@ -40,7 +49,7 @@ describe("postThread", () => {
     const { calls, client } = recordingClient();
 
     const refs = await postThread(client, REPO, specs, {
-      createdAt: CREATED_AT,
+      now: tickingClock(),
     });
 
     expect(calls.map((call) => call.record.text)).toEqual([
@@ -61,7 +70,7 @@ describe("postThread", () => {
   it("never writes with putRecord, and never names an rkey", async () => {
     const { calls, client } = recordingClient();
 
-    await postThread(client, REPO, specs, { createdAt: CREATED_AT });
+    await postThread(client, REPO, specs, { now: tickingClock() });
 
     for (const [nsid] of (client.post as ReturnType<typeof vi.fn>).mock.calls) {
       expect(nsid).toBe("com.atproto.repo.createRecord");
@@ -76,10 +85,10 @@ describe("postThread", () => {
     const second = recordingClient();
 
     const a = await postThread(first.client, REPO, specs, {
-      createdAt: CREATED_AT,
+      now: tickingClock(),
     });
     const b = await postThread(second.client, REPO, specs, {
-      createdAt: CREATED_AT,
+      now: tickingClock(),
     });
 
     // Same content, but the PDS picks the keys — neither run can land on a
@@ -94,7 +103,7 @@ describe("postThread", () => {
     const { calls, client } = recordingClient();
 
     const refs = await postThread(client, REPO, specs, {
-      createdAt: CREATED_AT,
+      now: tickingClock(),
     });
 
     expect(calls[0].record.reply).toBeUndefined();
@@ -111,12 +120,48 @@ describe("postThread", () => {
     }
   });
 
+  // The bug this guards: one `createdAt` shared by every post in the thread.
+  // Bluesky's author feed sorts on min(indexedAt, createdAt), and a thread whose
+  // posts all carried the same timestamp lost five of its six posts from the
+  // bot's profile — written fine, hydratable by getPosts, absent from the feed.
+  it("gives every post its own createdAt", async () => {
+    const { calls, client } = recordingClient();
+
+    await postThread(client, REPO, specs, { now: tickingClock() });
+
+    const stamps = calls.map((call) => call.record.createdAt as string);
+    expect(new Set(stamps).size).toBe(specs.length);
+    // And each one is later than the post it replies to.
+    for (let i = 1; i < stamps.length; i++) {
+      expect(Date.parse(stamps[i])).toBeGreaterThan(Date.parse(stamps[i - 1]));
+    }
+  });
+
+  it("reads the clock per post rather than once for the thread", async () => {
+    const { client } = recordingClient();
+    const now = vi.fn(tickingClock());
+
+    await postThread(client, REPO, specs, { now });
+
+    expect(now).toHaveBeenCalledTimes(specs.length);
+  });
+
+  it("defaults to the real clock when no now() is supplied", async () => {
+    const { calls, client } = recordingClient();
+
+    await postThread(client, REPO, specs, {});
+
+    for (const call of calls) {
+      expect(Date.parse(call.record.createdAt as string)).not.toBeNaN();
+    }
+  });
+
   it("stamps the root before any reply goes out", async () => {
     const { client } = recordingClient();
     const seen: Array<string> = [];
 
     await postThread(client, REPO, specs, {
-      createdAt: CREATED_AT,
+      now: tickingClock(),
       onRoot: async () => {
         seen.push("onRoot");
       },

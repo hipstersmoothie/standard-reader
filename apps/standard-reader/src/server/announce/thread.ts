@@ -125,9 +125,9 @@ export async function fetchThumbBlob(
 /**
  * Assemble one `app.bsky.feed.post` record (optionally as a reply).
  *
- * `createdAt` is passed in rather than read from the clock so the record is a
- * pure function of the week's content — re-running the job then rewrites an
- * identical record instead of shifting the thread's timestamp.
+ * `createdAt` belongs to THIS post and nothing else — see {@link postThread}
+ * for why every post in the thread must carry its own. It is a parameter rather
+ * than a clock read only so the builder stays pure and testable.
  */
 export function buildPostRecord(
   spec: PostSpec,
@@ -264,8 +264,11 @@ export async function findWeekThreadRoot(
 }
 
 export interface PostThreadOptions {
-  /** `createdAt` stamped on every post in the thread. */
-  createdAt: string;
+  /**
+   * Clock for each post's `createdAt`, injectable for tests. Called once per
+   * post — never hoisted to a single value for the thread.
+   */
+  now?: () => string;
   /**
    * Awaited right after the root post lands, before any reply goes out. The
    * caller uses it to record that this week's thread now exists — from that
@@ -279,6 +282,22 @@ export interface PostThreadOptions {
  * Post `specs` as a single reply-chained thread. Returns each post's strongRef
  * in order (first is the thread root). Sequential by necessity: each reply
  * references the previous post's `cid`.
+ *
+ * EVERY POST IS STAMPED WITH ITS OWN `createdAt`, read at the moment it is
+ * written. Do not hoist that to one timestamp for the whole thread, however
+ * tempting it looks: Bluesky's author feed sorts on
+ * `sortAt = min(indexedAt, createdAt)`, and a run whose posts all shared one
+ * `createdAt` had five of its six posts silently dropped from the bot's profile
+ * — the records were written fine and `getPosts` hydrated them, but only the
+ * last-written post of each identical-timestamp group ever reached the feed, so
+ * the whole thread vanished from the profile's Posts tab.
+ *
+ * That hoist arrived with the first "don't post twice" fix, which minted
+ * deterministic rkeys and re-`putRecord`ed the thread — a frozen timestamp was
+ * what made the rewrite byte-identical. The rkey scheme is long gone (posts are
+ * created at fresh TIDs and never rewritten); the frozen clock outlived it by
+ * five weeks and broke every thread it touched. A reply also has no business
+ * claiming it was created in the same millisecond as its parent.
  */
 export async function postThread(
   client: Client,
@@ -287,13 +306,14 @@ export async function postThread(
   options: PostThreadOptions,
 ): Promise<Array<StrongRef>> {
   const created: Array<StrongRef> = [];
+  const now = options.now ?? (() => new Date().toISOString());
   let root: StrongRef | null = null;
   let parent: StrongRef | null = null;
 
   for (const spec of specs) {
     const record = buildPostRecord(
       spec,
-      options.createdAt,
+      now(),
       root && parent ? { root, parent } : undefined,
     );
     const ref = await createPost(client, repo, record);

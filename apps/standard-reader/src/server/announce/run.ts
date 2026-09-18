@@ -329,10 +329,10 @@ async function postWeeklyThread(
 
   // Fresh TIDs, `createRecord`: these posts are new records that will never be
   // written over. Both duplicate guards are behind us by this point.
+  // No `createdAt` here on purpose: `postThread` stamps each post as it writes
+  // it. One shared timestamp for the whole thread is what hid five of every six
+  // posts from the bot's profile — see the note on `postThread`.
   const refs = await postThread(client, repo, specs, {
-    // The real posting instant. A catch-up run says when it actually posted
-    // rather than backdating itself to the week's nominal Friday slot.
-    createdAt: new Date().toISOString(),
     // Stamp the ledger the moment the root post lands — after that the thread
     // is public and no later run may post another, however this process ends.
     onRoot: async (root) => {
