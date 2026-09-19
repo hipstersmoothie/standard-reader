@@ -348,6 +348,55 @@ async function recordProgress(): Promise<void> {
 }
 
 /**
+ * A dead-letter `error` string that says what actually went wrong.
+ *
+ * Drizzle's `message` is the SQL plus every bound parameter and nothing else —
+ * for a document that is ~60KB of text with the failure nowhere in it. The
+ * driver puts the real Postgres error (`code`, `detail`, the constraint or
+ * index that rejected the row) on `cause`. Ten rows sat in
+ * `ingest_dead_letter` for six weeks and could not be diagnosed from the table
+ * at all because only the former was stored.
+ *
+ * Cause first, and the query truncated behind it: the query is occasionally
+ * useful, but never the part you need first.
+ */
+const DEAD_LETTER_QUERY_CHARS = 2000;
+
+function describeError(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+
+  const parts: Array<string> = [];
+  const cause: unknown = (error as { cause?: unknown }).cause;
+  if (cause instanceof Error) {
+    const pg = cause as Error & {
+      code?: string;
+      constraint?: string;
+      detail?: string;
+    };
+    parts.push(
+      [
+        pg.code ? `[${pg.code}]` : null,
+        pg.message,
+        pg.detail ? `detail: ${pg.detail}` : null,
+        pg.constraint ? `constraint: ${pg.constraint}` : null,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    );
+  } else if (cause !== undefined) {
+    parts.push(String(cause));
+  }
+
+  const query = error.message;
+  parts.push(
+    query.length > DEAD_LETTER_QUERY_CHARS
+      ? `${query.slice(0, DEAD_LETTER_QUERY_CHARS)}… (${query.length} chars truncated)`
+      : query,
+  );
+  return parts.join("\n");
+}
+
+/**
  * Park an event that failed to apply, for {@link replayDeadLetters} to retry.
  *
  * Exported for `scripts/replay-window.ts`, which applies events through
@@ -361,7 +410,7 @@ export async function deadLetter(
   event: IngestEvent,
   error: unknown,
 ): Promise<void> {
-  const message = error instanceof Error ? error.message : String(error);
+  const message = describeError(error);
   const collection =
     event.type === "record" ? event.record.collection : "identity";
   const action = event.type === "record" ? event.record.action : "identity";

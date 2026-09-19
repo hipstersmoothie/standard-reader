@@ -8,6 +8,58 @@ export function stripNullBytes(value: string): string {
   return value.replaceAll("\u0000", "");
 }
 
+/**
+ * Longest tag we will store, in graphemes.
+ *
+ * Matches the lexicon: `site.standard.document` declares `maxGraphemes: 128`
+ * for a tag, and our own `app.standard-reader` defs declare `maxLength: 128`.
+ * A record whose tags exceed it is malformed, not merely unusual.
+ */
+export const MAX_TAG_GRAPHEMES = 128;
+
+/**
+ * Sanitize a record's `tags` array for storage.
+ *
+ * Over-long tags are dropped, not truncated. A 5KB "tag" is a headline someone
+ * put in the wrong field, and half of it is not a tag either — keeping a
+ * truncated version would pollute tag pages and search with garbage that looks
+ * deliberate.
+ *
+ * This exists because three records with 56 tags each, the longest 5,403 bytes,
+ * jammed the ingest from 2026-08-01 onward. `documents_tags_norm_idx` is a GIN
+ * index over the tags array and a key that size exceeds Postgres's index-entry
+ * limit, so every insert failed, every retry failed the same way, and the rows
+ * sat in `ingest_dead_letter` at max retries until someone went looking. Their
+ * PDSes now refuse to serve them at all for the same lexicon violation.
+ *
+ * Dropping the bad tags keeps the rest of the record — title, body, everything
+ * a reader actually wants — instead of losing the whole article to one bad
+ * field.
+ */
+export function cleanTags(value: unknown): Array<string> | null {
+  if (!Array.isArray(value)) return null;
+  const segmenter =
+    globalThis.Intl?.Segmenter === undefined
+      ? null
+      : new Intl.Segmenter(undefined, { granularity: "grapheme" });
+  const count = (text: string): number => {
+    if (!segmenter) return [...text].length;
+    let n = 0;
+    for (const _ of segmenter.segment(text)) n++;
+    return n;
+  };
+
+  const tags: Array<string> = [];
+  for (const raw of value) {
+    if (typeof raw !== "string") continue;
+    const tag = stripNullBytes(raw).trim();
+    if (tag.length === 0) continue;
+    if (count(tag) > MAX_TAG_GRAPHEMES) continue;
+    tags.push(tag);
+  }
+  return tags;
+}
+
 /** Clean an optional text field: coerce non-strings to null, strip NUL bytes,
  * and treat the empty result as null. */
 export function cleanOptional(value: unknown): string | null {

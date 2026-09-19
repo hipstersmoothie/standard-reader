@@ -89,6 +89,7 @@ import {
   normalizePublicationUrl,
   parseDate,
   sanitizeJson,
+  cleanTags,
   stripNullBytes,
 } from "./mappers.ts";
 import { ensureTracked } from "./tracked-repos.ts";
@@ -521,11 +522,9 @@ export async function upsertDocument(
     }).length,
     coverImageCid: coverCid,
     coverImageMime: record.coverImage?.mimeType ?? null,
-    tags: Array.isArray(record.tags)
-      ? record.tags
-          .filter((t) => typeof t === "string")
-          .map((t) => stripNullBytes(t))
-      : null,
+    // Drops tags that violate the lexicon's 128-grapheme limit rather than
+    // letting one malformed field cost us the whole record — see `cleanTags`.
+    tags: cleanTags(record.tags),
     bskyPostUri: record.bskyPostRef?.uri ?? null,
     bskyPostCid: record.bskyPostRef?.cid ?? null,
     publishedAt,
