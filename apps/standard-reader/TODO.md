@@ -237,7 +237,25 @@ Check items off as they land.
       margin has to clear the seal lag — segments seal on a ~256MB boundary, so the sealed tip
       trails real time and a too-small `--since` errors rather than silently skipping the gap.
       Rehearsed on a Neon branch forked from prod: resumed from the seq, caught up, and applied
-      ~4,300 events with zero dead letters and zero errors. - Migration `0038` drops `tracked_repos.added_to_tap_at`; the table survives as an inventory
+      ~4,300 events with zero dead letters and zero errors. - **Region failover (2026-09-19):** `JETSTREAM_SERVICE` takes a comma-separated,
+      preference-ordered host list (`src/server/ingest/jetstream-endpoint.ts`); the first host that
+      answers wins, and when none does the worker backs off 5s→60s and keeps probing instead of
+      exiting. It used to name one host, default to `us-east`, and `process.exit(1)` on any channel
+      error — so when that region's load balancer 503'd on 2026-09-17T21:15Z the worker crash-looped
+      for a day, Railway stopped restarting it, and ingest was down 29 hours (~18k documents; normal
+      is ~15k/day). Prod runs `us-west,us-east`. A v2 cursor is portable across regions — verified
+      by the flip resuming at the stored seq. - **Gap repair:** `pnpm jetstream:replay-window
+    --from=<iso> --to=<iso>` re-applies a closed archive window through the normal handlers
+      without touching `ingest_state`, for gaps the live cursor has already passed. Rewinding the
+      cursor would also work and is wrong — the channel would stop tailing until it caught back up.
+      Needed because the reconcile sweep cannot see a hole in the middle of a repo: it compares PDS
+      head rev to `last_seen_rev`, so any later event from that repo hides the gap forever. - **Stream
+      watchdog:** `/health` on the ingest worker now reports whether the Jetstream cursor is still
+      advancing (503 when `ingest_state.last_event_at` is older than `INGEST_STALE_AFTER_MS`,
+      default 15m) instead of always 200, and `recompute-cron` polls it hourly from its own service
+      so an unreachable worker fails the cron. Row counts are not a substitute: `reads`,
+      `recommends` and `subscriptions` have a direct app-side writer and looked healthy throughout
+      the outage. Both September outages were found by a reader, not by us. - Migration `0038` drops `tracked_repos.added_to_tap_at`; the table survives as an inventory
       for the profile sweep and PDS reconcile, not as a gate on what gets indexed. - **Repo repair and read-path backfills fold the archive too** — no PDS reads left
       in the ingest tier. `reconcileRepoFromArchive` / `repairRepoFromArchive` replace
       the per-collection PDS sweep (killing the 20k `listRecords` cap and the

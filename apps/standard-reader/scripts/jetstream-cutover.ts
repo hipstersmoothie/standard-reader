@@ -23,99 +23,16 @@ import { sql } from "drizzle-orm";
 
 import { db } from "../src/db/index.ts";
 import { ingestState } from "../src/db/schema.ts";
-import { ingestConfig } from "../src/server/ingest/config.ts";
-import { resolveJetstreamService } from "../src/server/ingest/jetstream-endpoint.ts";
+import {
+  listSegments,
+  parseSince,
+  seqAt,
+} from "../src/server/ingest/jetstream-segments.ts";
 
 const STREAM_ID = "jetstream";
-/**
- * Segments per `listSegments` page. Deliberately well under the endpoint's
- * 1000 maximum: at 1000 the response runs past 500KB and the connection is
- * liable to be closed mid-body (`TypeError: terminated`).
- */
-const PAGE = 250;
-const ATTEMPTS = 4;
-
-interface Segment {
-  index: number;
-  maxSeq: number;
-  maxWitnessedAt: number;
-  minSeq: number;
-  minWitnessedAt: number;
-  name: string;
-}
-
 function flag(name: string): string | null {
   const hit = process.argv.slice(2).find((a) => a.startsWith(`--${name}=`));
   return hit ? hit.slice(name.length + 3) : null;
-}
-
-/** `--since=90m` / `--since=2h` / `--since=3d`, as a wall-clock instant. */
-function parseSince(value: string): number {
-  const match = /^(\d+)([mhd])$/.exec(value.trim());
-  if (!match) {
-    throw new Error(`--since must look like 30m, 2h, or 3d (got "${value}")`);
-  }
-  const scale = { d: 86_400_000, h: 3_600_000, m: 60_000 }[match[2]] ?? 0;
-  return Date.now() - Number(match[1]) * scale;
-}
-
-async function listSegments(): Promise<Array<Segment>> {
-  const headers: Record<string, string> = {};
-  if (ingestConfig.jetstreamApiKey) {
-    headers.Authorization = `Bearer ${ingestConfig.jetstreamApiKey}`;
-  }
-  const segments: Array<Segment> = [];
-  // Resolved once: the loop pages, and re-probing per page would add a round
-  // trip to every page for an answer that cannot change mid-run.
-  const service = await resolveJetstreamService(ingestConfig.jetstreamServices);
-  let cursor: string | undefined;
-  for (;;) {
-    const params = new URLSearchParams({ limit: String(PAGE) });
-    if (cursor) params.set("cursor", cursor);
-    const url = `${service}/xrpc/network.bsky.jetstream.listSegments?${params}`;
-
-    // Retry the whole request/parse: a dropped connection surfaces as a throw
-    // from `fetch` or from reading the body, and both mean the same thing here.
-    type Page = { cursor?: string; segments: Array<Segment> };
-    let page: Page | null = null;
-    for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
-      try {
-        const res = await fetch(url, { headers });
-        if (!res.ok) {
-          throw new Error(`listSegments ${res.status}: ${await res.text()}`);
-        }
-        page = (await res.json()) as Page;
-        break;
-      } catch (error: unknown) {
-        if (attempt === ATTEMPTS) throw error;
-        await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
-      }
-    }
-    if (!page) throw new Error("listSegments returned no page");
-    segments.push(...page.segments);
-    if (!page.cursor || page.segments.length === 0) break;
-    cursor = page.cursor;
-  }
-  return segments;
-}
-
-/**
- * The seq to resume from for a given instant.
- *
- * Segments are sealed in ingestion order, but their `witnessed_at` windows
- * overlap — the bootstrap backfill wrote thousands of segments within minutes
- * of each other — so this scans rather than binary-searches, and takes the
- * *earliest* segment that could contain the instant. 7,000 segments is eight
- * HTTP requests; correctness is worth more than the round trips here.
- */
-function seqAt(segments: Array<Segment>, atMs: number): Segment | null {
-  const atMicros = atMs * 1000;
-  let earliest: Segment | null = null;
-  for (const segment of segments) {
-    if (segment.maxWitnessedAt < atMicros) continue;
-    if (!earliest || segment.minSeq < earliest.minSeq) earliest = segment;
-  }
-  return earliest;
 }
 
 const write = process.argv.includes("--write");

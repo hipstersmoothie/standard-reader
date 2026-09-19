@@ -12,6 +12,7 @@ import { logEvent } from "../observability/log.ts";
 import { backfillRepoFromArchive } from "./archive-replay.ts";
 import { verifyIngestAuth } from "./auth.ts";
 import { ingestConfig } from "./config.ts";
+import { ingestFreshness } from "./freshness.ts";
 import { startJetstreamChannel } from "./jetstream-channel.ts";
 import { startProfileRefresh } from "./profile-refresh.ts";
 import { recomputeDerived } from "./recompute.ts";
@@ -22,6 +23,8 @@ import {
 } from "./repo-sync.ts";
 
 const DEFAULT_PORT = 3099;
+/** Named in `/health` so a reader of the response knows which lane it describes. */
+const STREAM_LANE = "jetstream";
 
 function port(): number {
   const value = Number(process.env.INGEST_PORT);
@@ -80,6 +83,7 @@ async function getStatus(): Promise<Record<string, unknown>> {
   `);
   return {
     counts: counts.rows[0] ?? null,
+    freshness: await ingestFreshness(),
     stream: state ?? null,
   };
 }
@@ -164,8 +168,29 @@ async function handleRequest(
 ): Promise<void> {
   const url = new URL(req.url ?? "/", "http://localhost");
 
+  // Answers for the *stream*, not the process. A 200 here used to mean only
+  // "an HTTP server is listening", which stayed true through 29 hours of a
+  // crash-looped, then stopped, ingest worker. Now it 503s once the cursor
+  // stops moving, so a healthcheck can act on it — and, more importantly, so
+  // anything polling it has something real to poll.
   if (req.method === "GET" && url.pathname === "/health") {
-    sendJson(res, 200, { ok: true });
+    const freshness = await ingestFreshness();
+    if (freshness.stale) {
+      logEvent("ingest.stale", {
+        ageMs: freshness.ageMs,
+        lastEventAt: freshness.lastEventAt?.toISOString() ?? null,
+        lastEventId: freshness.lastEventId,
+        ok: false,
+        staleAfterMs: freshness.staleAfterMs,
+      });
+    }
+    sendJson(res, freshness.stale ? 503 : 200, {
+      ageMs: freshness.ageMs,
+      lastEventAt: freshness.lastEventAt?.toISOString() ?? null,
+      ok: !freshness.stale,
+      staleAfterMs: freshness.staleAfterMs,
+      stream: STREAM_LANE,
+    });
     return;
   }
 
