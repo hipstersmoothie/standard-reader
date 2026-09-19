@@ -2,6 +2,7 @@
  * Server-only ingestion configuration, read from environment. None of these are
  * `VITE_`-prefixed, so they never reach the browser.
  */
+import { DEFAULT_JETSTREAM_SERVICES } from "./jetstream-endpoint.ts";
 
 function required(name: string): string {
   const value = process.env[name];
@@ -20,11 +21,17 @@ export const ingestConfig = {
     return process.env.INGEST_WEBHOOK_SECRET ?? null;
   },
 
-  /** Jetstream v2 instance to consume (`JETSTREAM_SERVICE`). */
-  get jetstreamService(): string {
-    return (
-      process.env.JETSTREAM_SERVICE ?? "https://jetstream.us-east.bsky.network"
-    );
+  /**
+   * Jetstream v2 hosts to consume, in preference order (`JETSTREAM_SERVICE`,
+   * comma-separated). The first one that answers is used; see
+   * `./jetstream-endpoint.ts` for why there is more than one.
+   */
+  get jetstreamServices(): Array<string> {
+    const configured = (process.env.JETSTREAM_SERVICE ?? "")
+      .split(",")
+      .map((value) => value.trim().replace(/\/+$/, ""))
+      .filter(Boolean);
+    return configured.length > 0 ? configured : DEFAULT_JETSTREAM_SERVICES;
   },
 
   /**

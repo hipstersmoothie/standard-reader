@@ -33,6 +33,13 @@ vi.mock("drizzle-orm", () => ({ eq: vi.fn(() => "eq") }));
 
 vi.mock("../observability/log.ts", () => ({ logEvent: vi.fn() }));
 
+// Host selection is `jetstream-endpoint.test.ts`'s subject, not this file's.
+// Left unmocked it puts a real liveness probe in front of the first fold.
+vi.mock("./jetstream-endpoint.ts", () => ({
+  DEFAULT_JETSTREAM_SERVICES: ["https://jetstream.test"],
+  resolveJetstreamService: vi.fn(async () => "https://jetstream.test"),
+}));
+
 vi.mock("./consumer.ts", () => ({
   handleRecord: vi.fn(async () => {}),
 }));

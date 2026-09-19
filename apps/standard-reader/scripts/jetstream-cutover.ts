@@ -24,6 +24,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../src/db/index.ts";
 import { ingestState } from "../src/db/schema.ts";
 import { ingestConfig } from "../src/server/ingest/config.ts";
+import { resolveJetstreamService } from "../src/server/ingest/jetstream-endpoint.ts";
 
 const STREAM_ID = "jetstream";
 /**
@@ -64,11 +65,14 @@ async function listSegments(): Promise<Array<Segment>> {
     headers.Authorization = `Bearer ${ingestConfig.jetstreamApiKey}`;
   }
   const segments: Array<Segment> = [];
+  // Resolved once: the loop pages, and re-probing per page would add a round
+  // trip to every page for an answer that cannot change mid-run.
+  const service = await resolveJetstreamService(ingestConfig.jetstreamServices);
   let cursor: string | undefined;
   for (;;) {
     const params = new URLSearchParams({ limit: String(PAGE) });
     if (cursor) params.set("cursor", cursor);
-    const url = `${ingestConfig.jetstreamService}/xrpc/network.bsky.jetstream.listSegments?${params}`;
+    const url = `${service}/xrpc/network.bsky.jetstream.listSegments?${params}`;
 
     // Retry the whole request/parse: a dropped connection surfaces as a throw
     // from `fetch` or from reading the body, and both mean the same thing here.

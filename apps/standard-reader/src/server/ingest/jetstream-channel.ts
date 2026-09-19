@@ -9,6 +9,7 @@ import { logEvent } from "../observability/log.ts";
 import { ingestConfig } from "./config.ts";
 import type { ProcessResult } from "./consumer.ts";
 import { processIngestEvent } from "./consumer.ts";
+import { resolveJetstreamService } from "./jetstream-endpoint.ts";
 import {
   INGESTED_COLLECTIONS,
   toIngestRecordPayload,
@@ -220,7 +221,7 @@ export async function retryAfterStrippingFetch(
  * have never heard of.
  */
 export function startJetstreamChannel(): { destroy: () => Promise<void> } {
-  const service = ingestConfig.jetstreamService;
+  const candidates = ingestConfig.jetstreamServices;
   const apiKey = ingestConfig.jetstreamApiKey;
   const blockConcurrency = ingestConfig.jetstreamBlockConcurrency;
   const applyConcurrency = envInt(
@@ -228,31 +229,34 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
     DEFAULT_APPLY_CONCURRENCY,
   );
 
-  const jetstream = new Jetstream({
-    // Absent is legal and only costs the archive: the live tail is
-    // unauthenticated, so a worker with no key still tails correctly — it just
-    // cannot replay history and will sit at the cursor's lookback floor.
-    ...(apiKey ? { apiKey } : {}),
-    blockConcurrency,
-    fetchImpl: retryAfterStrippingFetch,
-    // Without this the SDK retries every download forever and tells no one
-    // (`maxAttempts: Infinity`, no `onRetry`). `onRetry` is the part that
-    // matters most: a retry storm against the archive is the single failure
-    // mode that looks identical to an idle network from out here.
-    retry: {
-      maxAttempts: DOWNLOAD_MAX_ATTEMPTS,
-      onRetry: (error, info) => {
-        logEvent("ingest.jetstreamRetry", {
-          attempt: info.attempt,
-          delayMs: info.delayMs,
-          ok: false,
-          reason: error.message,
-          target: info.target.kind,
-        });
+  // Built once the host is picked, which needs a probe and so an await — see
+  // the `running` block below. Everything up to there is synchronous setup.
+  const makeJetstream = (service: string) =>
+    new Jetstream({
+      // Absent is legal and only costs the archive: the live tail is
+      // unauthenticated, so a worker with no key still tails correctly — it just
+      // cannot replay history and will sit at the cursor's lookback floor.
+      ...(apiKey ? { apiKey } : {}),
+      blockConcurrency,
+      fetchImpl: retryAfterStrippingFetch,
+      // Without this the SDK retries every download forever and tells no one
+      // (`maxAttempts: Infinity`, no `onRetry`). `onRetry` is the part that
+      // matters most: a retry storm against the archive is the single failure
+      // mode that looks identical to an idle network from out here.
+      retry: {
+        maxAttempts: DOWNLOAD_MAX_ATTEMPTS,
+        onRetry: (error, info) => {
+          logEvent("ingest.jetstreamRetry", {
+            attempt: info.attempt,
+            delayMs: info.delayMs,
+            ok: false,
+            reason: error.message,
+            target: info.target.kind,
+          });
+        },
       },
-    },
-    service,
-  });
+      service,
+    });
 
   const stats = {
     applied: 0,
@@ -489,6 +493,21 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
   heartbeat.unref?.();
 
   const running = (async () => {
+    // Blocks until a host answers rather than exiting when none does. The whole
+    // point: a worker that exits on a dead upstream is one Railway eventually
+    // stops restarting, and then nobody notices the recovery.
+    const service = await resolveJetstreamService(candidates, {
+      signal: controller.signal,
+    });
+    console.info(
+      `[ingest:jetstream] consuming ${service} (blockConcurrency=${blockConcurrency}, applyConcurrency=${applyConcurrency}, apiKey=${apiKey ? "set" : "MISSING — live tail only"})`,
+    );
+    logEvent("ingest.jetstreamHost", {
+      candidates: candidates.join(","),
+      ok: true,
+      service,
+    });
+    const jetstream = makeJetstream(service);
     try {
       for await (const raw of jetstream.replayRawBatches({
         collections: INGESTED_COLLECTIONS,
@@ -559,7 +578,7 @@ export function startJetstreamChannel(): { destroy: () => Promise<void> } {
   });
 
   console.info(
-    `[ingest:jetstream] consuming ${service} (blockConcurrency=${blockConcurrency}, applyConcurrency=${applyConcurrency}, apiKey=${apiKey ? "set" : "MISSING — live tail only"})`,
+    `[ingest:jetstream] starting (candidates=${candidates.join(", ")})`,
   );
 
   return {

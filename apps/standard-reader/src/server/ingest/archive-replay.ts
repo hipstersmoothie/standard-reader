@@ -7,6 +7,7 @@ import { buildAtUri } from "../atproto/uri.ts";
 import { logEvent } from "../observability/log.ts";
 import { ingestConfig } from "./config.ts";
 import { handleRecord } from "./consumer.ts";
+import { resolveJetstreamService } from "./jetstream-endpoint.ts";
 import {
   INGESTED_COLLECTIONS,
   toIngestRecordPayload,
@@ -170,7 +171,14 @@ function releaseFoldSlot(): void {
   foldSlots.free += 1;
 }
 
-function jetstream(): Jetstream {
+/**
+ * Memoized archive client, pinned to whichever configured host is answering.
+ * Async because picking the host means probing it — see
+ * `./jetstream-endpoint.ts` for why there is a choice to make.
+ */
+async function jetstream(): Promise<Jetstream> {
+  if (client) return client;
+  const service = await resolveJetstreamService(ingestConfig.jetstreamServices);
   client ??= new Jetstream({
     ...(ingestConfig.jetstreamApiKey
       ? { apiKey: ingestConfig.jetstreamApiKey }
@@ -187,7 +195,7 @@ function jetstream(): Jetstream {
           target: info.target.kind,
         }),
     },
-    service: ingestConfig.jetstreamService,
+    service,
   });
   return client;
 }
@@ -237,8 +245,9 @@ export async function foldReposFromArchive(
   // Separated from `ms` so a saturated sweep is legible: `ms` covers the whole
   // call, `waitMs` says how much of it was spent queued behind other folds.
   const waitMs = Math.round(performance.now() - started);
+  const archive = await jetstream();
   try {
-    for await (const event of jetstream().snapshot({
+    for await (const event of archive.snapshot({
       afterSeq: opts.afterSeq ?? 0,
       collections: INGESTED_COLLECTIONS,
       dids: dids as ArchiveDids,
