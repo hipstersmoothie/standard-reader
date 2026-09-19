@@ -347,7 +347,20 @@ async function recordProgress(): Promise<void> {
     });
 }
 
-async function deadLetter(event: IngestEvent, error: unknown): Promise<void> {
+/**
+ * Park an event that failed to apply, for {@link replayDeadLetters} to retry.
+ *
+ * Exported for `scripts/replay-window.ts`, which applies events through
+ * {@link handleRecord} directly rather than {@link processIngestEvent}: that
+ * wrapper also calls `recordProgress`, which refreshes
+ * `ingest_state.last_event_at` — the field the stream watchdog reads. A repair
+ * job running beside the channel must not touch it, or a long replay would mask
+ * a dead live channel for as long as it ran.
+ */
+export async function deadLetter(
+  event: IngestEvent,
+  error: unknown,
+): Promise<void> {
   const message = error instanceof Error ? error.message : String(error);
   const collection =
     event.type === "record" ? event.record.collection : "identity";

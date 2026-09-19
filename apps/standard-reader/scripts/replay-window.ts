@@ -28,8 +28,9 @@
 import { Jetstream } from "@bsky/jetstream";
 import type { CursorStore } from "@bsky/jetstream";
 
+import type { IngestRecordPayload } from "../src/server/atproto/types.ts";
 import { ingestConfig } from "../src/server/ingest/config.ts";
-import { handleRecord } from "../src/server/ingest/consumer.ts";
+import { deadLetter, handleRecord } from "../src/server/ingest/consumer.ts";
 import { resolveJetstreamService } from "../src/server/ingest/jetstream-endpoint.ts";
 import {
   INGESTED_COLLECTIONS,
@@ -147,6 +148,7 @@ function layer<T>(items: Array<T>, key: (item: T) => string): Array<Array<T>> {
 
 let seen = 0;
 let applied = 0;
+let deadLettered = 0;
 let failed = 0;
 let lastSeq = fromSeq;
 const startedAt = Date.now();
@@ -155,7 +157,7 @@ function progress(): void {
   const elapsed = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
   const done = Math.min(1, (lastSeq - fromSeq) / Math.max(1, toSeq - fromSeq));
   console.info(
-    `[replay-window] seq=${lastSeq} ${(done * 100).toFixed(1)}% seen=${seen} applied=${applied} failed=${failed} elapsed=${elapsed}s`,
+    `[replay-window] seq=${lastSeq} ${(done * 100).toFixed(1)}% seen=${seen} applied=${applied} deadLettered=${deadLettered} failed=${failed} elapsed=${elapsed}s`,
   );
 }
 const ticker = setInterval(progress, 15_000);
@@ -182,7 +184,7 @@ for await (const batch of jetstream.replayRawBatches({
   },
 })) {
   let past = false;
-  const payloads = [];
+  const payloads: Array<{ payload: IngestRecordPayload; seq: number }> = [];
   for (const event of batch.events) {
     lastSeq = event.seq;
     // The window's far end. `replayRawBatches` streams to the live tip, so the
@@ -195,22 +197,22 @@ for await (const batch of jetstream.replayRawBatches({
     // handlers use that to skip work that only makes sense for a fresh record
     // (notifications, feed churn).
     const payload = toIngestRecordPayload(event, { live: false });
-    if (payload) payloads.push(payload);
+    if (payload) payloads.push({ payload, seq: event.seq });
   }
 
   for (const group of layer(
     payloads,
-    (p) => `${p.did}/${p.collection}/${p.rkey}`,
+    ({ payload: p }) => `${p.did}/${p.collection}/${p.rkey}`,
   )) {
     for (let i = 0; i < group.length; i += APPLY_CONCURRENCY) {
       await Promise.all(
-        group.slice(i, i + APPLY_CONCURRENCY).map(async (payload) => {
+        group.slice(i, i + APPLY_CONCURRENCY).map(async ({ payload, seq }) => {
           seen += 1;
           try {
             await handleRecord(payload);
             applied += 1;
+            return;
           } catch (error: unknown) {
-            failed += 1;
             logEvent("ingest.replayWindowFailed", {
               collection: payload.collection,
               did: payload.did,
@@ -218,6 +220,20 @@ for await (const batch of jetstream.replayRawBatches({
               reason: error instanceof Error ? error.message : String(error),
               rkey: payload.rkey,
             });
+            // Park it rather than drop it. The first real run lost 43 records
+            // this way — all one repo, all transient connection errors — and
+            // nothing would ever have retried them, because only the live
+            // channel dead-letters. Now the hourly `replayDeadLetters()` sweep
+            // picks them up like any other failed apply.
+            try {
+              await deadLetter(
+                { id: seq, record: payload, type: "record" },
+                error,
+              );
+              deadLettered += 1;
+            } catch {
+              failed += 1;
+            }
           }
         }),
       );
@@ -229,10 +245,11 @@ for await (const batch of jetstream.replayRawBatches({
 clearInterval(ticker);
 progress();
 console.info(
-  `[replay-window] done: ${applied} applied, ${failed} failed, ${seen} in-window events`,
+  `[replay-window] done: ${applied} applied, ${deadLettered} dead-lettered for retry, ${failed} lost, ${seen} in-window events`,
 );
 logEvent("ingest.replayWindow", {
   applied,
+  deadLettered,
   failed,
   fromSeq,
   ok: failed === 0,
