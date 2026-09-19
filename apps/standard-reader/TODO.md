@@ -245,7 +245,7 @@ Check items off as they land.
       for a day, Railway stopped restarting it, and ingest was down 29 hours (~18k documents; normal
       is ~15k/day). Prod runs `us-west,us-east`. A v2 cursor is portable across regions — verified
       by the flip resuming at the stored seq. - **Gap repair:** `pnpm jetstream:replay-window
-    --from=<iso> --to=<iso>` re-applies a closed archive window through the normal handlers
+--from=<iso> --to=<iso>` re-applies a closed archive window through the normal handlers
       without touching `ingest_state`, for gaps the live cursor has already passed. Rewinding the
       cursor would also work and is wrong — the channel would stop tailing until it caught back up.
       Needed because the reconcile sweep cannot see a hole in the middle of a repo: it compares PDS

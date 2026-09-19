@@ -56,6 +56,20 @@ function instant(name: string): number {
   return ms;
 }
 
+/**
+ * Events applied at once.
+ *
+ * The first run of this script applied them one at a time and managed ~1/s:
+ * every handler is several Neon round trips, and from outside the DB's region
+ * each one costs ~230ms, so a serial replay is almost entirely spent waiting.
+ * The live channel runs 16 appliers for exactly this reason
+ * (`JETSTREAM_APPLY_CONCURRENCY`), and this matches it.
+ */
+const APPLY_CONCURRENCY = (() => {
+  const value = Number(process.env.REPLAY_APPLY_CONCURRENCY);
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : 16;
+})();
+
 const dryRun = process.argv.includes("--dry-run");
 const fromMs = instant("from");
 const toMs = instant("to");
@@ -96,6 +110,8 @@ if (dryRun) {
   process.exit(0);
 }
 
+console.info(`[replay-window] applying ${APPLY_CONCURRENCY} events at a time`);
+
 const service = await resolveJetstreamService(ingestConfig.jetstreamServices);
 const jetstream = new Jetstream({
   ...(ingestConfig.jetstreamApiKey
@@ -104,6 +120,30 @@ const jetstream = new Jetstream({
   blockConcurrency: ingestConfig.jetstreamBlockConcurrency,
   service,
 });
+
+/**
+ * Split a batch so that no two events for the same record are applied together.
+ *
+ * Concurrency must not reorder a record's own history: a create and the delete
+ * that follows it, applied in parallel, can settle either way. The nth event
+ * for a given URI goes in layer n, layers run in order, and everything within a
+ * layer is for a distinct record and so is safe to run at once. Repeats inside
+ * one batch are rare, so in practice this is a single layer.
+ *
+ * Stricter than the live channel, which pulls from one queue with no per-URI
+ * ordering at all — cheap enough here to just do the right thing.
+ */
+function layer<T>(items: Array<T>, key: (item: T) => string): Array<Array<T>> {
+  const layers: Array<Array<T>> = [];
+  const depth = new Map<string, number>();
+  for (const item of items) {
+    const k = key(item);
+    const at = (depth.get(k) ?? -1) + 1;
+    depth.set(k, at);
+    (layers[at] ??= []).push(item);
+  }
+  return layers;
+}
 
 let seen = 0;
 let applied = 0;
@@ -142,6 +182,7 @@ for await (const batch of jetstream.replayRawBatches({
   },
 })) {
   let past = false;
+  const payloads = [];
   for (const event of batch.events) {
     lastSeq = event.seq;
     // The window's far end. `replayRawBatches` streams to the live tip, so the
@@ -154,20 +195,32 @@ for await (const batch of jetstream.replayRawBatches({
     // handlers use that to skip work that only makes sense for a fresh record
     // (notifications, feed churn).
     const payload = toIngestRecordPayload(event, { live: false });
-    if (!payload) continue;
-    seen += 1;
-    try {
-      await handleRecord(payload);
-      applied += 1;
-    } catch (error: unknown) {
-      failed += 1;
-      logEvent("ingest.replayWindowFailed", {
-        collection: payload.collection,
-        did: payload.did,
-        ok: false,
-        reason: error instanceof Error ? error.message : String(error),
-        rkey: payload.rkey,
-      });
+    if (payload) payloads.push(payload);
+  }
+
+  for (const group of layer(
+    payloads,
+    (p) => `${p.did}/${p.collection}/${p.rkey}`,
+  )) {
+    for (let i = 0; i < group.length; i += APPLY_CONCURRENCY) {
+      await Promise.all(
+        group.slice(i, i + APPLY_CONCURRENCY).map(async (payload) => {
+          seen += 1;
+          try {
+            await handleRecord(payload);
+            applied += 1;
+          } catch (error: unknown) {
+            failed += 1;
+            logEvent("ingest.replayWindowFailed", {
+              collection: payload.collection,
+              did: payload.did,
+              ok: false,
+              reason: error instanceof Error ? error.message : String(error),
+              rkey: payload.rkey,
+            });
+          }
+        }),
+      );
     }
   }
   if (past) break;
