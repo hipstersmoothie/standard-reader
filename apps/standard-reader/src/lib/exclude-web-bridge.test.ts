@@ -54,6 +54,6 @@ describe("bridge exclusion preference", () => {
   it("rejects keys the picker does not offer", () => {
     expect(isBridgeExclusionKey("web")).toBe(true);
     expect(isBridgeExclusionKey("false")).toBe(false);
-    expect(isBridgeExclusionKey(undefined)).toBe(false);
+    expect(isBridgeExclusionKey(null)).toBe(false);
   });
 });

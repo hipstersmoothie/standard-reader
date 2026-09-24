@@ -1660,6 +1660,7 @@ hand-tuned lists:
   Topic pages are also unaffected — `topic_publications` is a precomputed, reader-independent
   table that already excludes the web bridge for everyone, so `*.ap.brid.gy` members can still
   appear there to a signed-out reader.
+
 - **Signed in, readers pick how much Bridgy to see** — the account setting is a three-way
   "Bridged accounts" choice (Show all / Hide mirrored / Hide all) that maps straight onto
   `BridgeExclusion`. "Hide all" gives a signed-in reader the same natively-AT-Protocol corpus a
