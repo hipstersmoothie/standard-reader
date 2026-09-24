@@ -1589,7 +1589,10 @@ export async function countNetworkDocuments(
   {
     excludeBridged = false,
     languages,
-  }: { excludeBridged?: BridgeExclusion; languages?: ReadonlyArray<string> } = {},
+  }: {
+    excludeBridged?: BridgeExclusion;
+    languages?: ReadonlyArray<string>;
+  } = {},
 ): Promise<number> {
   if (languages && languages.length > 0) {
     const keys = [...languages, UNTAGGED_LANGUAGE_KEY].map((lang) =>
@@ -1640,7 +1643,10 @@ export async function countNetworkDocumentsLive(
   {
     excludeBridged = false,
     languages,
-  }: { excludeBridged?: BridgeExclusion; languages?: ReadonlyArray<string> } = {},
+  }: {
+    excludeBridged?: BridgeExclusion;
+    languages?: ReadonlyArray<string>;
+  } = {},
 ): Promise<number> {
   const d = schema.documents;
   const p = schema.publications;
@@ -2274,7 +2280,10 @@ export async function countTrendingDocuments(
   {
     excludeBridged = false,
     languages,
-  }: { excludeBridged?: BridgeExclusion; languages?: ReadonlyArray<string> } = {},
+  }: {
+    excludeBridged?: BridgeExclusion;
+    languages?: ReadonlyArray<string>;
+  } = {},
 ): Promise<number> {
   const d = schema.documents;
   const p = schema.publications;
@@ -2785,7 +2794,10 @@ export async function countTagArticles(
   {
     excludeBridged = false,
     languages,
-  }: { excludeBridged?: BridgeExclusion; languages?: ReadonlyArray<string> } = {},
+  }: {
+    excludeBridged?: BridgeExclusion;
+    languages?: ReadonlyArray<string>;
+  } = {},
 ): Promise<number> {
   const d = schema.documents;
   const p = schema.publications;
