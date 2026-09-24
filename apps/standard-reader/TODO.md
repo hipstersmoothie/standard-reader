@@ -265,6 +265,15 @@ Check items off as they land.
       sweep skips the repo, and replays archived delete markers — which the
       upsert-only backfills never did (that is what left ghost sidebar-list rows
       behind when a delete event was dropped).
+- [x] **On-demand index of a document the stream hasn't delivered yet** (2026-09-23; requested
+      by Context Bot, whose Bluesky replies link `/a/{did}/{rkey}` right after `putRecord`, so
+      readers and OG scrapers hit "We couldn't find the article"). A miss in `getArticle` or
+      `app.standard-reader.getDocument` calls `indexDocumentOnDemand`
+      (`src/server/ingest/on-demand.ts`): fetch the record from the author's PDS (Slingshot as
+      fallback), run it through the stream's own `upsertDocument`, and re-read through the usual
+      filters. Bounded because any URL reaches it: `site.standard.document` URIs only, one attempt
+      per URI per minute, deduped in flight, 8 concurrent max, 4s timeout. No push notification
+      from this path — the stream's own event still sends it.
 - [ ] **Measure a from-scratch Jetstream backfill.** The cutover only replays a few hours, which is
       what was rehearsed. A full replay from seq 0 is attractive because it would heal the records
       tap lost to `lexParse`, but its cost is **not measured**: a partial dry run reached 1.25M
