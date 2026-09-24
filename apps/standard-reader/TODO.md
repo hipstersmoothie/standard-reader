@@ -1422,6 +1422,14 @@ Backend/API exists; UI or copy is missing.
       narrows `"all"`. Still reachable signed out, deliberately: a bridged page opened by link
       and a handle/URL searched by name. Topic pages are unchanged — `topic_publications` is a
       precomputed, reader-independent table, so `*.ap.brid.gy` members still appear there.
+- [x] **"Bridged accounts: Hide all" for signed-in readers** — the "Hide mirrored websites"
+      switch became a three-way segmented control (Show all / Hide mirrored / Hide all) backed
+      by `BridgeExclusion`, so a signed-in reader can drop every `*.brid.gy` account, not just
+      the web mirrors (userinput.app feedback: "filter out ALL brid.gy posts"). New nullable
+      `user.exclude_all_bridges` column (`drizzle/0046_*`) wins over `exclude_web_bridge`; see
+      [`exclude-web-bridge.ts`](src/lib/exclude-web-bridge.ts). The Latest "All" badge for
+      "all" reuses the web-only `network_stats` scalar, like signed-out does — `*.ap.brid.gy`
+      is a rounding error next to the mirrors.
 - [x] **Reading typography preferences** — font size / measure (and optional sans body) on the
       article wrapper; cookie + optional `user` column (same pattern as [`open-links.ts`](src/lib/open-links.ts));
       menu item alongside [`OpenLinksMenuItem`](src/components/OpenLinksMenuItem.tsx)

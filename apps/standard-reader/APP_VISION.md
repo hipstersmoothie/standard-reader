@@ -1660,6 +1660,14 @@ hand-tuned lists:
   Topic pages are also unaffected — `topic_publications` is a precomputed, reader-independent
   table that already excludes the web bridge for everyone, so `*.ap.brid.gy` members can still
   appear there to a signed-out reader.
+- **Signed in, readers pick how much Bridgy to see** — the account setting is a three-way
+  "Bridged accounts" choice (Show all / Hide mirrored / Hide all) that maps straight onto
+  `BridgeExclusion`. "Hide all" gives a signed-in reader the same natively-AT-Protocol corpus a
+  signed-out visitor sees, for readers who asked to drop every `*.brid.gy` post. Stored as two
+  nullable booleans on `user` — the original `exclude_web_bridge` plus `exclude_all_bridges`
+  (`drizzle/0046_*`), which wins when set — so the older column keeps its meaning and nothing is
+  backfilled. The default is still "Show all". The same carve-outs apply: subscriptions, pages
+  opened by link, and names searched for directly are never hidden.
 
 ### Web push delivery
 

@@ -10,7 +10,7 @@ import {
   dbValueToCountOldPostsAsUnread,
   parseCountOldPostsAsUnreadCookie,
 } from "#/lib/count-old-posts-as-unread";
-import { dbValueToExcludeWebBridge } from "#/lib/exclude-web-bridge";
+import { dbValuesToBridgeExclusion } from "#/lib/exclude-web-bridge";
 import {
   TRACK_READING_HISTORY_COOKIE,
   dbValueToTrackReadingHistory,
@@ -121,6 +121,7 @@ export async function resolveReaderSessionPreferences(
             trackReadingHistory: true,
             countOldPostsAsUnread: true,
             excludeWebBridge: true,
+            excludeAllBridges: true,
           },
         },
       },
@@ -138,11 +139,7 @@ export async function resolveReaderSessionPreferences(
         countOldPostsAsUnreadEnabled: dbValueToCountOldPostsAsUnread(
           sessionRow.user.countOldPostsAsUnread ?? null,
         ),
-        excludeBridged: dbValueToExcludeWebBridge(
-          sessionRow.user.excludeWebBridge ?? null,
-        )
-          ? "web"
-          : false,
+        excludeBridged: dbValuesToBridgeExclusion(sessionRow.user),
         hasReaderSession: true,
       };
     }

@@ -84,6 +84,12 @@ export const user = pgTable("user", {
    * own subscriptions, and never to `*.ap.brid.gy`. See
    * `src/lib/exclude-web-bridge.ts`. */
   excludeWebBridge: boolean("exclude_web_bridge"),
+  /** `true` widens {@link excludeWebBridge} to every Bridgy Fed repo
+   * (`*.brid.gy`, `*.ap.brid.gy` included) — the reader's "Hide all bridged
+   * accounts" choice, and what signed-out visitors always get. Wins over
+   * `excludeWebBridge` when set. `null`/`false` = defer to `excludeWebBridge`.
+   * See `src/lib/exclude-web-bridge.ts`. */
+  excludeAllBridges: boolean("exclude_all_bridges"),
   /** `true` paints publication pages and their documents in the publication's
    * own `site.standard.theme.basic` colors; `null`/`false` = off (default), so
    * the app's editorial theme is used everywhere. Publications that carry no

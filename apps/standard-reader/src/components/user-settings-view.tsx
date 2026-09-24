@@ -77,6 +77,11 @@ import { mutesApi } from "#/integrations/tanstack-query/api-mutes.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import type { DigestSectionKey } from "#/integrations/tanstack-query/api-user.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import {
+  bridgeExclusionFromKey,
+  bridgeExclusionToKey,
+  isBridgeExclusionKey,
+} from "#/lib/exclude-web-bridge";
 import { isFeedPagination } from "#/lib/feed-preferences";
 import { DEFAULT_CUSTOM_GOOGLE_FONT } from "#/lib/google-fonts";
 import type { Locale } from "#/lib/locale";
@@ -96,8 +101,8 @@ import {
 import { CUSTOMIZABLE_SIDEBAR_NAV } from "#/lib/sidebar-nav";
 import type { ThemeMode } from "#/lib/theme";
 import { isThemeMode } from "#/lib/theme";
+import { useBridgeExclusion } from "#/lib/use-bridge-exclusion";
 import { useCountOldPostsAsUnread } from "#/lib/use-count-old-posts-as-unread";
-import { useExcludeWebBridge } from "#/lib/use-exclude-web-bridge";
 import {
   useFeedPagination,
   useHideFeedMetrics,
@@ -477,8 +482,8 @@ export function UserSettingsView() {
     useTrackReadingHistory();
   const { enabled: countOldAsUnread, setEnabled: setCountOldAsUnread } =
     useCountOldPostsAsUnread();
-  const { enabled: excludeWebBridge, setEnabled: setExcludeWebBridge } =
-    useExcludeWebBridge();
+  const { exclusion: bridgeExclusion, setExclusion: setBridgeExclusion } =
+    useBridgeExclusion();
   const { enabled: usePublicationTheme, setEnabled: setUsePublicationTheme } =
     usePublicationThemePreference();
   const { hidden: hideFeedMetrics, setHidden: setHideFeedMetrics } =
@@ -810,14 +815,30 @@ export function UserSettingsView() {
           </SettingRow>
           <Separator />
           <SettingRow
-            label={t`Hide mirrored websites`}
-            description={t`Bridgy Fed mirrors tens of thousands of websites into the network without anyone there asking. When on, they are hidden from Latest, Discover, search, and tag pages. Publications you already subscribe to are never hidden, and blogs whose authors chose to bridge (ap.brid.gy) always stay.`}
+            label={t`Bridged accounts`}
+            description={t`Bridgy Fed brings posts in from outside AT Protocol. Most are websites it mirrors without anyone there asking; the rest are authors who chose to bridge (ap.brid.gy). Hide the mirrored websites, or every bridged account, from Latest, Discover, search, and tag pages. Publications you already subscribe to are never hidden.`}
           >
-            <Switch
-              isSelected={excludeWebBridge}
-              onChange={setExcludeWebBridge}
-              aria-label={t`Hide mirrored websites`}
-            />
+            <SegmentedControl
+              aria-label={t`Bridged accounts`}
+              selectedKeys={new Set([bridgeExclusionToKey(bridgeExclusion)])}
+              onSelectionChange={(keys: Set<React.Key> | "all") => {
+                const key = keys === "all" ? undefined : String([...keys][0]);
+                if (isBridgeExclusionKey(key)) {
+                  setBridgeExclusion(bridgeExclusionFromKey(key));
+                }
+              }}
+              style={styles.segmentedControl}
+            >
+              <SegmentedControlItem id="show">
+                <Trans>Show all</Trans>
+              </SegmentedControlItem>
+              <SegmentedControlItem id="web">
+                <Trans>Hide mirrored</Trans>
+              </SegmentedControlItem>
+              <SegmentedControlItem id="all">
+                <Trans>Hide all</Trans>
+              </SegmentedControlItem>
+            </SegmentedControl>
           </SettingRow>
           <Separator />
           <SettingRow

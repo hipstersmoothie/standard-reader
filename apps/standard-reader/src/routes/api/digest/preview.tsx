@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { dbValuesToBridgeExclusion } from "#/lib/exclude-web-bridge";
+
 /**
  * Authenticated self-preview: renders the signed-in reader's own weekly digest
  * HTML, for the "Preview" button in settings. Unlike the dev-only
@@ -44,13 +46,14 @@ export const Route = createFileRoute("/api/digest/preview")({
             weeklyDigestSectionSaved: true,
             weeklyDigestSectionRecommendations: true,
             excludeWebBridge: true,
+            excludeAllBridges: true,
           },
         });
 
         const digest = await buildDigestForUser(db, schema, {
           did: reader.did,
           sections: digestSectionsFromUser(prefsRow ?? {}),
-          excludeBridged: prefsRow?.excludeWebBridge === true ? "web" : false,
+          excludeBridged: dbValuesToBridgeExclusion(prefsRow ?? {}),
         });
         const rendered = await renderDigestEmail(digest, {
           baseUrl: getPublicUrl(),
