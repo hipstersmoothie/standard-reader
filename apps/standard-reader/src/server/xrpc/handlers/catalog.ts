@@ -10,6 +10,7 @@ import {
   resolvePageUrl,
   resolvePageUrls,
 } from "#/server/extension/resolve-page-url.server";
+import { indexDocumentOnDemand } from "#/server/ingest/on-demand";
 import { muteFilterDid } from "#/server/mutes/mutes";
 import { selectPublicationHeader } from "#/server/reader/publication-header";
 import {
@@ -159,13 +160,16 @@ export async function handleGetDocument(ctx: XrpcRequestContext) {
   const documentUri = requireParam(ctx.params, "document");
   const readForDid =
     ctx.auth && ctx.trackReadingEnabled ? ctx.auth.did : undefined;
-  const cards = await selectArticleCardsByUris(
-    ctx.db,
-    ctx.schema,
-    [documentUri],
-    { viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did) },
-  );
-  let card = cards[0];
+  const viewerDid = await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did);
+  const selectCards = () =>
+    selectArticleCardsByUris(ctx.db, ctx.schema, [documentUri], { viewerDid });
+  let [card] = await selectCards();
+  // Not streamed in yet (clients look it up right after `putRecord`) — fetch
+  // it from the author's repo once, then read it back through the usual
+  // filters.
+  if (!card && (await indexDocumentOnDemand(documentUri))) {
+    [card] = await selectCards();
+  }
   if (!card) {
     throw new InvalidRequestError("Document not found");
   }

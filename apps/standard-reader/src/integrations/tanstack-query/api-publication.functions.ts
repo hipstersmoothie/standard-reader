@@ -35,6 +35,7 @@ import {
   readerHasBlocks,
 } from "#/server/blocks/blocks";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
+import { indexDocumentOnDemand } from "#/server/ingest/on-demand";
 import { readAccountLabels } from "#/server/labeler/labels.server";
 import { observe } from "#/server/observability/log";
 import { attachReaderSpanContext } from "#/server/observability/span-context.ts";
@@ -595,8 +596,8 @@ const getArticle = createServerFn({ method: "GET" })
         span.set("documentUri", data.documentUri);
         await attachReaderSpanContext(span, getRequest());
 
-        const [docRows, contributorRows, recommendRows, readRows, reader] =
-          await Promise.all([
+        const readArticleRows = () =>
+          Promise.all([
             db
               .select({
                 uri: d.uri,
@@ -698,6 +699,20 @@ const getArticle = createServerFn({ method: "GET" })
               return viewer;
             }),
           ]);
+
+        let [docRows, contributorRows, recommendRows, readRows, reader] =
+          await readArticleRows();
+        // Linked before the stream delivered it (publishers share the URL the
+        // moment `putRecord` returns) — fetch it from the author's repo once
+        // and read again.
+        if (
+          docRows.length === 0 &&
+          (await indexDocumentOnDemand(data.documentUri))
+        ) {
+          span.set("indexedOnDemand", true);
+          [docRows, contributorRows, recommendRows, readRows, reader] =
+            await readArticleRows();
+        }
 
         const row = docRows[0];
         if (!row) {
