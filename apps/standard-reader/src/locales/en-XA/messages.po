@@ -600,6 +600,10 @@ msgstr ""
 msgid "The spacing between things — tighter for more on screen, looser for more room to read."
 msgstr ""
 
+#: src/components/feed-languages-setting.tsx
+msgid "Every language is shown. Pick one or more to narrow your feed."
+msgstr ""
+
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Sign in to run this example (curl uses Bearer $ACCESS_TOKEN)."
 msgstr ""
@@ -2347,6 +2351,10 @@ msgstr ""
 #~ msgid "The reading experience"
 #~ msgstr ""
 
+#: src/components/feed-languages-setting.tsx
+msgid "Languages your feed is filtered to"
+msgstr ""
+
 #: src/routes/_layout.tsx
 msgid "Loading page"
 msgstr ""
@@ -3368,6 +3376,10 @@ msgstr ""
 msgid "<0>Hide recommend and comment counts</0> removes the numbers from article cards, lists, and bylines. You can still recommend an article — only the tallies go away. If counts make you read differently, this is worth trying."
 msgstr ""
 
+#: src/components/feed-languages-setting.tsx
+msgid "Languages"
+msgstr ""
+
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Uploading…"
@@ -3383,6 +3395,10 @@ msgstr ""
 
 #: src/routes/_layout.topics.$slug.tsx
 msgid "No articles in this topic yet."
+msgstr ""
+
+#: src/components/feed-languages-setting.tsx
+msgid "Show all languages"
 msgstr ""
 
 #: src/components/reader/subscribe-card.tsx
@@ -4479,6 +4495,10 @@ msgstr ""
 
 #: src/components/guide/pages/lists-guide-page.tsx
 msgid "Once you subscribe to more than a handful of publications, one long list stops helping. Lists group them, and the sidebar can be arranged around how you actually read."
+msgstr ""
+
+#: src/components/feed-languages-setting.tsx
+msgid "Add a language…"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -5852,6 +5872,10 @@ msgstr ""
 msgid "Your display name, handle, avatar URL, and DID as returned by your account provider."
 msgstr ""
 
+#: src/components/feed-languages-setting.tsx
+msgid "Show only posts written in the languages you pick, on Latest, Discover, search, topics, and tag pages. Publications you subscribe to are never filtered, and neither is a post you open directly."
+msgstr ""
+
 #: src/components/reader/terms-view.tsx
 msgid "We may update these terms as the product changes. The “Last updated” date at the top will change when we do. Continued use of the site after an update means you accept the revised terms."
 msgstr ""
@@ -6589,6 +6613,10 @@ msgstr ""
 
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "Another app on the same network can read them, so your reading list is not trapped in one product."
+msgstr ""
+
+#: src/components/feed-languages-setting.tsx
+msgid "Posts whose language we could not detect are always shown — a filter never hides a post on a guess."
 msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
@@ -7512,6 +7540,10 @@ msgstr ""
 
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Tag"
+msgstr ""
+
+#: src/components/feed-languages-setting.tsx
+msgid "Add a language"
 msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
