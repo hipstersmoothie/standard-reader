@@ -1,6 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
-import { detectDocumentLanguage, detectLanguage } from "./detect.ts";
+import { CONTENT_LANGUAGES } from "#/lib/content-language";
+
+import {
+  detectDocumentLanguage,
+  detectLanguage,
+  languageColumns,
+} from "./detect.ts";
+import { glotlidLabels, loadGlotlid } from "./glotlid.ts";
 import { documentLanguageSample, proseSample } from "./sample.ts";
 
 /** Long enough to clear `MIN_SAMPLE_LENGTH` without being a whole article. */
@@ -24,29 +31,53 @@ const SAMPLES: Record<string, string> = {
   sv: "Kommittén sammanträdde en grå tisdagsmorgon för att avgöra om den gamla biblioteksbyggnaden skulle säljas, och efter tre timmars diskussion hade ingen ändrat uppfattning om någonting alls.",
 };
 
+/** Too little prose to ask a model: no tag, and no model's name on it. */
+const UNTAGGED = { code: null, confidence: null, source: null };
+
+// ~150 ms, once. The model is a Git LFS object; a clone without LFS fetches it.
+beforeAll(async () => {
+  await loadGlotlid();
+}, 60_000);
+
 describe("detectLanguage", () => {
   for (const [code, text] of Object.entries(SAMPLES)) {
     it(`places a ${code} paragraph`, () => {
-      expect(detectLanguage(text)?.code).toBe(code);
+      expect(detectLanguage(text)).toMatchObject({ code, source: "glotlid" });
     });
   }
 
   it("declines rather than guessing on too little text", () => {
-    expect(detectLanguage("Hello there.")).toBeNull();
-    expect(detectLanguage("")).toBeNull();
+    expect(detectLanguage("Hello there.")).toEqual(UNTAGGED);
+    expect(detectLanguage("")).toEqual(UNTAGGED);
   });
 
   it("does not count digits and punctuation as prose", () => {
     // Long enough as a string, but nothing in it is written in a language.
     expect(
       detectLanguage("12:30 — 2024-01-02 · 45% · $1,200 · #4 ".repeat(8)),
-    ).toBeNull();
+    ).toEqual(UNTAGGED);
+  });
+
+  it("leaves a language we don't list untagged instead of the nearest one", () => {
+    // The failure that retired the trigram detector: forced to answer from the
+    // vocabulary, it filed every Tatar post under Kazakh and every Pashto post
+    // under Persian. GlotLID knows both, so they come back confident and
+    // untagged — shown to every reader, hidden from none.
+    const tatar =
+      "Капка төбендә — җыр-моң: Туктар авылы халкы элекке кич утыру традицияләрен яңартты. Июльдә Туктар авылы клубы каршындагы болында матур кич утыру оештырылды, анда авыл халкы җырлады һәм биеде.";
+    const pashto =
+      "طالبانو د افغانستان پر اعلانېدو خواشیني وښوده. د طالبانو د باندنیو چارو وزارت د امریکا پر وروستۍ پرېکړه، چې افغانستان یې د ناحقه نیونو ملاتړی هېواد بللی، خواشینۍ څرګنده کړه.";
+    for (const text of [tatar, pashto]) {
+      expect(detectLanguage(text)).toMatchObject({
+        code: null,
+        source: "glotlid",
+      });
+    }
   });
 
   it("reads a kanji-heavy Japanese document as Japanese, not Chinese", () => {
-    // The case the CJK pre-gate exists for: far more kanji than kana, which is
-    // where franc's Han-inclusive `jpn` pattern and a naive share test both go
-    // wrong. The particles and verb endings are all the evidence there is.
+    // Far more kanji than kana — the case trigram detection got wrong. The
+    // particles and verb endings are all the evidence there is.
     const kanjiHeavy =
       "第一四半期経営戦略会議資料の概要を報告する。地域別市場占有率は前年同期比で増加し、新規事業開発投資計画の検討事項も併せて提示した。人材採用教育研修制度改定案および情報技術基盤整備予算執行状況については次回審議とする。";
     expect(detectLanguage(kanjiHeavy)?.code).toBe("ja");
@@ -55,13 +86,6 @@ describe("detectLanguage", () => {
   it("is not flipped to Japanese by one borrowed word in a Chinese document", () => {
     const chineseWithLoanword = `${SAMPLES.zh}${SAMPLES.zh}カ`;
     expect(detectLanguage(chineseWithLoanword)?.code).toBe("zh");
-  });
-
-  it("scores a short sample below a long one in the same language", () => {
-    const short = detectLanguage(SAMPLES.en);
-    const long = detectLanguage(SAMPLES.en.repeat(8));
-    expect(short?.confidence).toBeLessThan(long?.confidence ?? 0);
-    expect(long?.confidence).toBe(1);
   });
 
   it("tags a CJK paragraph without demanding five times the writing", () => {
@@ -77,24 +101,51 @@ describe("detectLanguage", () => {
     expect(detectLanguage(mostlyEnglish)?.code).toBe("en");
   });
 
-  it("scores a mixed document below a monolingual one", () => {
-    // A half-and-half document still gets *a* tag — either answer is defensible
-    // and `null` would only mean "no filter applies", which is not more correct.
-    // What has to hold is that the confidence says it was a closer call, so the
-    // number stays usable as a quality signal for a later sweep.
-    const mixed = detectLanguage(
-      `${SAMPLES.en.repeat(3)} ${SAMPLES.de.repeat(3)}`,
-    );
-    const pure = detectLanguage(SAMPLES.en.repeat(6));
-    expect(mixed).not.toBeNull();
-    expect(mixed?.confidence).toBeLessThan(pure?.confidence ?? 0);
+  it("reports GlotLID's probability as the confidence", () => {
+    const result = detectLanguage(SAMPLES.en.repeat(4));
+    expect(result?.confidence).toBeGreaterThan(0.9);
+    expect(result?.confidence).toBeLessThanOrEqual(1);
+  });
+
+  it("can reach every language in the vocabulary", () => {
+    // A vocabulary label the model never emits is a language no document can
+    // ever be tagged with — silently. Persian (`fas`, not `pes`), Filipino
+    // (`fil`, not `tgl`) and Malay (`zsm`, not `zlm`) were exactly that when
+    // the labels were carried over from the trigram detector.
+    const labels = glotlidLabels();
+    expect(labels.size).toBeGreaterThan(2000);
+    for (const entry of CONTENT_LANGUAGES) {
+      for (const label of entry.detected) {
+        expect(labels.has(label), `${entry.code}: ${label}`).toBe(true);
+      }
+    }
   });
 
   it("only ever returns a code from the closed vocabulary", () => {
-    // Scots and Interlingua are in the raw trigram data and are what an
-    // unrestricted detector reports for plain English prose.
-    const result = detectLanguage(SAMPLES.en.repeat(4));
-    expect(result?.code).toBe("en");
+    const codes = new Set<string>(CONTENT_LANGUAGES.map((l) => l.code));
+    for (const text of Object.values(SAMPLES)) {
+      const code = detectLanguage(text)?.code;
+      if (code != null) expect(codes.has(code)).toBe(true);
+    }
+  });
+});
+
+describe("languageColumns", () => {
+  it("clears every column when the model isn't loaded, queueing the sweep", () => {
+    // The web server never loads GlotLID; its writes must land in the sweep's
+    // `lang_detected_at IS NULL` queue rather than as a stamped non-answer.
+    expect(languageColumns()).toEqual({
+      lang: null,
+      langConfidence: null,
+      langDetectedAt: null,
+      langSource: null,
+    });
+  });
+
+  it("stamps a detection whether or not it found a language", () => {
+    const columns = languageColumns(UNTAGGED);
+    expect(columns.lang).toBeNull();
+    expect(columns.langDetectedAt).toBeInstanceOf(Date);
   });
 });
 
@@ -153,7 +204,7 @@ describe("detectDocumentLanguage", () => {
         description: null,
         textContent: null,
       }),
-    ).toBeNull();
+    ).toEqual(UNTAGGED);
   });
 
   it("survives every field being null", () => {
@@ -163,7 +214,7 @@ describe("detectDocumentLanguage", () => {
         description: null,
         textContent: null,
       }),
-    ).toBeNull();
+    ).toEqual(UNTAGGED);
   });
 });
 

@@ -95,12 +95,18 @@ export const documents = pgTable(
      */
     lang: text("lang"),
     /**
-     * 0–1, how much of the document agreed on {@link lang}. Not used to filter
-     * — a row is either tagged or it isn't — but kept so a later sweep can
-     * re-examine the weak tags without re-reading every document, and so a bad
-     * threshold is diagnosable after the fact rather than only in the abstract.
+     * 0–1, the deciding model's probability for its pick (see
+     * {@link langSource}). Not used to filter — a row is either tagged or it
+     * isn't — but kept so a bad threshold is diagnosable after the fact rather
+     * than only in the abstract.
      */
     langConfidence: doublePrecision("lang_confidence"),
+    /**
+     * Who settled {@link lang}: `glotlid`, `glotlid-unsure` (waiting on the Jev
+     * tiebreak the hourly sweep runs), or `jev`. NULL when there was too little
+     * prose to ask a model. See `LanguageSource` in `#/server/lang/detect`.
+     */
+    langSource: text("lang_source"),
     /**
      * When detection last ran, whatever its outcome. Distinct from
      * `lang IS NULL`, which cannot tell "detector declined" from "never looked"
@@ -191,6 +197,11 @@ export const documents = pgTable(
     index("documents_lang_pending_idx")
       .on(table.publishedAt.desc())
       .where(sql`lang_detected_at is null and deleted = false`),
+    // The Jev tiebreak's work queue: the ~2% of documents GlotLID wasn't sure
+    // of. Partial, so it only ever holds the rows still waiting.
+    index("documents_lang_tiebreak_idx")
+      .on(table.publishedAt.desc())
+      .where(sql`lang_source = 'glotlid-unsure' and deleted = false`),
     index("documents_search_idx").using("gin", table.searchVector),
     index("documents_trending_idx").on(table.trendingScore.desc()),
     // Extension page-URL resolution: lookup live documents by canonical URL.

@@ -21,7 +21,7 @@ import {
   FETCHED_CONTENT_FORMATS,
   resolveFetchedContent,
 } from "#/server/content/resolve";
-import { detectDocumentLanguage } from "#/server/lang/detect";
+import { detectDocumentLanguage, languageColumns } from "#/server/lang/detect";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
 import { fetchMochottArticleContent } from "#/server/mochott/resolve";
 import { invalidateMuteCache } from "#/server/mutes/mutes";
@@ -505,7 +505,9 @@ export async function upsertDocument(
   // ("not enough prose", "not a language we list") and is never filtered out,
   // so a miss here costs a reader nothing. `langDetectedAt` is stamped either
   // way, which is what keeps the sweep's work queue from re-reading every
-  // undetectable document forever.
+  // undetectable document forever. Only the ingest worker has the model
+  // loaded; when the web server indexes a document on demand, detection comes
+  // back `undefined` and the row is left for the worker's hourly sweep.
   const detected = detectDocumentLanguage({
     title: record.title,
     description: cleanOptional(record.description),
@@ -541,9 +543,7 @@ export async function upsertDocument(
     // Drops tags that violate the lexicon's 128-grapheme limit rather than
     // letting one malformed field cost us the whole record — see `cleanTags`.
     tags: cleanTags(record.tags),
-    lang: detected?.code ?? null,
-    langConfidence: detected?.confidence ?? null,
-    langDetectedAt: new Date(),
+    ...languageColumns(detected),
     bskyPostUri: record.bskyPostRef?.uri ?? null,
     bskyPostCid: record.bskyPostRef?.cid ?? null,
     publishedAt,
@@ -1159,9 +1159,7 @@ export async function upsertMochottArticle(
         contentJson,
         contentFormat: MOCHOTT_ARTICLE,
       }),
-      lang: detected?.code ?? null,
-      langConfidence: detected?.confidence ?? null,
-      langDetectedAt: new Date(),
+      ...languageColumns(detected),
       textContent: nextTextContent,
       updatedAt: sql`now()`,
     })

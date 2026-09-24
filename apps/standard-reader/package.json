@@ -138,7 +138,7 @@
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
-    "franc": "^6.2.0",
+    "fasttext.wasm.js": "1.0.0",
     "jose": "^6.2.3",
     "katex": "^0.17.0",
     "kokoro-js": "^1.2.1",

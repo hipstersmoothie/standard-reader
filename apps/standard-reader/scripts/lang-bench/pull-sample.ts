@@ -12,7 +12,9 @@ import { neon } from "@neondatabase/serverless";
 
 const [out, nArg] = process.argv.slice(2);
 const n = Number(nArg ?? 3000);
-const sql = neon(process.env.DATABASE_URL!);
+if (!out || !process.env.DATABASE_URL)
+  throw new Error("usage: pull-sample.ts <out.jsonl> [n] (needs DATABASE_URL)");
+const sql = neon(process.env.DATABASE_URL);
 
 const random = await sql`
   select distinct on (publication_uri) uri, title, description,
@@ -33,4 +35,6 @@ const rows = [...random, ...nonLatin].filter((r) =>
   seen.has(r.uri) ? false : (seen.add(r.uri), true),
 );
 writeFileSync(out, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
-console.log(`wrote ${rows.length} (${random.length} random, ${nonLatin.length} non-latin)`);
+console.log(
+  `wrote ${rows.length} (${random.length} random, ${nonLatin.length} non-latin)`,
+);
