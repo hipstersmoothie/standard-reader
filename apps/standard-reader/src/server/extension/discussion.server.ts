@@ -4,6 +4,7 @@ import { documentLinkParams } from "#/components/reader/format";
 import type { db } from "#/db/index.server";
 import type * as schema from "#/db/schema";
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
+import type { BridgeExclusion } from "#/lib/atproto/bridged-repo";
 import { articleLinkTarget } from "#/lib/link-target-variants";
 import { getPublicUrl } from "#/lib/public-url";
 import { blockFilterDid, filterBlockedCards } from "#/server/blocks/blocks";
@@ -91,10 +92,10 @@ export async function resolveDiscussion(
   schemaModule: typeof schema,
   documentUri: string,
   {
-    excludeWebBridge = false,
+    excludeBridged = false,
     viewerDid,
   }: {
-    excludeWebBridge?: boolean;
+    excludeBridged?: BridgeExclusion;
     /** The reader this panel is for, so their blocks apply here too. */
     viewerDid?: string | null;
   } = {},
@@ -158,7 +159,7 @@ export async function resolveDiscussion(
       documentUri: row.uri,
       publicationUri: row.publicationUri,
       limit: 8,
-      excludeWebBridge,
+      excludeBridged,
     }).then((rows) =>
       filterBlockedCards(dbClient, schemaModule, viewerDid, rows),
     ),

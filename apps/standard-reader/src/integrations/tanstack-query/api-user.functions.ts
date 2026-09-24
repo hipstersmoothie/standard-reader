@@ -25,6 +25,7 @@ import {
   normalizeAppearance,
   parseAppearanceCookie,
 } from "#/lib/appearance";
+import type { BridgeExclusion } from "#/lib/atproto/bridged-repo";
 import {
   COUNT_OLD_POSTS_AS_UNREAD_COOKIE,
   COUNT_OLD_POSTS_AS_UNREAD_COOKIE_MAX_AGE_SECONDS,
@@ -34,9 +35,11 @@ import {
   parseCountOldPostsAsUnreadCookie,
 } from "#/lib/count-old-posts-as-unread";
 import {
-  DEFAULT_EXCLUDE_WEB_BRIDGE,
-  dbValueToExcludeWebBridge,
-  excludeWebBridgeToDbValue,
+  BRIDGE_EXCLUSION_OPTIONS,
+  bridgeExclusionFromKey,
+  bridgeExclusionToDbValues,
+  DEFAULT_BRIDGE_EXCLUSION,
+  dbValuesToBridgeExclusion,
 } from "#/lib/exclude-web-bridge";
 import type { FeedPagination } from "#/lib/feed-preferences";
 import {
@@ -1230,40 +1233,43 @@ const setUsePublicationThemePreference = createServerFn({ method: "POST" })
 
 // Signed-in only, like the publication theme above. Guests get the default,
 // which is also what every network-wide query falls back to.
-const getExcludeWebBridgePreference = createServerFn({ method: "GET" })
+const getBridgeExclusionPreference = createServerFn({ method: "GET" })
   .middleware([dbMiddleware, maybeAuthMiddleware])
-  .handler(async ({ context }): Promise<{ enabled: boolean }> => {
+  .handler(async ({ context }): Promise<{ exclusion: BridgeExclusion }> => {
     const session = context?.session;
-    if (!session?.user) return { enabled: DEFAULT_EXCLUDE_WEB_BRIDGE };
+    if (!session?.user) return { exclusion: DEFAULT_BRIDGE_EXCLUSION };
 
     const row = await context.db.query.user.findFirst({
       where: eq(context.schema.user.id, session.user.id),
-      columns: { excludeWebBridge: true },
+      columns: { excludeWebBridge: true, excludeAllBridges: true },
     });
-    return {
-      enabled: dbValueToExcludeWebBridge(row?.excludeWebBridge ?? null),
-    };
+    return { exclusion: dbValuesToBridgeExclusion(row ?? {}) };
   });
 
-const getExcludeWebBridgePreferenceQueryOptions = queryOptions({
-  queryKey: ["excludeWebBridgePreference"] as const,
-  queryFn: () => getExcludeWebBridgePreference(),
+const getBridgeExclusionPreferenceQueryOptions = queryOptions({
+  queryKey: ["bridgeExclusionPreference"] as const,
+  queryFn: () => getBridgeExclusionPreference(),
   staleTime: Number.POSITIVE_INFINITY,
 });
 
-const setExcludeWebBridgePreference = createServerFn({ method: "POST" })
+const setBridgeExclusionPreference = createServerFn({ method: "POST" })
   .middleware([dbMiddleware, maybeAuthMiddleware])
-  .validator(z.object({ enabled: z.boolean() }))
-  .handler(async ({ data, context }): Promise<{ enabled: boolean }> => {
-    if (!context?.session?.user) return { enabled: DEFAULT_EXCLUDE_WEB_BRIDGE };
+  .validator(z.object({ exclusion: z.enum(BRIDGE_EXCLUSION_OPTIONS) }))
+  .handler(
+    async ({ data, context }): Promise<{ exclusion: BridgeExclusion }> => {
+      if (!context?.session?.user) {
+        return { exclusion: DEFAULT_BRIDGE_EXCLUSION };
+      }
 
-    await context.db
-      .update(context.schema.user)
-      .set({ excludeWebBridge: excludeWebBridgeToDbValue(data.enabled) })
-      .where(eq(context.schema.user.id, context.session.user.id));
+      const exclusion = bridgeExclusionFromKey(data.exclusion);
+      await context.db
+        .update(context.schema.user)
+        .set(bridgeExclusionToDbValues(exclusion))
+        .where(eq(context.schema.user.id, context.session.user.id));
 
-    return { enabled: data.enabled };
-  });
+      return { exclusion };
+    },
+  );
 
 // Feed presentation preferences — signed-in only, like the publication theme
 // above (the settings page is behind auth), so no cookie mirror for guests.
@@ -1638,9 +1644,9 @@ export const user = {
   getUsePublicationThemePreference,
   getUsePublicationThemePreferenceQueryOptions,
   setUsePublicationThemePreference,
-  getExcludeWebBridgePreference,
-  getExcludeWebBridgePreferenceQueryOptions,
-  setExcludeWebBridgePreference,
+  getBridgeExclusionPreference,
+  getBridgeExclusionPreferenceQueryOptions,
+  setBridgeExclusionPreference,
   getHideFeedMetricsPreference,
   getHideFeedMetricsPreferenceQueryOptions,
   setHideFeedMetricsPreference,

@@ -1633,6 +1633,10 @@ msgstr ""
 msgid "Custom"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Hide mirrored"
+msgstr ""
+
 #: src/routes/_layout.saved.tsx
 msgid "No saved articles match"
 msgstr ""
@@ -3900,6 +3904,10 @@ msgstr "Crear"
 msgid "<0>Save for later</0> puts an article in a queue you can come back to, without marking it read. <1>Saved</1> in the sidebar holds them, newest first, with a badge showing how many are waiting. Saving again removes it."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Bridged accounts"
+msgstr ""
+
 #: src/routes/mcp/authorize.tsx
 msgid "Act on your behalf"
 msgstr ""
@@ -4474,8 +4482,8 @@ msgid "Once you subscribe to more than a handful of publications, one long list 
 msgstr ""
 
 #: src/components/user-settings-view.tsx
-msgid "Bridgy Fed mirrors tens of thousands of websites into the network without anyone there asking. When on, they are hidden from Latest, Discover, search, and tag pages. Publications you already subscribe to are never hidden, and blogs whose authors chose to bridge (ap.brid.gy) always stay."
-msgstr ""
+#~ msgid "Bridgy Fed mirrors tens of thousands of websites into the network without anyone there asking. When on, they are hidden from Latest, Discover, search, and tag pages. Publications you already subscribe to are never hidden, and blogs whose authors chose to bridge (ap.brid.gy) always stay."
+#~ msgstr ""
 
 #: src/components/reader/comments/add-comment-dialog.tsx
 #~ msgid "Discussion here is assembled from posts that live in your own repo, so comments are written wherever you already post. Pick where to write yours — it joins this article's discussion once the network indexes it."
@@ -5050,6 +5058,10 @@ msgstr ""
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Delete list"
 msgstr "Eliminar la lista"
+
+#: src/components/user-settings-view.tsx
+msgid "Show all"
+msgstr ""
 
 #: src/components/guide/pages/comics-guide-page.tsx
 msgid "The one part that is required is the hash before the issue number — a bare number in a title is never read as an issue, because too many ordinary titles start with one. After the number you can use a comma, a colon, a dash, or nothing at all; everything following it is treated as the page label and is not otherwise parsed, so write it however you like."
@@ -7325,6 +7337,10 @@ msgstr "Ajustes"
 msgid "If something is confusing, broken, or missing, the <0>feedback board</0> is the place to say so. It takes bug reports, feature requests, and plain questions, and you can read and vote on what other people have already asked for."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Bridgy Fed brings posts in from outside AT Protocol. Most are websites it mirrors without anyone there asking; the rest are authors who chose to bridge (ap.brid.gy). Hide the mirrored websites, or every bridged account, from Latest, Discover, search, and tag pages. Publications you already subscribe to are never hidden."
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 #~ msgid "A lightweight browser extension lets you save and subscribe to publications while you’re out on the web — with subtle badges on bsky.app and a one-click overlay on any page you land on. Your reading list fills itself."
 #~ msgstr "Una extensión de navegador ligera le permite guardar publicaciones y suscribirse a ellas mientras navega por la web, con distintivos sutiles en bsky.app y una superposición de un clic en cualquier página que visite. Su lista de lectura se llena sola."
@@ -7366,6 +7382,10 @@ msgstr "Explorar el directorio"
 
 #: src/components/reader/article-view.tsx
 msgid "Start from top"
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "Hide all"
 msgstr ""
 
 #: src/components/reader/extension-privacy-view.tsx
@@ -7786,8 +7806,8 @@ msgid "Selecting the <0>Subscriptions</0> heading in the sidebar opens one table
 msgstr ""
 
 #: src/components/user-settings-view.tsx
-msgid "Hide mirrored websites"
-msgstr ""
+#~ msgid "Hide mirrored websites"
+#~ msgstr ""
 
 #: src/routes/_layout.p.$did.$rkey.tsx
 #~ msgid "Open publication"

@@ -23,12 +23,12 @@ export const Route = createFileRoute("/api/extension/discussion")({
             import("#/server/reader/session-preferences.server"),
           ]);
 
-        const [{ excludeWebBridgeEnabled }, session] = await Promise.all([
+        const [{ excludeBridged }, session] = await Promise.all([
           resolveReaderSessionPreferences(db, schema),
           getExtensionSession(request),
         ]);
         const discussion = await resolveDiscussion(db, schema, documentUri, {
-          excludeWebBridge: excludeWebBridgeEnabled,
+          excludeBridged,
           viewerDid: session?.did,
         });
         return Response.json(discussion);

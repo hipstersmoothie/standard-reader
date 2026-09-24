@@ -1,4 +1,5 @@
 import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
+import type { BridgeExclusion } from "#/lib/atproto/bridged-repo";
 
 import type { XrpcAuthContext } from "./auth";
 
@@ -13,8 +14,15 @@ export type XrpcRequestContext = {
   schema: Schema;
   trackReadingEnabled: boolean;
   countOldPostsAsUnreadEnabled: boolean;
-  /** "Hide mirrored websites" — see `#/lib/exclude-web-bridge`. */
-  excludeWebBridgeEnabled: boolean;
+  /**
+   * How much of Bridgy Fed this request hides — see `BridgeExclusion`.
+   *
+   * `"all"` for an anonymous caller, matching the signed-out app. A caller who
+   * authenticated — with a cookie session or a DID token — gets their own
+   * "Hide mirrored websites" setting instead, which covers the web bridge only
+   * and is off by default.
+   */
+  excludeBridged: BridgeExclusion;
   /** Parsed query-string parameters (queries only). */
   params: XrpcQueryParams;
   /** Parsed JSON body (procedures only). */

@@ -226,7 +226,7 @@ export async function handleGetPublications(ctx: XrpcRequestContext) {
     limit,
     offset,
     query: q ?? undefined,
-    excludeWebBridge: ctx.excludeWebBridgeEnabled,
+    excludeBridged: ctx.excludeBridged,
     viewerDid: await blockFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
     muterDid: await muteFilterDid(ctx.db, ctx.schema, ctx.auth?.did),
   });
@@ -448,7 +448,7 @@ export async function handleGetDocumentContext(ctx: XrpcRequestContext) {
       documentUri: row.uri,
       publicationUri: row.publicationUri,
       limit: 6,
-      excludeWebBridge: ctx.excludeWebBridgeEnabled,
+      excludeBridged: ctx.excludeBridged,
     }).then((rows) => filterBlockedCards(ctx.db, ctx.schema, readerDid, rows)),
     articleRecommendedPublications(ctx.db, ctx.schema, {
       publicationUri: row.publicationUri,

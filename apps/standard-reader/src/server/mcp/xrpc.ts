@@ -3,7 +3,7 @@ import type { Did } from "@atcute/lexicons";
 import { restoreAuthenticatedClient } from "#/integrations/auth/restore-client.server";
 import { getPublicUrl } from "#/lib/public-url";
 import type { XrpcAuthContext } from "#/server/xrpc/auth";
-import { getXrpcDbContext } from "#/server/xrpc/db";
+import { effectiveBridgeExclusion, getXrpcDbContext } from "#/server/xrpc/db";
 import { AuthRequiredError } from "#/server/xrpc/errors";
 import { XRPC_REGISTRY } from "#/server/xrpc/registry";
 import type { XrpcQueryParams, XrpcRequestContext } from "#/server/xrpc/types";
@@ -87,7 +87,7 @@ export async function invokeXrpc(
     schema: db.schema,
     trackReadingEnabled: db.trackReadingEnabled,
     countOldPostsAsUnreadEnabled: db.countOldPostsAsUnreadEnabled,
-    excludeWebBridgeEnabled: db.excludeWebBridgeEnabled,
+    excludeBridged: effectiveBridgeExclusion(db, auth),
     params,
     body: input.body ?? null,
   };

@@ -1636,6 +1636,39 @@ hand-tuned lists:
   publications, so the filtered Latest "All" badge gets its own precomputed `network_stats` scalar
   (`network_document_count_no_web_bridge`) rather than a live count, and the tag feed switches to a
   tag-first query shape (`selectTagArticleUris`) that the survival rate can't blow up.
+- **Signed out, no bridged accounts at all** — a request with no reader session hides **every**
+  `*.brid.gy` repo, the opt-in ActivityPub bridge included, across the same network-wide surfaces.
+  Signed out there is nothing of the reader's own on the page — no subscriptions, no preferences,
+  no history — so those surfaces are the whole product, and what they should show is writing
+  published natively to AT Protocol. Signing in _adds_ the bridges back: the account setting above
+  is off by default and only ever covers the web bridge, so nothing is taken away by having an
+  account.
+
+  One `BridgeExclusion` (`false` / `"web"` / `"all"`, in `#/lib/atproto/bridged-repo`) carries this
+  through the read-model instead of a boolean: the two audiences want different corpora out of the
+  same queries, and the only thing that differs is the `ILIKE` suffix
+  (`bridgeHandlePattern`), so the query shapes and their measured costs are unchanged.
+  `resolveReaderSessionPreferences` is the single place the scope is decided; it also reports
+  `hasReaderSession` so the XRPC AppView can tell an anonymous caller (who gets `"all"`) from a
+  DID-token caller whose cookie it simply cannot see (who keeps the signed-in default) —
+  `effectiveBridgeExclusion` in `#/server/xrpc/db`. Curated surfaces that already dropped the bulk
+  mirrors for everybody keep doing so via `curatedBridgeExclusion`, which raises `false` to `"web"`
+  and never narrows `"all"`.
+
+  Two things stay reachable signed out, on purpose and for the same reason they do signed in: a
+  bridged publication or article opened **by link**, and a handle or URL **searched for by name**.
+  Topic pages are also unaffected — `topic_publications` is a precomputed, reader-independent
+  table that already excludes the web bridge for everyone, so `*.ap.brid.gy` members can still
+  appear there to a signed-out reader.
+
+- **Signed in, readers pick how much Bridgy to see** — the account setting is a three-way
+  "Bridged accounts" choice (Show all / Hide mirrored / Hide all) that maps straight onto
+  `BridgeExclusion`. "Hide all" gives a signed-in reader the same natively-AT-Protocol corpus a
+  signed-out visitor sees, for readers who asked to drop every `*.brid.gy` post. Stored as two
+  nullable booleans on `user` — the original `exclude_web_bridge` plus `exclude_all_bridges`
+  (`drizzle/0046_*`), which wins when set — so the older column keeps its meaning and nothing is
+  backfilled. The default is still "Show all". The same carve-outs apply: subscriptions, pages
+  opened by link, and names searched for directly are never hidden.
 
 ### Web push delivery
 

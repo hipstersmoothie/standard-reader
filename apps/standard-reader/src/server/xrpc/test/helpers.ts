@@ -11,7 +11,7 @@ export function mockXrpcContext(
     schema: {} as XrpcRequestContext["schema"],
     trackReadingEnabled: false,
     countOldPostsAsUnreadEnabled: true,
-    excludeWebBridgeEnabled: false,
+    excludeBridged: false,
     params: {},
     body: null,
     ...partial,
