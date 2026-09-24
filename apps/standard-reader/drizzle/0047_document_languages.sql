@@ -27,4 +27,11 @@ ALTER TABLE "documents" ADD COLUMN "lang_source" text;--> statement-breakpoint
 ALTER TABLE "documents" ADD COLUMN "lang_detected_at" timestamp with time zone;--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "documents_lang_published_idx" ON "documents" USING btree ("lang","published_at" desc nulls last) WHERE deleted = false;--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "documents_lang_pending_idx" ON "documents" USING btree ("published_at" DESC NULLS LAST) WHERE lang_detected_at is null and deleted = false;--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "documents_lang_tiebreak_idx" ON "documents" USING btree ("published_at" DESC NULLS LAST) WHERE lang_source = 'glotlid-unsure' and deleted = false;
+CREATE INDEX IF NOT EXISTS "documents_lang_tiebreak_idx" ON "documents" USING btree ("published_at" DESC NULLS LAST) WHERE lang_source = 'glotlid-unsure' and deleted = false;--> statement-breakpoint
+-- Give the planner statistics for the new columns now. Until `documents` is
+-- analyzed, Postgres guesses `lang IS NULL` matches ~0.5% of rows when it
+-- matches ~100% (nothing is tagged yet), and on the language-filtered Latest
+-- "All" query that guess picked a plan measured at 61-107s — 427ms once
+-- analyzed. ANALYZE samples ~30k rows and takes seconds; it holds no lock that
+-- blocks reads or writes, so it is safe inside preDeploy.
+ANALYZE "documents";

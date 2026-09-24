@@ -41,6 +41,12 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS documents_lang_tiebreak_idx
   ON documents USING btree (published_at DESC NULLS LAST)
   WHERE lang_source = 'glotlid-unsure' AND deleted = false;
 
+-- Statistics for the new columns, before any reader can filter on them. Without
+-- them the planner assumes `lang IS NULL` is rare when it is ~every row, and
+-- the language-filtered Latest "All" page took 61-107s on the PR-192 preview
+-- (427ms after this). Seconds; blocks neither reads nor writes.
+ANALYZE documents;
+
 -- A failed CONCURRENTLY build leaves an INVALID index behind, which the planner
 -- ignores while it still costs writes. This should return zero rows; if it
 -- lists any index above, DROP INDEX CONCURRENTLY and re-run.

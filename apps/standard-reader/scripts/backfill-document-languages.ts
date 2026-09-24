@@ -19,6 +19,9 @@
  *
  *   pnpm backfill:languages [--no-tiebreak]
  */
+import { sql } from "drizzle-orm";
+
+import { db } from "../src/db/index.ts";
 import {
   backfillDocumentLanguages,
   tiebreakDocumentLanguages,
@@ -53,6 +56,12 @@ const examined = await backfillDocumentLanguages({
 console.log(
   `[backfill:languages] GlotLID: ${examined} document(s) examined in ${detect.seconds()}s`,
 );
+
+// The backfill moves `lang IS NULL` from ~100% of rows to its real share, which
+// the planner's statistics still describe as the former until autovacuum gets
+// round to it. Language-filtered pages plan on those numbers, so refresh them
+// now rather than whenever. Seconds; blocks neither reads nor writes.
+await db.execute(sql`analyze documents`);
 
 if (!process.argv.includes("--no-tiebreak")) {
   const tiebreak = progress("tiebroken");
