@@ -8,6 +8,7 @@ import { ingestState, subscriptions, trackedRepos } from "../../db/schema.ts";
 import { Collections } from "../atproto/uri.ts";
 import { startLabelerDiscovery } from "../labeler/discover.server.ts";
 import { startLabelSync } from "../labeler/sync.server.ts";
+import { loadGlotlid } from "../lang/glotlid.ts";
 import { logEvent } from "../observability/log.ts";
 import { backfillRepoFromArchive } from "./archive-replay.ts";
 import { verifyIngestAuth } from "./auth.ts";
@@ -389,6 +390,21 @@ server.listen(port(), "::", () => {
     }
   }
 });
+
+// The language model, before the stream: `upsertDocument` tags each document
+// as it writes it, and a document written before the model is ready is only
+// tagged by the next hourly sweep. A failed load is not fatal — ingest carries
+// on untagged, and the sweep retries the load.
+try {
+  const startedAt = performance.now();
+  await loadGlotlid();
+  logEvent("ingest.languageModel", {
+    loaded: true,
+    ms: Math.round(performance.now() - startedAt),
+  });
+} catch (error) {
+  logEvent("ingest.languageModel", { error: String(error), loaded: false });
+}
 
 // One Jetstream subscription, where there used to be three tap lanes plus the
 // admin API that fed them. Its collection filter already spans every repo on

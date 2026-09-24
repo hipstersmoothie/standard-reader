@@ -14,6 +14,11 @@ import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { CONTENT_LANGUAGES } from "../../src/lib/content-language.ts";
 
 const [samplesPath, goldPath, out] = process.argv.slice(2);
+if (!samplesPath || !goldPath || !out) {
+  throw new Error(
+    "usage: run-jev.ts <samples.jsonl> <gold_uris.json> <out.jsonl>",
+  );
+}
 const key = process.env.JEV_API_KEY;
 if (!key) throw new Error("JEV_API_KEY is not set");
 
@@ -26,13 +31,17 @@ const criteria: Record<string, string> = Object.fromEntries(
 criteria.other =
   "A language not listed here (e.g. Tatar, Pashto, Tajik, Kurdish), or no real prose";
 
-const wanted = new Set<string>(JSON.parse(readFileSync(goldPath!, "utf8")));
+const wanted = new Set<string>(JSON.parse(readFileSync(goldPath, "utf8")));
 const done = new Set(
-  existsSync(out!)
-    ? readFileSync(out!, "utf8").trim().split("\n").filter(Boolean).map((l) => JSON.parse(l).uri)
+  existsSync(out)
+    ? readFileSync(out, "utf8")
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .map((l) => JSON.parse(l).uri)
     : [],
 );
-const queue = readFileSync(samplesPath!, "utf8")
+const queue = readFileSync(samplesPath, "utf8")
   .trim()
   .split("\n")
   .map((l) => JSON.parse(l))
@@ -43,7 +52,10 @@ async function classify(sample: string) {
     const t0 = performance.now();
     const res = await fetch("https://api.typesafe.ai/v1/systemone", {
       method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         model: "jev-latest",
         state: sample.slice(0, STATE_CHARS),
@@ -74,13 +86,15 @@ async function worker() {
     const { body, ms } = await classify(r.sample);
     const a = body.answers.lang;
     appendFileSync(
-      out!,
+      out,
       JSON.stringify({
         uri: r.uri,
         pred: a.choice === "other" ? "other" : a.choice,
         p: a.probabilities?.[a.choice] ?? null,
         confidence: a.confidence ?? null,
-        top: Object.entries(a.probabilities ?? {}).sort((x, y) => (y[1] as number) - (x[1] as number)).slice(0, 3),
+        top: Object.entries(a.probabilities ?? {})
+          .toSorted((x, y) => (y[1] as number) - (x[1] as number))
+          .slice(0, 3),
         ms: Math.round(ms),
         usage: body.usage,
         model: body.model,

@@ -28,11 +28,15 @@ export interface ContentLanguage {
   /** BCP-47 primary subtag — what `documents.lang` stores. */
   code: string;
   /**
-   * The ISO 639-3 code(s) the trigram detector reports for this language.
+   * The GlotLID label(s) — ISO 639-3 plus ISO 15924 script, e.g. `fas_Arab` —
+   * that the detector in `#/server/lang` reports for this language.
    *
-   * More than one where the detector splits a language finer than readers
-   * think of it: Norwegian Bokmål and Nynorsk are one entry here, as are the
-   * Latin and Cyrillic models for Serbian.
+   * More than one where the model splits a language finer than readers think
+   * of it: Norwegian Bokmål and Nynorsk are one entry, as are Serbian in both
+   * scripts, the spoken Arabic varieties, and the Chinese ones (Mandarin,
+   * Cantonese, Wu, Hakka, Classical) — a reader who picks "Chinese" means all
+   * of them. Romanized writing (`hin_Latn`, `urd_Latn`, …) is deliberately
+   * absent: a reader who reads Hindi reads Devanagari, so those stay untagged.
    */
   detected: ReadonlyArray<string>;
   /** Endonym — the language's name in itself, as the picker shows it. */
@@ -51,148 +55,368 @@ export interface ContentLanguage {
  * clearing `documents.lang` for it in the same change.
  */
 export const CONTENT_LANGUAGES = [
-  { code: "en", detected: ["eng"], label: "English", englishLabel: "English" },
-  { code: "es", detected: ["spa"], label: "Español", englishLabel: "Spanish" },
+  {
+    code: "en",
+    detected: ["eng_Latn"],
+    label: "English",
+    englishLabel: "English",
+  },
+  {
+    code: "es",
+    detected: ["spa_Latn"],
+    label: "Español",
+    englishLabel: "Spanish",
+  },
   {
     code: "pt",
-    detected: ["por"],
+    detected: ["por_Latn"],
     label: "Português",
     englishLabel: "Portuguese",
   },
-  { code: "fr", detected: ["fra"], label: "Français", englishLabel: "French" },
-  { code: "de", detected: ["deu"], label: "Deutsch", englishLabel: "German" },
-  { code: "it", detected: ["ita"], label: "Italiano", englishLabel: "Italian" },
-  { code: "nl", detected: ["nld"], label: "Nederlands", englishLabel: "Dutch" },
-  { code: "ja", detected: ["jpn"], label: "日本語", englishLabel: "Japanese" },
-  { code: "zh", detected: ["cmn"], label: "中文", englishLabel: "Chinese" },
-  { code: "ko", detected: ["kor"], label: "한국어", englishLabel: "Korean" },
-  { code: "ru", detected: ["rus"], label: "Русский", englishLabel: "Russian" },
+  {
+    code: "fr",
+    detected: ["fra_Latn"],
+    label: "Français",
+    englishLabel: "French",
+  },
+  {
+    code: "de",
+    detected: ["deu_Latn"],
+    label: "Deutsch",
+    englishLabel: "German",
+  },
+  {
+    code: "it",
+    detected: ["ita_Latn"],
+    label: "Italiano",
+    englishLabel: "Italian",
+  },
+  {
+    code: "nl",
+    detected: ["nld_Latn"],
+    label: "Nederlands",
+    englishLabel: "Dutch",
+  },
+  {
+    code: "ja",
+    detected: ["jpn_Jpan"],
+    label: "日本語",
+    englishLabel: "Japanese",
+  },
+  {
+    code: "zh",
+    detected: ["cmn_Hani", "yue_Hani", "wuu_Hani", "hak_Hani", "lzh_Hani"],
+    label: "中文",
+    englishLabel: "Chinese",
+  },
+  {
+    code: "ko",
+    detected: ["kor_Hang"],
+    label: "한국어",
+    englishLabel: "Korean",
+  },
+  {
+    code: "ru",
+    detected: ["rus_Cyrl"],
+    label: "Русский",
+    englishLabel: "Russian",
+  },
   {
     code: "uk",
-    detected: ["ukr"],
+    detected: ["ukr_Cyrl"],
     label: "Українська",
     englishLabel: "Ukrainian",
   },
-  { code: "pl", detected: ["pol"], label: "Polski", englishLabel: "Polish" },
-  { code: "tr", detected: ["tur"], label: "Türkçe", englishLabel: "Turkish" },
-  { code: "ar", detected: ["arb"], label: "العربية", englishLabel: "Arabic" },
-  { code: "fa", detected: ["pes"], label: "فارسی", englishLabel: "Persian" },
-  { code: "he", detected: ["heb"], label: "עברית", englishLabel: "Hebrew" },
-  { code: "hi", detected: ["hin"], label: "हिन्दी", englishLabel: "Hindi" },
-  { code: "bn", detected: ["ben"], label: "বাংলা", englishLabel: "Bengali" },
+  {
+    code: "pl",
+    detected: ["pol_Latn"],
+    label: "Polski",
+    englishLabel: "Polish",
+  },
+  {
+    code: "tr",
+    detected: ["tur_Latn"],
+    label: "Türkçe",
+    englishLabel: "Turkish",
+  },
+  {
+    code: "ar",
+    detected: [
+      "arb_Arab",
+      "ary_Arab",
+      "arz_Arab",
+      "apc_Arab",
+      "ajp_Arab",
+      "acm_Arab",
+      "ars_Arab",
+      "aeb_Arab",
+      "ayp_Arab",
+    ],
+    label: "العربية",
+    englishLabel: "Arabic",
+  },
+  {
+    code: "fa",
+    detected: ["fas_Arab"],
+    label: "فارسی",
+    englishLabel: "Persian",
+  },
+  {
+    code: "he",
+    detected: ["heb_Hebr"],
+    label: "עברית",
+    englishLabel: "Hebrew",
+  },
+  { code: "hi", detected: ["hin_Deva"], label: "हिन्दी", englishLabel: "Hindi" },
+  { code: "bn", detected: ["ben_Beng"], label: "বাংলা", englishLabel: "Bengali" },
   {
     code: "id",
-    detected: ["ind"],
+    detected: ["ind_Latn"],
     label: "Bahasa Indonesia",
     englishLabel: "Indonesian",
   },
   {
     code: "vi",
-    detected: ["vie"],
+    detected: ["vie_Latn"],
     label: "Tiếng Việt",
     englishLabel: "Vietnamese",
   },
-  { code: "th", detected: ["tha"], label: "ไทย", englishLabel: "Thai" },
-  { code: "sv", detected: ["swe"], label: "Svenska", englishLabel: "Swedish" },
-  { code: "da", detected: ["dan"], label: "Dansk", englishLabel: "Danish" },
+  { code: "th", detected: ["tha_Thai"], label: "ไทย", englishLabel: "Thai" },
+  {
+    code: "sv",
+    detected: ["swe_Latn"],
+    label: "Svenska",
+    englishLabel: "Swedish",
+  },
+  {
+    code: "da",
+    detected: ["dan_Latn"],
+    label: "Dansk",
+    englishLabel: "Danish",
+  },
   {
     code: "no",
-    detected: ["nob", "nno"],
+    detected: ["nob_Latn", "nno_Latn"],
     label: "Norsk",
     englishLabel: "Norwegian",
   },
-  { code: "fi", detected: ["fin"], label: "Suomi", englishLabel: "Finnish" },
-  { code: "cs", detected: ["ces"], label: "Čeština", englishLabel: "Czech" },
+  {
+    code: "fi",
+    detected: ["fin_Latn"],
+    label: "Suomi",
+    englishLabel: "Finnish",
+  },
+  {
+    code: "cs",
+    detected: ["ces_Latn"],
+    label: "Čeština",
+    englishLabel: "Czech",
+  },
   {
     code: "sk",
-    detected: ["slk"],
+    detected: ["slk_Latn"],
     label: "Slovenčina",
     englishLabel: "Slovak",
   },
-  { code: "hu", detected: ["hun"], label: "Magyar", englishLabel: "Hungarian" },
-  { code: "ro", detected: ["ron"], label: "Română", englishLabel: "Romanian" },
-  { code: "el", detected: ["ell"], label: "Ελληνικά", englishLabel: "Greek" },
+  {
+    code: "hu",
+    detected: ["hun_Latn"],
+    label: "Magyar",
+    englishLabel: "Hungarian",
+  },
+  {
+    code: "ro",
+    detected: ["ron_Latn"],
+    label: "Română",
+    englishLabel: "Romanian",
+  },
+  {
+    code: "el",
+    detected: ["ell_Grek"],
+    label: "Ελληνικά",
+    englishLabel: "Greek",
+  },
   {
     code: "bg",
-    detected: ["bul"],
+    detected: ["bul_Cyrl"],
     label: "Български",
     englishLabel: "Bulgarian",
   },
-  { code: "sr", detected: ["srp"], label: "Српски", englishLabel: "Serbian" },
+  {
+    code: "sr",
+    detected: ["srp_Cyrl", "srp_Latn"],
+    label: "Српски",
+    englishLabel: "Serbian",
+  },
   {
     code: "hr",
-    detected: ["hrv"],
+    detected: ["hrv_Latn"],
     label: "Hrvatski",
     englishLabel: "Croatian",
   },
   {
     code: "sl",
-    detected: ["slv"],
+    detected: ["slv_Latn"],
     label: "Slovenščina",
     englishLabel: "Slovenian",
   },
   {
     code: "lt",
-    detected: ["lit"],
+    detected: ["lit_Latn"],
     label: "Lietuvių",
     englishLabel: "Lithuanian",
   },
-  { code: "lv", detected: ["lvs"], label: "Latviešu", englishLabel: "Latvian" },
-  { code: "et", detected: ["ekk"], label: "Eesti", englishLabel: "Estonian" },
-  { code: "ca", detected: ["cat"], label: "Català", englishLabel: "Catalan" },
-  { code: "gl", detected: ["glg"], label: "Galego", englishLabel: "Galician" },
+  {
+    code: "lv",
+    detected: ["lvs_Latn"],
+    label: "Latviešu",
+    englishLabel: "Latvian",
+  },
+  {
+    code: "et",
+    detected: ["ekk_Latn"],
+    label: "Eesti",
+    englishLabel: "Estonian",
+  },
+  {
+    code: "ca",
+    detected: ["cat_Latn"],
+    label: "Català",
+    englishLabel: "Catalan",
+  },
+  {
+    code: "gl",
+    detected: ["glg_Latn"],
+    label: "Galego",
+    englishLabel: "Galician",
+  },
   {
     code: "ms",
-    detected: ["zlm"],
+    detected: ["zsm_Latn"],
     label: "Bahasa Melayu",
     englishLabel: "Malay",
   },
-  { code: "tl", detected: ["tgl"], label: "Tagalog", englishLabel: "Tagalog" },
+  {
+    code: "tl",
+    detected: ["fil_Latn"],
+    label: "Tagalog",
+    englishLabel: "Tagalog",
+  },
   {
     code: "sw",
-    detected: ["swh"],
+    detected: ["swh_Latn", "swc_Latn"],
     label: "Kiswahili",
     englishLabel: "Swahili",
   },
   {
     code: "af",
-    detected: ["afr"],
+    detected: ["afr_Latn"],
     label: "Afrikaans",
     englishLabel: "Afrikaans",
   },
   {
     code: "be",
-    detected: ["bel"],
+    detected: ["bel_Cyrl"],
     label: "Беларуская",
     englishLabel: "Belarusian",
   },
   {
     code: "mk",
-    detected: ["mkd"],
+    detected: ["mkd_Cyrl"],
     label: "Македонски",
     englishLabel: "Macedonian",
   },
-  { code: "kk", detected: ["kaz"], label: "Қазақша", englishLabel: "Kazakh" },
-  { code: "hy", detected: ["hye"], label: "Հայերեն", englishLabel: "Armenian" },
-  { code: "ka", detected: ["kat"], label: "ქართული", englishLabel: "Georgian" },
-  { code: "ta", detected: ["tam"], label: "தமிழ்", englishLabel: "Tamil" },
-  { code: "te", detected: ["tel"], label: "తెలుగు", englishLabel: "Telugu" },
-  { code: "ml", detected: ["mal"], label: "മലയാളം", englishLabel: "Malayalam" },
-  { code: "kn", detected: ["kan"], label: "ಕನ್ನಡ", englishLabel: "Kannada" },
-  { code: "gu", detected: ["guj"], label: "ગુજરાતી", englishLabel: "Gujarati" },
-  { code: "pa", detected: ["pan"], label: "ਪੰਜਾਬੀ", englishLabel: "Punjabi" },
-  { code: "mr", detected: ["mar"], label: "मराठी", englishLabel: "Marathi" },
-  { code: "ne", detected: ["npi"], label: "नेपाली", englishLabel: "Nepali" },
-  { code: "ur", detected: ["urd"], label: "اردو", englishLabel: "Urdu" },
-  { code: "si", detected: ["sin"], label: "සිංහල", englishLabel: "Sinhala" },
-  { code: "km", detected: ["khm"], label: "ខ្មែរ", englishLabel: "Khmer" },
-  { code: "lo", detected: ["lao"], label: "ລາວ", englishLabel: "Lao" },
-  { code: "my", detected: ["mya"], label: "မြန်မာ", englishLabel: "Burmese" },
-  { code: "am", detected: ["amh"], label: "አማርኛ", englishLabel: "Amharic" },
-  { code: "sq", detected: ["als"], label: "Shqip", englishLabel: "Albanian" },
+  {
+    code: "kk",
+    detected: ["kaz_Cyrl"],
+    label: "Қазақша",
+    englishLabel: "Kazakh",
+  },
+  {
+    code: "hy",
+    detected: ["hye_Armn"],
+    label: "Հայերեն",
+    englishLabel: "Armenian",
+  },
+  {
+    code: "ka",
+    detected: ["kat_Geor"],
+    label: "ქართული",
+    englishLabel: "Georgian",
+  },
+  { code: "ta", detected: ["tam_Taml"], label: "தமிழ்", englishLabel: "Tamil" },
+  {
+    code: "te",
+    detected: ["tel_Telu"],
+    label: "తెలుగు",
+    englishLabel: "Telugu",
+  },
+  {
+    code: "ml",
+    detected: ["mal_Mlym"],
+    label: "മലയാളം",
+    englishLabel: "Malayalam",
+  },
+  {
+    code: "kn",
+    detected: ["kan_Knda"],
+    label: "ಕನ್ನಡ",
+    englishLabel: "Kannada",
+  },
+  {
+    code: "gu",
+    detected: ["guj_Gujr"],
+    label: "ગુજરાતી",
+    englishLabel: "Gujarati",
+  },
+  {
+    code: "pa",
+    detected: ["pan_Guru"],
+    label: "ਪੰਜਾਬੀ",
+    englishLabel: "Punjabi",
+  },
+  {
+    code: "mr",
+    detected: ["mar_Deva"],
+    label: "मराठी",
+    englishLabel: "Marathi",
+  },
+  {
+    code: "ne",
+    detected: ["npi_Deva"],
+    label: "नेपाली",
+    englishLabel: "Nepali",
+  },
+  { code: "ur", detected: ["urd_Arab"], label: "اردو", englishLabel: "Urdu" },
+  {
+    code: "si",
+    detected: ["sin_Sinh"],
+    label: "සිංහල",
+    englishLabel: "Sinhala",
+  },
+  { code: "km", detected: ["khm_Khmr"], label: "ខ្មែរ", englishLabel: "Khmer" },
+  { code: "lo", detected: ["lao_Laoo"], label: "ລາວ", englishLabel: "Lao" },
+  {
+    code: "my",
+    detected: ["mya_Mymr"],
+    label: "မြန်မာ",
+    englishLabel: "Burmese",
+  },
+  {
+    code: "am",
+    detected: ["amh_Ethi"],
+    label: "አማርኛ",
+    englishLabel: "Amharic",
+  },
+  {
+    code: "sq",
+    detected: ["als_Latn", "aln_Latn"],
+    label: "Shqip",
+    englishLabel: "Albanian",
+  },
   {
     code: "eo",
-    detected: ["epo"],
+    detected: ["epo_Latn"],
     label: "Esperanto",
     englishLabel: "Esperanto",
   },
@@ -202,17 +426,12 @@ const BY_CODE = new Map<string, ContentLanguage>(
   CONTENT_LANGUAGES.map((entry) => [entry.code, entry]),
 );
 
-/** ISO 639-3 -> BCP-47, for translating what the trigram detector reports. */
+/** GlotLID label -> BCP-47, for translating what the detector reports. */
 const BY_DETECTED = new Map<string, ContentLanguageCode>(
   CONTENT_LANGUAGES.flatMap((entry) =>
     entry.detected.map((iso) => [iso, entry.code as ContentLanguageCode]),
   ),
 );
-
-/** Every ISO 639-3 code the detector is allowed to return. */
-export const DETECTABLE_ISO_639_3: ReadonlyArray<string> = [
-  ...BY_DETECTED.keys(),
-];
 
 export function isContentLanguage(
   value: unknown,
@@ -220,11 +439,14 @@ export function isContentLanguage(
   return typeof value === "string" && BY_CODE.has(value);
 }
 
-/** Map a detector result (ISO 639-3) onto this app's code, or `null`. */
-export function contentLanguageFromIso639_3(
-  iso: string,
+/**
+ * Map a detector label (`fas_Arab`) onto this app's code, or `null` for a
+ * language the closed vocabulary doesn't list.
+ */
+export function contentLanguageFromDetectorLabel(
+  label: string,
 ): ContentLanguageCode | null {
-  return BY_DETECTED.get(iso) ?? null;
+  return BY_DETECTED.get(label) ?? null;
 }
 
 export function contentLanguage(code: string): ContentLanguage | undefined {

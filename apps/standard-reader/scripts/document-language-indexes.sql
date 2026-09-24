@@ -1,14 +1,14 @@
 -- Language tagging — prod index creation + verification.
 --
 -- Run this against prod Neon BEFORE merging migration
--- 0045_document_languages.sql. Building CONCURRENTLY avoids a long write-lock
+-- 0047_document_languages.sql. Building CONCURRENTLY avoids a long write-lock
 -- on `documents` (~3.4M rows, ~14 GB with indexes); because the migration uses
 -- `CREATE INDEX IF NOT EXISTS`, it then no-ops on prod while still building the
 -- indexes on fresh/local/CI databases.
 --
 -- The columns themselves are added by the migration and are instant (nullable,
 -- no default), so they do not need the same treatment — but the indexes
--- reference them, so the two ALTERs below are repeated here (IF NOT EXISTS) to
+-- reference them, so the ALTERs below are repeated here (IF NOT EXISTS) to
 -- let this file run first.
 --
 -- Usage (reads DATABASE_URL from .env — this is a PROD write, run it
@@ -19,6 +19,7 @@
 
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS lang text;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS lang_confidence double precision;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS lang_source text;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS lang_detected_at timestamptz;
 
 -- Serves `lang IS NULL OR lang IN (…)` on the language-filtered network
@@ -35,15 +36,21 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS documents_lang_pending_idx
   ON documents USING btree (published_at DESC NULLS LAST)
   WHERE lang_detected_at IS NULL AND deleted = false;
 
+-- The Jev tiebreak's work queue: documents GlotLID wasn't sure of (~2%).
+CREATE INDEX CONCURRENTLY IF NOT EXISTS documents_lang_tiebreak_idx
+  ON documents USING btree (published_at DESC NULLS LAST)
+  WHERE lang_source = 'glotlid-unsure' AND deleted = false;
+
 -- A failed CONCURRENTLY build leaves an INVALID index behind, which the planner
 -- ignores while it still costs writes. This should return zero rows; if it
--- lists either index above, DROP INDEX CONCURRENTLY and re-run.
+-- lists any index above, DROP INDEX CONCURRENTLY and re-run.
 SELECT indexrelid::regclass AS invalid_index
 FROM pg_index
 WHERE NOT indisvalid;
 
 SELECT pg_size_pretty(pg_relation_size('documents_lang_published_idx')) AS lang_idx_size,
-       pg_size_pretty(pg_relation_size('documents_lang_pending_idx')) AS pending_idx_size;
+       pg_size_pretty(pg_relation_size('documents_lang_pending_idx')) AS pending_idx_size,
+       pg_size_pretty(pg_relation_size('documents_lang_tiebreak_idx')) AS tiebreak_idx_size;
 
 -- ── Verification EXPLAINs (read-only) ────────────────────────────────────────
 -- 1. A language-filtered Latest "All" page. Expect the lang predicate to be

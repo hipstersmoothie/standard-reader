@@ -2,11 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   CONTENT_LANGUAGES,
-  DETECTABLE_ISO_639_3,
-  contentLanguageFromIso639_3,
+  contentLanguageFromDetectorLabel,
   contentLanguageLabel,
   feedLanguagesToDbValue,
-  isContentLanguage,
   parseFeedLanguages,
 } from "./content-language.ts";
 
@@ -16,12 +14,11 @@ describe("the catalog", () => {
     expect(new Set(codes).size).toBe(codes.length);
   });
 
-  it("has no duplicate detector codes", () => {
-    // Two entries claiming the same ISO 639-3 code would make the detector's
+  it("has no duplicate detector labels", () => {
+    // Two entries claiming the same GlotLID label would make the detector's
     // output ambiguous — whichever entry the map built last would silently win.
-    expect(new Set(DETECTABLE_ISO_639_3).size).toBe(
-      DETECTABLE_ISO_639_3.length,
-    );
+    const labels = CONTENT_LANGUAGES.flatMap((entry) => entry.detected);
+    expect(new Set(labels).size).toBe(labels.length);
   });
 
   it("gives every language an endonym and an English name", () => {
@@ -32,21 +29,28 @@ describe("the catalog", () => {
     }
   });
 
-  it("maps every detector code back to a language in the catalog", () => {
-    for (const iso of DETECTABLE_ISO_639_3) {
-      expect(isContentLanguage(contentLanguageFromIso639_3(iso))).toBe(true);
+  it("maps every detector label back to a language in the catalog", () => {
+    for (const entry of CONTENT_LANGUAGES) {
+      for (const label of entry.detected) {
+        expect(contentLanguageFromDetectorLabel(label)).toBe(entry.code);
+        expect(label).toMatch(/^[a-z]{3}_[A-Z][a-z]{3}$/);
+      }
     }
   });
 
-  it("does not claim a language it has no detector code for", () => {
-    expect(contentLanguageFromIso639_3("xyz")).toBeNull();
+  it("does not claim a language it has no detector label for", () => {
+    expect(contentLanguageFromDetectorLabel("tat_Cyrl")).toBeNull();
+    // Romanized writing is deliberately not the language it romanizes.
+    expect(contentLanguageFromDetectorLabel("hin_Latn")).toBeNull();
   });
 
   it("folds a language's detector variants onto one code", () => {
     // Norwegian Bokmål and Nynorsk are one language to a reader picking a
-    // filter, even though the trigram models are separate.
-    expect(contentLanguageFromIso639_3("nob")).toBe("no");
-    expect(contentLanguageFromIso639_3("nno")).toBe("no");
+    // filter, as are Mandarin and Cantonese, even though the model splits them.
+    expect(contentLanguageFromDetectorLabel("nob_Latn")).toBe("no");
+    expect(contentLanguageFromDetectorLabel("nno_Latn")).toBe("no");
+    expect(contentLanguageFromDetectorLabel("cmn_Hani")).toBe("zh");
+    expect(contentLanguageFromDetectorLabel("yue_Hani")).toBe("zh");
   });
 });
 

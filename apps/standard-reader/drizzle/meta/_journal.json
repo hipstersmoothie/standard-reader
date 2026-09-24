@@ -330,6 +330,13 @@
       "when": 1790208000000,
       "tag": "0046_exclude_all_bridges",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1790230825275,
+      "tag": "0047_document_languages",
+      "breakpoints": true
     }
   ]
 }

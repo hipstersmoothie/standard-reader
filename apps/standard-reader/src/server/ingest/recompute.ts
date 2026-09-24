@@ -21,7 +21,10 @@ import {
 } from "#/lib/document/search-text";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
 import { SERIAL_DIRECTION } from "#/lib/publication/serial";
-import { detectDocumentLanguage } from "#/server/lang/detect";
+import { detectDocumentLanguage, languageColumns } from "#/server/lang/detect";
+import { loadGlotlid } from "#/server/lang/glotlid";
+import { isJevConfigured, jevLanguage } from "#/server/lang/jev";
+import { documentLanguageSample } from "#/server/lang/sample";
 import { deriveSerialKind } from "#/server/reader/series";
 import {
   ARTICLE_BLEND,
@@ -57,13 +60,20 @@ import { reconcileDocumentDup, reconcilePublicationGroup } from "./handlers.ts";
 /**
  * How many documents one sweep will language-tag before stopping.
  *
- * At ~2 ms a document this is roughly two seconds of CPU per sweep — enough to
- * absorb an hour of ingest many times over, and small enough that a corpus
- * that has never been tagged degrades into "this takes a while" rather than
- * "the ingest worker stops keeping up". See
- * {@link backfillDocumentLanguages}.
+ * Well under a second of model time per sweep — enough to absorb an hour of
+ * ingest many times over, and small enough that a corpus that has never been
+ * tagged degrades into "this takes a while" rather than "the ingest worker
+ * stops keeping up". See {@link backfillDocumentLanguages}.
  */
 const LANGUAGE_SWEEP_CAP = 2000;
+
+/**
+ * How many Jev tiebreaks one sweep will run. ~2% of an hour's ~600 new
+ * documents need one, so this clears the steady state with room to spare and
+ * works a post-backfill queue down over a few hours instead of all at once.
+ * See {@link tiebreakDocumentLanguages}.
+ */
+const JEV_TIEBREAK_CAP = 1000;
 
 /**
  * Recompute the derived per-publication aggregates (subscriber/document/
@@ -991,21 +1001,20 @@ export async function backfillRenderableBody(): Promise<number> {
 /**
  * Tag documents the language detector has never looked at.
  *
- * `upsertDocument` detects on write, so in steady state this pass finds almost
- * nothing: it exists for the rows that predate language tagging, and for the
- * handful ingest can still leave behind (a body that arrived out of order, a
- * write that raced a deploy). The work queue is
- * `lang_detected_at IS NULL`, served by the partial
+ * `upsertDocument` detects on write in the ingest worker, so in steady state
+ * this pass finds little: the rows that predate language tagging, the ones the
+ * web server indexed on demand (it never loads the model — see
+ * `#/server/lang/glotlid`), and the handful ingest can still leave behind (a
+ * body that arrived out of order, a write that raced a deploy). The work queue
+ * is `lang_detected_at IS NULL`, served by the partial
  * `documents_lang_pending_idx`, so the query cost shrinks toward zero as the
  * corpus is covered rather than scanning 3.4M rows every hour.
  *
- * **Bounded on purpose.** Detection is ~2 ms of CPU per document, which is
- * nothing for a page of them and two hours for the whole corpus — and this runs
- * in the ingest worker, in front of the live tap. {@link LANGUAGE_SWEEP_CAP} is
- * what keeps a cold corpus from monopolising a sweep; the initial pass over an
- * existing corpus belongs in `scripts/backfill-document-languages.ts`, which
- * can take as long as it likes. Once that has run this pass has a few hundred
- * rows to do at most.
+ * **Bounded on purpose.** Detection is ~0.3 ms of CPU per document plus the
+ * read, and this runs in the ingest worker, in front of the live stream.
+ * {@link LANGUAGE_SWEEP_CAP} is what keeps a cold corpus from monopolising a
+ * sweep; the initial pass over an existing corpus belongs in
+ * `scripts/backfill-document-languages.ts`, which can take as long as it likes.
  *
  * Stamps `lang_detected_at` whether or not a language came out, so a document
  * with nothing detectable in it is examined once and never again. Idempotent.
@@ -1019,9 +1028,9 @@ export async function backfillDocumentLanguages(
     onProgress?: (examined: number) => void;
   } = {},
 ): Promise<number> {
+  await loadGlotlid();
   const limit = opts.limit ?? LANGUAGE_SWEEP_CAP;
   const READ_BATCH = 500;
-  const WRITE_CHUNK = 250;
   let examined = 0;
 
   while (examined < limit) {
@@ -1041,41 +1050,13 @@ export async function backfillDocumentLanguages(
 
     if (rows.length === 0) break;
 
-    // Group by outcome so a batch costs one UPDATE per distinct language plus
-    // one for the undetectable rows, rather than one per document. The
-    // undetectable group is by far the largest on this network — most bridged
-    // posts carry a headline and a link — and it is the group that most needs
-    // its `lang_detected_at` stamped, or the next sweep reads it all again.
-    const byOutcome = new Map<
-      string,
-      { confidence: number | null; uris: Array<string> }
-    >();
-    for (const row of rows) {
-      const detected = detectDocumentLanguage(row);
-      const key = detected?.code ?? "";
-      const bucket = byOutcome.get(key);
-      if (bucket) bucket.uris.push(row.uri);
-      else {
-        byOutcome.set(key, {
-          confidence: detected?.confidence ?? null,
-          uris: [row.uri],
-        });
-      }
-    }
-
-    const detectedAt = new Date();
-    for (const [code, bucket] of byOutcome) {
-      for (let i = 0; i < bucket.uris.length; i += WRITE_CHUNK) {
-        await db
-          .update(documents)
-          .set({
-            lang: code === "" ? null : code,
-            langConfidence: bucket.confidence,
-            langDetectedAt: detectedAt,
-          })
-          .where(inArray(documents.uri, bucket.uris.slice(i, i + WRITE_CHUNK)));
-      }
-    }
+    await writeLanguageColumns(
+      rows.map((row) => ({
+        uri: row.uri,
+        // Never `undefined` here: the model was loaded above.
+        ...languageColumns(detectDocumentLanguage(row)),
+      })),
+    );
 
     examined += rows.length;
     opts.onProgress?.(examined);
@@ -1086,6 +1067,145 @@ export async function backfillDocumentLanguages(
     logEvent("ingest.languageSweep", { examined });
   }
   return examined;
+}
+
+/**
+ * Write per-document language columns in one statement per chunk.
+ *
+ * Every row carries its own confidence, so rows can't be grouped into one
+ * UPDATE per language; a `VALUES` list joined on `uri` keeps it to a single
+ * round trip per {@link WRITE_CHUNK} rows instead of one per document — the
+ * difference that matters when the database is a continent away from the
+ * worker.
+ */
+async function writeLanguageColumns(
+  rows: Array<{
+    uri: string;
+    lang: string | null;
+    langConfidence: number | null;
+    langDetectedAt: Date | null;
+    langSource: string | null;
+  }>,
+): Promise<void> {
+  const WRITE_CHUNK = 250;
+  for (let i = 0; i < rows.length; i += WRITE_CHUNK) {
+    const part = rows.slice(i, i + WRITE_CHUNK);
+    const values = sql.join(
+      part.map(
+        (row) =>
+          sql`(${row.uri}, ${row.lang}::text, ${row.langConfidence}::double precision, ${row.langSource}::text, ${row.langDetectedAt?.toISOString() ?? null}::timestamptz)`,
+      ),
+      sql`, `,
+    );
+    await db.execute(sql`
+      update documents as d
+      set lang = v.lang,
+          lang_confidence = v.lang_confidence,
+          lang_source = v.lang_source,
+          lang_detected_at = v.lang_detected_at
+      from (values ${values}) as v(uri, lang, lang_confidence, lang_source, lang_detected_at)
+      where d.uri = v.uri
+    `);
+  }
+}
+
+/**
+ * Ask Jev about the documents GlotLID wasn't sure of.
+ *
+ * The queue is `lang_source = 'glotlid-unsure'` (~2% of documents), served by
+ * `documents_lang_tiebreak_idx`. Each call is one Jev request (~1,400 input
+ * tokens, fractions of a cent); {@link JEV_TIEBREAK_CAP} bounds a sweep to a few
+ * minutes and a few cents even when a backfill has just queued thousands.
+ *
+ * A failed call leaves the document queued for the next sweep; a run of them
+ * ends this one early rather than burning the sweep on an outage. A call that
+ * *succeeds* is terminal (`lang_source = 'jev'`) whatever it says, so a
+ * document neither model can place is asked about once, not every hour.
+ *
+ * No-op when `JEV_API_KEY` isn't set. Returns how many documents were settled.
+ */
+export async function tiebreakDocumentLanguages(
+  opts: {
+    /** Stop after this many documents. The sweep's cap by default. */
+    limit?: number;
+    onProgress?: (settled: number) => void;
+  } = {},
+): Promise<number> {
+  if (!isJevConfigured()) return 0;
+  const limit = opts.limit ?? JEV_TIEBREAK_CAP;
+  const READ_BATCH = 100;
+  const CONCURRENCY = 4;
+  const MAX_CONSECUTIVE_FAILURES = 10;
+  let settled = 0;
+  let failures = 0;
+  let consecutiveFailures = 0;
+  const skipped = new Set<string>();
+
+  while (settled + skipped.size < limit) {
+    const rows = await db
+      .select({
+        description: documents.description,
+        textContent: documents.textContent,
+        title: documents.title,
+        uri: documents.uri,
+      })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.deleted, false),
+          eq(documents.langSource, "glotlid-unsure"),
+          skipped.size > 0
+            ? sql`${documents.uri} not in (${sql.join(
+                [...skipped].map((uri) => sql`${uri}`),
+                sql`, `,
+              )})`
+            : undefined,
+        ),
+      )
+      .orderBy(desc(documents.publishedAt))
+      .limit(Math.min(READ_BATCH, limit - settled - skipped.size));
+    if (rows.length === 0) break;
+
+    const verdicts = await mapWithConcurrency(
+      rows,
+      CONCURRENCY,
+      async (row) => {
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) return;
+        const verdict = await jevLanguage(documentLanguageSample(row));
+        if (verdict) consecutiveFailures = 0;
+        else consecutiveFailures += 1;
+        return verdict;
+      },
+    );
+
+    const writes: Parameters<typeof writeLanguageColumns>[0] = [];
+    for (const [i, row] of rows.entries()) {
+      const verdict = verdicts[i];
+      if (!verdict) {
+        failures += 1;
+        skipped.add(row.uri);
+        continue;
+      }
+      writes.push({
+        lang: verdict.code,
+        langConfidence: Number(verdict.probability.toFixed(3)),
+        langDetectedAt: new Date(),
+        langSource: "jev",
+        uri: row.uri,
+      });
+    }
+    await writeLanguageColumns(writes);
+    settled += writes.length;
+    opts.onProgress?.(settled);
+
+    if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) break;
+    if (rows.length < READ_BATCH) break;
+  }
+
+  if (settled > 0 || failures > 0) {
+    logEvent("ingest.languageTiebreak", { failures, settled });
+  }
+  return settled;
 }
 
 /**
@@ -1275,6 +1395,7 @@ export async function recomputeDerived(): Promise<void> {
   await recomputeSerialKinds();
   try {
     await backfillDocumentLanguages();
+    await tiebreakDocumentLanguages();
   } catch {
     // Best-effort: an untagged document is shown to everyone rather than
     // hidden from anyone, so falling behind here costs nothing a reader sees.
