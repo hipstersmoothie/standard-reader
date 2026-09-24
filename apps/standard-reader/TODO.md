@@ -1430,6 +1430,40 @@ Backend/API exists; UI or copy is missing.
       [`exclude-web-bridge.ts`](src/lib/exclude-web-bridge.ts). The Latest "All" badge for
       "all" reuses the web-only `network_stats` scalar, like signed-out does — `*.ap.brid.gy`
       is a rounding error next to the mirrors.
+- [x] **Post language tagging + the "Languages" feed filter** — `documents.lang` /
+      `lang_confidence` / `lang_source` / `lang_detected_at` (`drizzle/0047_*`), derived by
+      [`src/server/lang/`](src/server/lang/detect.ts) from the indexed text, since
+      `site.standard.document` has no language field. GlotLID (quantized, Git LFS in `models/`)
+      over a cleaned prose sample, mapped onto the closed ~65-language vocabulary in
+      [`content-language.ts`](src/lib/content-language.ts); languages outside it (Tatar, Pashto, …)
+      stay untagged rather than filed under a neighbour. Detected in `upsertDocument` in the ingest
+      worker (~0.3 ms); the web server never loads the model and leaves its on-demand writes to the
+      hourly sweep, which also sends GlotLID's unsure ~1–2% to the Jev tiebreak
+      ([`jev.ts`](src/server/lang/jev.ts), `JEV_API_KEY`). `pnpm backfill:languages` does the
+      initial corpus. The reader preference (`user.feed_languages`, default empty = all) narrows
+      exactly the surfaces "Hide mirrored websites" narrows, and nowhere else. **Untagged documents
+      always pass** — the filter narrows on positive evidence only, so a detector miss shows you a
+      post you didn't ask for rather than hiding one you did. The Latest badge needed per-language
+      `network_stats` rows (one `GROUPING SETS` scan, summed at read time) for the same reason the
+      web-bridge badge needed its own scalar.
+- [x] **Benchmark the detector** — [`scripts/lang-bench/`](scripts/lang-bench/): franc vs GlotLID,
+      OpenLID-v2, fastText lid.176, NLLB-LID, XLM-R and Jev on 1,049 labelled documents. Bad-tag
+      rate: franc 15.7%, GlotLID 0.4%, Jev 1.7%. Picked GlotLID with a Jev tiebreak.
+- [ ] **Before deploying language tagging** — run `scripts/document-language-indexes.sql`
+      against prod (CONCURRENTLY; the migration's `IF NOT EXISTS` then no-ops), set `JEV_API_KEY`
+      on the ingest service, confirm the ingest log shows `ingest.languageModel loaded: true`
+      (falls back to a checksummed GitHub LFS download if the checkout has only the pointer), then
+      `pnpm backfill:languages` (~2–3 h, ~$4 of Jev).
+- [ ] **Publication-level language** — Discover's publication rails and the directory currently
+      ignore the language filter, because a publication has no single language and inferring one
+      needs a derivation of its own (dominant `documents.lang` per publication, recomputed with
+      `publication_stats`). Worth doing once there is evidence readers expect the filter to reach
+      the rails; a wrong publication-level language is worse than none, since it would hide a
+      whole source.
+- [ ] **Re-examine low-confidence language tags** — once there is a tagged corpus, check whether
+      GlotLID's 0.5 and Jev's 0.8 floors are in the right place against `lang_confidence` /
+      `lang_source`, and whether a sweep should re-run detection after a document's body grows (a
+      stub indexed before its content resolved keeps the language detected from its title).
 - [x] **Reading typography preferences** — font size / measure (and optional sans body) on the
       article wrapper; cookie + optional `user` column (same pattern as [`open-links.ts`](src/lib/open-links.ts));
       menu item alongside [`OpenLinksMenuItem`](src/components/OpenLinksMenuItem.tsx)

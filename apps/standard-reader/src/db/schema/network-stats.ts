@@ -43,5 +43,35 @@ export const NETWORK_DOCUMENT_COUNT_KEY = "network_document_count";
 export const NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY =
   "network_document_count_no_web_bridge";
 
+/**
+ * Stands in for `lang IS NULL` in a per-language key. Not a code in
+ * `#/lib/content-language`, so it can never collide with a real one.
+ */
+export const UNTAGGED_LANGUAGE_KEY = "und";
+
+/**
+ * Per-language breakdown of the two scalars above, so the Latest "All" badge
+ * stays honest for a reader who filtered their feed by language.
+ *
+ * A filtered count cannot be computed live for the same reason the web-bridge
+ * one cannot — the eligibility predicate is a left join that no index serves —
+ * and it cannot be a single extra scalar either, because there is one per
+ * subset of ~66 languages. So the sweep emits one row per language instead and
+ * the read path sums the ones the reader picked, plus
+ * {@link UNTAGGED_LANGUAGE_KEY}: untagged documents are always shown, so they
+ * are always in the total. That is 134 small rows maintained by the same single
+ * scan that already produced the two totals (`GROUPING SETS`), read back as one
+ * primary-key lookup.
+ */
+export function networkDocumentCountLanguageKey(
+  lang: string,
+  excludeWebBridge: boolean,
+): string {
+  const base = excludeWebBridge
+    ? NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY
+    : NETWORK_DOCUMENT_COUNT_KEY;
+  return `${base}_lang:${lang}`;
+}
+
 export type NetworkStat = typeof networkStats.$inferSelect;
 export type NewNetworkStat = typeof networkStats.$inferInsert;

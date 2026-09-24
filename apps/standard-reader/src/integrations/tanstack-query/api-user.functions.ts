@@ -26,6 +26,12 @@ import {
   parseAppearanceCookie,
 } from "#/lib/appearance";
 import type { BridgeExclusion } from "#/lib/atproto/bridged-repo";
+import type { ContentLanguageCode } from "#/lib/content-language";
+import {
+  DEFAULT_FEED_LANGUAGES,
+  feedLanguagesToDbValue,
+  parseFeedLanguages,
+} from "#/lib/content-language";
 import {
   COUNT_OLD_POSTS_AS_UNREAD_COOKIE,
   COUNT_OLD_POSTS_AS_UNREAD_COOKIE_MAX_AGE_SECONDS,
@@ -1271,6 +1277,54 @@ const setBridgeExclusionPreference = createServerFn({ method: "POST" })
     },
   );
 
+// Languages the reader wants network-wide surfaces narrowed to. Signed-in only,
+// like the two above; an empty list is the default and means "every language".
+const getFeedLanguagesPreference = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .handler(
+    async ({ context }): Promise<{ languages: Array<ContentLanguageCode> }> => {
+      const session = context?.session;
+      if (!session?.user) return { languages: [...DEFAULT_FEED_LANGUAGES] };
+
+      const row = await context.db.query.user.findFirst({
+        where: eq(context.schema.user.id, session.user.id),
+        columns: { feedLanguages: true },
+      });
+      return { languages: parseFeedLanguages(row?.feedLanguages) };
+    },
+  );
+
+const getFeedLanguagesPreferenceQueryOptions = queryOptions({
+  queryKey: ["feedLanguagesPreference"] as const,
+  queryFn: () => getFeedLanguagesPreference(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const setFeedLanguagesPreference = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  // Validated against the closed vocabulary rather than accepted as free text:
+  // an unknown code would be stored, filtered on, and match nothing — an empty
+  // feed with no way for the reader to see why.
+  .validator(z.object({ languages: z.array(z.string()).max(200) }))
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ languages: Array<ContentLanguageCode> }> => {
+      if (!context?.session?.user) {
+        return { languages: [...DEFAULT_FEED_LANGUAGES] };
+      }
+
+      const dbValue = feedLanguagesToDbValue(data.languages);
+      await context.db
+        .update(context.schema.user)
+        .set({ feedLanguages: dbValue })
+        .where(eq(context.schema.user.id, context.session.user.id));
+
+      return { languages: parseFeedLanguages(dbValue) };
+    },
+  );
+
 // Feed presentation preferences — signed-in only, like the publication theme
 // above (the settings page is behind auth), so no cookie mirror for guests.
 const getHideFeedMetricsPreference = createServerFn({ method: "GET" })
@@ -1647,6 +1701,9 @@ export const user = {
   getBridgeExclusionPreference,
   getBridgeExclusionPreferenceQueryOptions,
   setBridgeExclusionPreference,
+  getFeedLanguagesPreference,
+  getFeedLanguagesPreferenceQueryOptions,
+  setFeedLanguagesPreference,
   getHideFeedMetricsPreference,
   getHideFeedMetricsPreferenceQueryOptions,
   setHideFeedMetricsPreference,

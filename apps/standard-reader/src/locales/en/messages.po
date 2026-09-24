@@ -600,6 +600,10 @@ msgstr "Send to e-reader…"
 msgid "The spacing between things — tighter for more on screen, looser for more room to read."
 msgstr "The spacing between things — tighter for more on screen, looser for more room to read."
 
+#: src/components/feed-languages-setting.tsx
+msgid "Every language is shown. Pick one or more to narrow your feed."
+msgstr "Every language is shown. Pick one or more to narrow your feed."
+
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Sign in to run this example (curl uses Bearer $ACCESS_TOKEN)."
 msgstr "Sign in to run this example (curl uses Bearer $ACCESS_TOKEN)."
@@ -2347,6 +2351,10 @@ msgstr "Notifications aren’t available here"
 #~ msgid "The reading experience"
 #~ msgstr "The reading experience"
 
+#: src/components/feed-languages-setting.tsx
+msgid "Languages your feed is filtered to"
+msgstr "Languages your feed is filtered to"
+
 #: src/routes/_layout.tsx
 msgid "Loading page"
 msgstr "Loading page"
@@ -3368,6 +3376,10 @@ msgstr "All articles you have marked as read."
 msgid "<0>Hide recommend and comment counts</0> removes the numbers from article cards, lists, and bylines. You can still recommend an article — only the tallies go away. If counts make you read differently, this is worth trying."
 msgstr "<0>Hide recommend and comment counts</0> removes the numbers from article cards, lists, and bylines. You can still recommend an article — only the tallies go away. If counts make you read differently, this is worth trying."
 
+#: src/components/feed-languages-setting.tsx
+msgid "Languages"
+msgstr "Languages"
+
 #: src/components/reader/collection-builder.tsx
 #: src/components/reader/collection-publication-editor.tsx
 msgid "Uploading…"
@@ -3384,6 +3396,10 @@ msgstr "Everything below is compatibility support for formats already out there 
 #: src/routes/_layout.topics.$slug.tsx
 msgid "No articles in this topic yet."
 msgstr "No articles in this topic yet."
+
+#: src/components/feed-languages-setting.tsx
+msgid "Show all languages"
+msgstr "Show all languages"
 
 #: src/components/reader/subscribe-card.tsx
 msgid "Subscribing"
@@ -4480,6 +4496,10 @@ msgstr "Some labels skipped"
 #: src/components/guide/pages/lists-guide-page.tsx
 msgid "Once you subscribe to more than a handful of publications, one long list stops helping. Lists group them, and the sidebar can be arranged around how you actually read."
 msgstr "Once you subscribe to more than a handful of publications, one long list stops helping. Lists group them, and the sidebar can be arranged around how you actually read."
+
+#: src/components/feed-languages-setting.tsx
+msgid "Add a language…"
+msgstr "Add a language…"
 
 #: src/components/user-settings-view.tsx
 #~ msgid "Bridgy Fed mirrors tens of thousands of websites into the network without anyone there asking. When on, they are hidden from Latest, Discover, search, and tag pages. Publications you already subscribe to are never hidden, and blogs whose authors chose to bridge (ap.brid.gy) always stay."
@@ -5852,6 +5872,10 @@ msgstr "Mark all as read"
 msgid "Your display name, handle, avatar URL, and DID as returned by your account provider."
 msgstr "Your display name, handle, avatar URL, and DID as returned by your account provider."
 
+#: src/components/feed-languages-setting.tsx
+msgid "Show only posts written in the languages you pick, on Latest, Discover, search, topics, and tag pages. Publications you subscribe to are never filtered, and neither is a post you open directly."
+msgstr "Show only posts written in the languages you pick, on Latest, Discover, search, topics, and tag pages. Publications you subscribe to are never filtered, and neither is a post you open directly."
+
 #: src/components/reader/terms-view.tsx
 msgid "We may update these terms as the product changes. The “Last updated” date at the top will change when we do. Continued use of the site after an update means you accept the revised terms."
 msgstr "We may update these terms as the product changes. The “Last updated” date at the top will change when we do. Continued use of the site after an update means you accept the revised terms."
@@ -6590,6 +6614,10 @@ msgstr "<0>Theme</0> offers light, dark, match-your-system, or <1>Custom</1>. Cu
 #: src/components/guide/pages/your-data-guide-page.tsx
 msgid "Another app on the same network can read them, so your reading list is not trapped in one product."
 msgstr "Another app on the same network can read them, so your reading list is not trapped in one product."
+
+#: src/components/feed-languages-setting.tsx
+msgid "Posts whose language we could not detect are always shown — a filter never hides a post on a guess."
+msgstr "Posts whose language we could not detect are always shown — a filter never hides a post on a guess."
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Pick the package for your framework; all sit on the same core. Install instructions, the full props reference, and framework-specific usage examples live in each package's README on npm."
@@ -7513,6 +7541,10 @@ msgstr "It follows you"
 #: src/routes/_layout.tag.$tag.tsx
 msgid "Tag"
 msgstr "Tag"
+
+#: src/components/feed-languages-setting.tsx
+msgid "Add a language"
+msgstr "Add a language"
 
 #: src/components/docs/renderers-docs-page.tsx
 #~ msgid "The React package, for example. With no <0>components</0> prop, a document renders as unstyled semantic HTML."

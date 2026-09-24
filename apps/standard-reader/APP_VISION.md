@@ -1670,6 +1670,61 @@ hand-tuned lists:
   backfilled. The default is still "Show all". The same carve-outs apply: subscriptions, pages
   opened by link, and names searched for directly are never hidden.
 
+### Language tagging and the language filter
+
+The network publishes in far more languages than the app's ten UI locales, and nothing in
+`site.standard.document` records which one a post is in — the lexicon has no language field. So
+the language is **ours to derive**, and it is derived once, on the write path.
+
+- **The tagger** (`src/server/lang/`) reads a document's indexed text, strips the parts that are
+  not written in any language (code fences, URLs, markup, handles, digit runs), and refuses to
+  answer on too little prose. What survives goes to **GlotLID** (cis-lmu/glotlid v3, Apache-2.0),
+  a fastText classifier over ~2,100 language/script labels, mapped onto the **closed vocabulary**
+  of ~65 languages (`src/lib/content-language.ts`). It replaced trigram detection (`franc`) after
+  a benchmark on 1,049 hand-labelled documents from this network (`scripts/lang-bench/`): franc
+  tagged 15.7% of them wrongly, largely because it could only answer from our vocabulary — every
+  Tatar post came back Kazakh, every Pashto post Persian. GlotLID knows the languages we don't
+  list, so those now come back confidently _untagged_; it made 0.4% bad tags on the same set.
+  We ship it quantized (71 MB rather than 1.6 GB, 99.93% agreement with the full model) because
+  the full model doesn't fit the WASM fastText heap; `scripts/lang/quantize-glotlid.py` rebuilds
+  it, and it lives in Git LFS under `models/`.
+- **The Jev tiebreak.** Below 0.5 probability GlotLID doesn't decide on its own: the document is
+  stored as `lang_source = 'glotlid-unsure'` (~1–2% of documents) and the hourly sweep asks Jev
+  (TypeSafe's typed-decision model, `src/server/lang/jev.ts`) — one `choice` over the vocabulary
+  plus an explicit "other". Jev must reach 0.8 to tag. On the documents GlotLID was least sure
+  of it placed 31 of 35 to GlotLID's 26, but it is no better elsewhere and costs a network round
+  trip, so it is never asked first and never sits on the ingest write path. Without
+  `JEV_API_KEY` those documents simply stay untagged.
+- **Where it runs** — `upsertDocument` in the ingest worker, alongside `has_renderable_body` and
+  `body_image_count` and for the same reason: the text is already in hand. ~0.3 ms a document;
+  the worker loads the model (~150 ms, ~400 MB RSS) before it starts the stream. The **web server
+  never loads it**: a document it indexes on demand is written with `lang_detected_at` NULL and
+  the worker's hourly sweep (`backfillDocumentLanguages`, then `tiebreakDocumentLanguages`) tags
+  it, rather than every web replica carrying the model for a handful of documents. Both sweeps
+  are bounded so a cold corpus can't monopolise one; the initial pass over an existing corpus is
+  `pnpm backfill:languages`.
+- **`documents.lang` is a closed vocabulary, and NULL is a real answer.** The detector only ever
+  emits a code the settings picker lists, so a reader can never be offered a filter for a language
+  nothing is tagged with. `lang_detected_at` is stamped whichever way it goes, which is what
+  separates "declined" from "never looked" and keeps the sweep's work queue shrinking;
+  `lang_source` records who settled it (`glotlid`, `glotlid-unsure`, `jev`).
+- **The filter** (`user.feed_languages`, default empty = every language;
+  `src/server/reader/language-filters.ts`) narrows the same network-wide surfaces
+  "Hide mirrored websites" does — Latest "All" and its badge counts, home network/trending,
+  search, topics, tag pages, trending, related articles, the digest's network section — and is
+  applied nowhere else, for the same reason: a preference about discovery must not quietly retract
+  a subscription. **Untagged documents always pass.** The filter narrows on positive evidence
+  only, so its failure mode is showing a post you did not ask for rather than silently hiding one
+  you did.
+- **Publications are not filtered.** A publication has no single language — a group blog can carry
+  three — so Discover's rails and the directory ignore the preference. Only documents are tagged
+  and only documents are filtered.
+- **The badge count** needed the same treatment as the web-bridge one, and then some: a filtered
+  live count is the 26.5s query with another clause, and there is one possible answer per subset
+  of 66 languages. The sweep's existing single scan now emits a per-language breakdown as well as
+  the two totals (one `GROUPING SETS` query), and the read path sums the rows the reader picked
+  plus the untagged bucket — one primary-key lookup.
+
 ### Web push delivery
 
 Split across two processes, and the split is the whole design:
