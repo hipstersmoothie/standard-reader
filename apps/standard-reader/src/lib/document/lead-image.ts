@@ -80,9 +80,44 @@ export function stripLeadingMarkupImage(text: string): string {
     .trimStart();
 }
 
-function firstBlockImageUrl(
+/** An image that opens the body, with its width ÷ height when the record says. */
+type LeadingImage = { url: string; aspectRatio: number | null };
+
+/**
+ * The hero frame is a fixed 16∶9 box that crops with `object-fit: cover`, and a
+ * promoted image is removed from the body. So an image only moves up when the
+ * frame shows (nearly) all of it: at 1.6 the crop loses under a tenth of the
+ * height. A square or portrait photo would lose most of itself, and the
+ * reader would never see the whole picture.
+ */
+const MIN_PROMOTED_ASPECT_RATIO = 1.6;
+
+function aspectRatioOf(
+  dimensions: { width?: unknown; height?: unknown } | null | undefined,
+): number | null {
+  const width = dimensions?.width;
+  const height = dimensions?.height;
+  if (
+    typeof width === "number" &&
+    typeof height === "number" &&
+    width > 0 &&
+    height > 0
+  ) {
+    return width / height;
+  }
+  return null;
+}
+
+function leadingImage(
+  url: string | null,
+  aspectRatio: number | null,
+): LeadingImage | null {
+  return url ? { url, aspectRatio } : null;
+}
+
+function firstBlockImage(
   article: Pick<ArticleDetail, "contentFormat" | "contentJson" | "did">,
-): string | null {
+): LeadingImage | null {
   const contentType = resolveContentType(article);
   const { contentJson, did } = article;
   if (!contentType || !contentJson) return null;
@@ -97,7 +132,10 @@ function firstBlockImageUrl(
         : contentJson;
     const first = leafletBlocks(content)[0];
     if (first?.kind === "image") {
-      return leafletImageUrl(first.block, did);
+      return leadingImage(
+        leafletImageUrl(first.block, did),
+        aspectRatioOf(first.block.aspectRatio),
+      );
     }
     return null;
   }
@@ -105,7 +143,15 @@ function firstBlockImageUrl(
   if (contentType === PCKT_CONTENT) {
     const first = pcktBlocks(contentJson)[0];
     if (first?.kind === "image" && pcktImageHasSource(first.block)) {
-      return pcktImageUrl(first.block, did);
+      const attrs = first.block.attrs;
+      return leadingImage(
+        pcktImageUrl(first.block, did),
+        aspectRatioOf(attrs?.aspectRatio) ??
+          aspectRatioOf({
+            width: attrs?.naturalWidth,
+            height: attrs?.naturalHeight,
+          }),
+      );
     }
     return null;
   }
@@ -113,7 +159,10 @@ function firstBlockImageUrl(
   if (contentType === OFFPRINT_CONTENT) {
     const first = offprintBlocks(contentJson)[0];
     if (first?.kind === "image" && structuredImageHasSource(first)) {
-      return structuredImageUrl(first, did);
+      return leadingImage(
+        structuredImageUrl(first, did),
+        aspectRatioOf(first.aspectRatio),
+      );
     }
     return null;
   }
@@ -122,7 +171,10 @@ function firstBlockImageUrl(
   if (structured?.[0]?.kind === "image") {
     const first = structured[0];
     if (structuredImageHasSource(first)) {
-      return structuredImageUrl(first, did);
+      return leadingImage(
+        structuredImageUrl(first, did),
+        aspectRatioOf(first.aspectRatio),
+      );
     }
   }
 
@@ -131,14 +183,34 @@ function firstBlockImageUrl(
     altMarkdownText(contentJson) ??
     prepareMarkpubMarkdown(contentJson)?.body ??
     htmlContentBody(contentJson);
-  if (markdown) return leadingMarkupImageUrl(markdown);
+  // Markup images carry no dimensions, so their shape is unknown.
+  if (markdown) return leadingImage(leadingMarkupImageUrl(markdown), null);
 
   return null;
 }
 
+/** Unknown shapes keep the old behaviour: markup images have no dimensions. */
+function fitsHeroFrame(image: LeadingImage): boolean {
+  return (
+    image.aspectRatio === null || image.aspectRatio >= MIN_PROMOTED_ASPECT_RATIO
+  );
+}
+
+const BLOB_CID_IN_URL = /\/(baf[a-z2-7]{20,})(?:@[a-z]+)?(?:[?#]|$)/;
+
+/** Same picture: the same blob CID, whatever CDN size or format suffix. */
+function isSameImage(a: string, b: string): boolean {
+  if (a === b) return true;
+  const cidA = a.match(BLOB_CID_IN_URL)?.[1];
+  return cidA !== undefined && cidA === b.match(BLOB_CID_IN_URL)?.[1];
+}
+
 /**
  * Hero image for an article header: a leading content image wins over the
- * document's explicit cover image.
+ * document's explicit cover image, as long as the 16∶9 frame can show it
+ * whole. A square or portrait lead stays in the body at full size, and the
+ * cover (often the author's own crop of it) takes the header instead. When the
+ * cover is that same picture there is no hero, so it does not appear twice.
  */
 export function resolveArticleHeroImage(
   article: Pick<
@@ -146,12 +218,13 @@ export function resolveArticleHeroImage(
     "coverImageUrl" | "contentFormat" | "contentJson" | "did"
   >,
 ): ArticleHeroImage | null {
-  const fromFirstBlock = firstBlockImageUrl(article);
-  if (fromFirstBlock) {
-    return { url: fromFirstBlock, fromFirstBlock: true };
+  const lead = firstBlockImage(article);
+  if (lead && fitsHeroFrame(lead)) {
+    return { url: lead.url, fromFirstBlock: true };
   }
-  if (article.coverImageUrl) {
-    return { url: article.coverImageUrl, fromFirstBlock: false };
+  const cover = article.coverImageUrl;
+  if (cover && !(lead && isSameImage(lead.url, cover))) {
+    return { url: cover, fromFirstBlock: false };
   }
   return null;
 }

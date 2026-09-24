@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import type { JsonValue } from "#/integrations/tanstack-query/api-shapes";
+
 import {
   leadingMarkupImageUrl,
   resolveArticleHeroImage,
@@ -7,6 +9,29 @@ import {
 } from "./lead-image";
 
 const author = { did: "did:plc:author" };
+
+const leafletLead = (
+  cid: string,
+  aspectRatio?: { width: number; height: number },
+): JsonValue => ({
+  $type: "pub.leaflet.content",
+  pages: [
+    {
+      id: "p1",
+      blocks: [
+        {
+          $type: "pub.leaflet.blocks.image",
+          image: { $type: "blob", ref: { $link: cid } },
+          aspectRatio: aspectRatio ?? null,
+        },
+        {
+          $type: "pub.leaflet.blocks.text",
+          plaintext: "Shot on medium-format film.",
+        },
+      ],
+    },
+  ],
+});
 
 describe("leadingMarkupImageUrl", () => {
   it("reads a leading markdown image", () => {
@@ -129,5 +154,56 @@ describe("resolveArticleHeroImage", () => {
     });
     expect(hero?.fromFirstBlock).toBe(true);
     expect(hero?.url).toContain("bafyhero");
+  });
+
+  it("promotes a wide leading image that fits the 16:9 frame", () => {
+    const hero = resolveArticleHeroImage({
+      ...author,
+      coverImageUrl: null,
+      contentFormat: "pub.leaflet.content",
+      contentJson: leafletLead("bafywidelead", { width: 1600, height: 900 }),
+    });
+    expect(hero?.fromFirstBlock).toBe(true);
+  });
+
+  it("keeps a square leading photo in the body and uses the cover instead", () => {
+    const hero = resolveArticleHeroImage({
+      ...author,
+      coverImageUrl:
+        "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:author/bafkreicustomcropcoverimage@jpeg",
+      contentFormat: "pub.leaflet.content",
+      contentJson: leafletLead("bafkreisquareoriginalphotoz", {
+        width: 1200,
+        height: 1200,
+      }),
+    });
+    expect(hero).toEqual({
+      url: "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:author/bafkreicustomcropcoverimage@jpeg",
+      fromFirstBlock: false,
+    });
+  });
+
+  it("shows no hero when the cover is the same picture as a square lead", () => {
+    const hero = resolveArticleHeroImage({
+      ...author,
+      coverImageUrl:
+        "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:author/bafkreisquareoriginalphotoz@jpeg",
+      contentFormat: "pub.leaflet.content",
+      contentJson: leafletLead("bafkreisquareoriginalphotoz", {
+        width: 800,
+        height: 1200,
+      }),
+    });
+    expect(hero).toBeNull();
+  });
+
+  it("still promotes a leading image whose shape is unknown", () => {
+    const hero = resolveArticleHeroImage({
+      ...author,
+      coverImageUrl: null,
+      contentFormat: "pub.leaflet.content",
+      contentJson: leafletLead("bafynodimensions"),
+    });
+    expect(hero?.fromFirstBlock).toBe(true);
   });
 });
