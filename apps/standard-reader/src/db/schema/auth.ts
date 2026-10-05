@@ -143,6 +143,14 @@ export const user = pgTable("user", {
    * Only *writing* needs this. Blocks the reader already made are enforced for
    * everyone, granted or not — they are public repo records. */
   blockingEnabled: boolean("blocking_enabled"),
+  /** `false` stops Bluesky blocks from hiding anything for this reader — feeds,
+   * search, profiles, discussion, the digest and push all show blocked accounts
+   * as if there were no block, in either direction. `null`/`true` = blocks are
+   * honoured (default). The block records themselves are untouched: they stay
+   * in the reader's repo, keep applying on Bluesky, and still list (and can be
+   * undone) in Settings → Blocked accounts. See `readerHasBlocks` in
+   * `src/server/blocks/blocks.ts`. */
+  respectBlocks: boolean("respect_blocks"),
   /** `true` stops the one-time ATStore review prompt toast from showing again. */
   atstoreReviewPromptDismissed: boolean("atstore_review_prompt_dismissed"),
   /** `true` once the first-run onboarding wizard was finished or dismissed;

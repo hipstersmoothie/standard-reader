@@ -1516,6 +1516,10 @@ msgstr "<0>Atividade de leitura.</0> Quando o histórico de leitura está ativo,
 msgid "Opens a new post linking to this article."
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Hide blocked accounts"
+msgstr ""
+
 #: src/routes/_layout.friends.tsx
 msgid "Browse the directory"
 msgstr "Navegue pelo diretório"
@@ -3418,6 +3422,10 @@ msgstr ""
 msgid "Setting the issue…"
 msgstr "Preparando a edição…"
 
+#: src/components/blocks-settings-view.tsx
+msgid "Blocks aren't hiding anything in Standard Reader right now. Turn on <0>Hide blocked accounts</0> in Settings to hide them again."
+msgstr ""
+
 #: src/components/docs/docs-renderers-nav.tsx
 #~ msgid "Renderers guide"
 #~ msgstr "Guia de renderizadores"
@@ -4581,6 +4589,10 @@ msgstr ""
 
 #: src/components/comic/comic-page-note.tsx
 msgid "Note for {issueTitle}"
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "When off, your blocks stop hiding anything in Standard Reader — people you block, and people who block you, show up in your feeds, search, and discussion as usual. Your blocks stay on your account and still apply on Bluesky."
 msgstr ""
 
 #: src/components/reader/atstore-review-prompt.tsx

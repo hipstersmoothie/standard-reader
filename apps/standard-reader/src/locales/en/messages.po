@@ -1516,6 +1516,10 @@ msgstr "<0>Reading activity.</0> When reading history is enabled, articles you o
 msgid "Opens a new post linking to this article."
 msgstr "Opens a new post linking to this article."
 
+#: src/components/user-settings-view.tsx
+msgid "Hide blocked accounts"
+msgstr "Hide blocked accounts"
+
 #: src/routes/_layout.friends.tsx
 msgid "Browse the directory"
 msgstr "Browse the directory"
@@ -3418,6 +3422,10 @@ msgstr "Initial fill"
 msgid "Setting the issue…"
 msgstr "Setting the issue…"
 
+#: src/components/blocks-settings-view.tsx
+msgid "Blocks aren't hiding anything in Standard Reader right now. Turn on <0>Hide blocked accounts</0> in Settings to hide them again."
+msgstr "Blocks aren't hiding anything in Standard Reader right now. Turn on <0>Hide blocked accounts</0> in Settings to hide them again."
+
 #: src/components/docs/docs-renderers-nav.tsx
 #~ msgid "Renderers guide"
 #~ msgstr "Renderers guide"
@@ -4582,6 +4590,10 @@ msgstr "Read the next instalment: {0}"
 #: src/components/comic/comic-page-note.tsx
 msgid "Note for {issueTitle}"
 msgstr "Note for {issueTitle}"
+
+#: src/components/user-settings-view.tsx
+msgid "When off, your blocks stop hiding anything in Standard Reader — people you block, and people who block you, show up in your feeds, search, and discussion as usual. Your blocks stay on your account and still apply on Bluesky."
+msgstr "When off, your blocks stop hiding anything in Standard Reader — people you block, and people who block you, show up in your feeds, search, and discussion as usual. Your blocks stay on your account and still apply on Bluesky."
 
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Something went wrong while preparing your review."
