@@ -416,6 +416,11 @@ msgstr ""
 msgid "We couldn't write the mute to your account. Try again?"
 msgstr ""
 
+#. placeholder {0}: tile.name
+#: src/components/appearance-settings.tsx
+msgid "{0}, from Witchsky"
+msgstr ""
+
 #: src/components/reader/continue-reading.tsx
 #~ msgid "Still open"
 #~ msgstr ""
@@ -7836,6 +7841,10 @@ msgstr ""
 #: src/components/guide/pages/publishing-guide-page.tsx
 msgid "How to wire a personal site's own <0>site.standard.*</0> records so Standard Reader can find it and read articles inline, without going through Leaflet, Pckt, Offprint, or another publishing tool."
 msgstr "Leaflet, Pckt, Offprint 같은 퍼블리싱 도구를 거치지 않고, 개인 사이트에 <0>site.standard.*</0> 레코드를 직접 연결해 Standard Reader가 사이트를 찾고 글을 인라인으로 읽게 하는 방법."
+
+#: src/components/appearance-settings.tsx
+msgid "From Witchsky"
+msgstr ""
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Save to {appLabel}"

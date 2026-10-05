@@ -36,15 +36,18 @@ import {
   tracking,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
+import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Check } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Radio as AriaRadio,
   RadioGroup as AriaRadioGroup,
 } from "react-aria-components";
 
+import { user } from "#/integrations/tanstack-query/api-user.functions";
 import { contrastRatio } from "#/lib/collections/color";
 import { DEFAULT_CUSTOM_GOOGLE_FONT } from "#/lib/google-fonts";
+import { fetchWitchskyPalettes } from "#/lib/witchsky-themes";
 
 import type {
   AppearanceDensity,
@@ -76,6 +79,9 @@ const MOBILE = "@media (max-width: 47.5rem)";
 
 /** How long a color can be dragged before the whole app repaints to match. */
 const COLOR_COMMIT_DELAY_MS = 200;
+
+/** Radio values for imported themes, kept apart from the `PaletteId`s. */
+const WITCHSKY_VALUE_PREFIX = "witchsky:";
 
 const FONT_LABELS: Record<AppearanceFont, MessageDescriptor> = {
   editorial: msg`Editorial`,
@@ -454,6 +460,17 @@ function CustomColorEditor({
 export function AppearancePalettePanel() {
   const { t } = useLingui();
   const { preference, setPreference } = useAppearance();
+  const { data: session } = useQuery(user.getSessionQueryOptions);
+  const readerDid = session?.user?.did;
+  // Read in the browser, from the reader's own repo — nothing to render for
+  // most readers, so a failure just means the group stays hidden.
+  const { data: witchskyPalettes } = useQuery({
+    queryKey: ["witchsky-palettes", readerDid],
+    queryFn: () => fetchWitchskyPalettes(readerDid ?? ""),
+    enabled: Boolean(readerDid),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
   const [draft, setDraft] = useState({
     paper: preference.customPaper ?? DEFAULT_CUSTOM_PAPER,
     accent: preference.customAccent ?? DEFAULT_CUSTOM_ACCENT,
@@ -510,16 +527,47 @@ export function AppearancePalettePanel() {
     draft.accent,
   ) as React.CSSProperties;
 
+  const importedTiles = useMemo(
+    () =>
+      (witchskyPalettes ?? []).map((palette) => ({
+        ...palette,
+        value: `${WITCHSKY_VALUE_PREFIX}${palette.id}`,
+        scheme: appearanceScheme({
+          ...DEFAULT_APPEARANCE,
+          palette: "custom",
+          customPaper: palette.paper,
+        }),
+        vars: customPaletteVars(
+          palette.paper,
+          palette.accent,
+        ) as React.CSSProperties,
+      })),
+    [witchskyPalettes],
+  );
+
+  // An imported theme is just a custom paper + accent, so it reads as selected
+  // for as long as the custom colors still match it — and hands selection back
+  // to the Custom tile the moment the reader tweaks either one.
+  const selectedImport =
+    preference.palette === "custom"
+      ? importedTiles.find(
+          (tile) =>
+            tile.paper === draft.paper.toLowerCase() &&
+            tile.accent === draft.accent.toLowerCase(),
+        )
+      : undefined;
+
   const renderTile = (
     id: PaletteId,
     name: string,
     scheme: "light" | "dark",
     label: string,
     vars?: React.CSSProperties,
+    value: string = id,
   ) => (
     <AriaRadio
-      key={id}
-      value={id}
+      key={value}
+      value={value}
       aria-label={label}
       {...stylex.props(styles.tile)}
     >
@@ -550,8 +598,20 @@ export function AppearancePalettePanel() {
 
       <AriaRadioGroup
         aria-label={t`Palette`}
-        value={preference.palette}
-        onChange={(value) => setPreference({ palette: value as PaletteId })}
+        value={selectedImport?.value ?? preference.palette}
+        onChange={(value) => {
+          const imported = importedTiles.find((tile) => tile.value === value);
+          if (imported) {
+            setDraft({ paper: imported.paper, accent: imported.accent });
+            setPreference({
+              palette: "custom",
+              customPaper: imported.paper,
+              customAccent: imported.accent,
+            });
+            return;
+          }
+          setPreference({ palette: value as PaletteId });
+        }}
         {...stylex.props(styles.radioGroup)}
       >
         <div>
@@ -600,6 +660,26 @@ export function AppearancePalettePanel() {
             )}
           </div>
         </div>
+
+        {importedTiles.length > 0 ? (
+          <div>
+            <p {...stylex.props(styles.groupLabel)}>
+              <Trans>From Witchsky</Trans>
+            </p>
+            <div {...stylex.props(styles.tileGrid)}>
+              {importedTiles.map((tile) =>
+                renderTile(
+                  "custom",
+                  tile.name,
+                  tile.scheme,
+                  t`${tile.name}, from Witchsky`,
+                  tile.vars,
+                  tile.value,
+                ),
+              )}
+            </div>
+          </div>
+        ) : null}
       </AriaRadioGroup>
 
       {preference.palette === "custom" ? (

@@ -904,6 +904,11 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       `standard-reader-appearance` cookie (`drizzle/0021_melodic_texas_twister`), seeded through
       `getShellBootstrap` so the first paint is already themed
       (`#/lib/appearance`, `useAppearance`, `AppearancePalettePanel`).
+- [x] **Witchsky themes in the palette picker** — signed-in readers see a "From Witchsky" row
+      of their own + saved `app.witchsky.theme.*` themes (base + variants), fetched client-side
+      from their PDS (`#/lib/witchsky-themes`). `canvas` → paper, `accent` → accent; picking one
+      fills the custom pair. Material You (generator) themes hidden. Requested by
+      danielmorrisey.com on Bluesky.
 - [x] **"Use publication themes" preference** — Settings → Appearance toggle that repaints
       `/p/$did/$rkey` and `/a/$did/$rkey` in the publication's own `basicTheme` colors.
       `publicationThemeScaleVars` expands the four flat colors into light + dark UI/accent

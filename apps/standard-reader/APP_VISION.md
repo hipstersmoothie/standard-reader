@@ -328,6 +328,16 @@ Topics are **derived, never curated** — see
   the color they picked (choosing a primary color and being handed grey is a
   worse answer), and the panel scores the generated ramp and warns instead.
 
+  Signed-in readers who use **Witchsky** also get a "From Witchsky" row: their own
+  `app.witchsky.theme.colors` records and the themes they saved
+  (`app.witchsky.theme.saved`, read from its `snapshot`), one tile per base and
+  variant. A Witchsky theme states thirteen semantic colors; we take `canvas` as
+  paper and `accent` as accent, so picking one just fills the custom pair (and
+  tweaking either color hands selection back to Custom). Read in the browser
+  straight from the reader's PDS (Slingshot resolves the DID) — a third-party
+  collection only the settings page reads, so no DB mirror. Material You themes
+  are hidden: their stored colors are an example of a generator, not a palette.
+
   Alongside the palette, four dials that apply in **every** theme mode because
   none of them is color: interface font (editorial / sans / any Google family),
   text size (XS–XL, 13→22px of interface text, in even ~10–20% steps so no one
