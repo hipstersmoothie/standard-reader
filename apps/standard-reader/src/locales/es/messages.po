@@ -416,6 +416,11 @@ msgstr ""
 msgid "We couldn't write the mute to your account. Try again?"
 msgstr ""
 
+#. placeholder {0}: tile.name
+#: src/components/appearance-settings.tsx
+msgid "{0}, from Witchsky"
+msgstr ""
+
 #: src/components/reader/continue-reading.tsx
 #~ msgid "Still open"
 #~ msgstr ""
@@ -7836,6 +7841,10 @@ msgstr ""
 #: src/components/guide/pages/publishing-guide-page.tsx
 msgid "How to wire a personal site's own <0>site.standard.*</0> records so Standard Reader can find it and read articles inline, without going through Leaflet, Pckt, Offprint, or another publishing tool."
 msgstr "Cómo configurar los registros <0>site.standard.*</0> de un sitio personal para que Standard Reader pueda encontrarlo y leer sus artículos en línea, sin pasar por Leaflet, Pckt, Offprint u otra herramienta de publicación."
+
+#: src/components/appearance-settings.tsx
+msgid "From Witchsky"
+msgstr ""
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "Save to {appLabel}"
