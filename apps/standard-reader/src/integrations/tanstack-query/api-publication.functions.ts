@@ -921,7 +921,7 @@ const getArticleExtras = createServerFn({ method: "GET" })
     observe(
       "publication.getArticleExtras",
       async ({ data, context }, span): Promise<ArticleExtras> => {
-        const { db, schema, excludeBridged } = context;
+        const { db, schema, excludeBridged, feedLanguages } = context;
         const d = schema.documents;
         span.set("documentUri", data.documentUri);
         await attachReaderSpanContext(span, getRequest());
@@ -974,11 +974,15 @@ const getArticleExtras = createServerFn({ method: "GET" })
                 viewerDid: blockDid,
               })
             : Promise.resolve([]),
+          // "Related articles" is the app recommending, not the reader
+          // choosing, so it is a network-wide surface and the language filter
+          // applies — unlike "More from this publication" just above it.
           relatedArticles(db, schema, {
             documentUri: row.uri,
             publicationUri: row.publicationUri,
             limit: data.relatedLimit,
             excludeBridged,
+            languages: feedLanguages,
           }).then((rows) => filterBlockedCards(db, schema, readerDid, rows)),
           articleRecommendedPublications(db, schema, {
             publicationUri: row.publicationUri,

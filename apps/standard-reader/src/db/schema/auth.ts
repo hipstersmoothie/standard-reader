@@ -106,6 +106,21 @@ export const user = pgTable("user", {
   feedPagination: text("feed_pagination"),
   /** `network` shows the whole-network home feed; `null` = follows (default). */
   homeScope: text("home_scope"),
+  /**
+   * Comma-separated BCP-47 codes from `#/lib/content-language` — the languages
+   * this reader wants network-wide surfaces narrowed to. `null`/empty = no
+   * filter (the default: every language), which is also what guests get.
+   *
+   * Unrelated to {@link locale}, which is the language the *interface* is
+   * translated into. Neither seeds the other: wanting the app in English says
+   * nothing about whether you read Japanese.
+   *
+   * Applied only where the app chose what to show you — Latest "All", Discover,
+   * search, tag pages, trending, related — never to your subscriptions or to a
+   * publication or article you opened. See `#/lib/content-language` and
+   * `#/server/reader/language-filters`.
+   */
+  feedLanguages: text("feed_languages"),
   /** Comma-separated author-profile tab ids the owner has hidden from their
    * public profile (`posts,publications,...`); `null`/empty = all visible. */
   profileHiddenTabs: text("profile_hidden_tabs"),

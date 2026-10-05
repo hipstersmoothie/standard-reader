@@ -52,6 +52,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # The language detector's GlotLID model is a Git LFS object; without
+          # this the checkout has a pointer file and `detect.test.ts` would
+          # download 71 MB from GitHub on every run.
+          lfs: true
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4

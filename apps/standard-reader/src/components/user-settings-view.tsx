@@ -124,6 +124,7 @@ import {
   AppearancePalettePanel,
 } from "./appearance-settings";
 import { EreaderSettings } from "./ereader-settings";
+import { FeedLanguagesSetting } from "./feed-languages-setting";
 import { OfflineReadingSettings } from "./offline-settings";
 import { OfflineSyncDebugPanel } from "./offline-sync-debug";
 import { PushDiagnosticsPanel } from "./push-diagnostics";
@@ -840,6 +841,8 @@ export function UserSettingsView() {
               </SegmentedControlItem>
             </SegmentedControl>
           </SettingRow>
+          <Separator />
+          <FeedLanguagesSetting />
           <Separator />
           <SettingRow
             label={t`Loading more`}
