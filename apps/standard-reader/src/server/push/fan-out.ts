@@ -13,6 +13,7 @@ import {
   publications,
   pushDevices,
   pushTopics,
+  user,
 } from "../../db/schema.ts";
 
 /**
@@ -212,14 +213,25 @@ export async function resolveTargets(
  * lists (the recipients, and the document's author + contributors + owner).
  *
  * Mirrors the four directions in `server/blocks/blocks.ts`; a block hides
- * content whichever way it runs.
+ * content whichever way it runs. Recipients who turned blocks off
+ * (`user.respect_blocks = false`) are dropped first: this probes the block
+ * tables directly rather than through `readerHasBlocks`, so it has to honour
+ * that switch itself.
  */
 async function blockedRecipients(
   targets: Array<PushTarget>,
   subjectDids: Array<string>,
 ): Promise<Set<string>> {
-  const owners = [...new Set(targets.map((target) => target.ownerDid))];
-  if (owners.length === 0 || subjectDids.length === 0) return new Set();
+  const recipients = [...new Set(targets.map((target) => target.ownerDid))];
+  if (recipients.length === 0 || subjectDids.length === 0) return new Set();
+
+  const optedOut = await db
+    .select({ did: user.did })
+    .from(user)
+    .where(and(inArray(user.did, recipients), eq(user.respectBlocks, false)));
+  const optedOutDids = new Set(optedOut.map((row) => row.did));
+  const owners = recipients.filter((did) => !optedOutDids.has(did));
+  if (owners.length === 0) return new Set();
 
   const [blocking, blockedBy, listBlocking, listBlockedBy] = await Promise.all([
     db
