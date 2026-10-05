@@ -116,6 +116,7 @@ import { usePublicationThemePreference } from "#/lib/use-publication-theme-prefe
 import { usePushSettings } from "#/lib/use-push-settings";
 import { useReaderVoice } from "#/lib/use-reader-voice";
 import { useReadingTypography } from "#/lib/use-reading-typography";
+import { useRespectBlocks } from "#/lib/use-respect-blocks";
 import { useTheme } from "#/lib/use-theme";
 import { useTrackReadingHistory } from "#/lib/use-track-reading-history";
 
@@ -484,6 +485,8 @@ export function UserSettingsView() {
     useCountOldPostsAsUnread();
   const { exclusion: bridgeExclusion, setExclusion: setBridgeExclusion } =
     useBridgeExclusion();
+  const { enabled: respectBlocks, setEnabled: setRespectBlocks } =
+    useRespectBlocks();
   const { enabled: usePublicationTheme, setEnabled: setUsePublicationTheme } =
     usePublicationThemePreference();
   const { hidden: hideFeedMetrics, setHidden: setHideFeedMetrics } =
@@ -1252,6 +1255,17 @@ export function UserSettingsView() {
                 <Trans>Manage {blockCount} blocks</Trans>
               )}
             </ButtonLink>
+          </SettingRow>
+          <Separator />
+          <SettingRow
+            label={t`Hide blocked accounts`}
+            description={t`When off, your blocks stop hiding anything in Standard Reader — people you block, and people who block you, show up in your feeds, search, and discussion as usual. Your blocks stay on your account and still apply on Bluesky.`}
+          >
+            <Switch
+              isSelected={respectBlocks}
+              onChange={setRespectBlocks}
+              aria-label={t`Hide blocked accounts`}
+            />
           </SettingRow>
           <Separator />
           <SettingRow

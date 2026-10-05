@@ -1410,6 +1410,15 @@ A reader's blocks follow them here, in both directions, with no setup and no imp
 - **Big blocklists are mirrored partially, and say so.** The largest public lists run to six
   figures; past the mirror cap a list is stored truncated and flagged, because silently
   under-enforcing a blocklist is worse than admitting the limit.
+- **Enforcement is the reader's to turn off.** Settings → Moderation → "Hide blocked accounts"
+  (`user.respect_blocks`, `null` = on) stops blocks hiding anything here, in all four directions —
+  a signed-out visitor already sees every one of those accounts, so the switch only brings a
+  signed-in reader level with that. It changes nothing on the network: the records stay in their
+  repo, still apply on Bluesky, and still list and unblock in Settings → Blocked accounts, which
+  says up top that they aren't being enforced. It lands in one place — `readerHasBlocks`, the
+  cached guard every other block helper and the feed predicate already sit behind, answers "no"
+  for an opted-out reader in the same round trip — so no surface has to know the setting exists.
+  Push fan-out is the one path that probes the block tables directly and checks the column itself.
 - **Settings → Blocked accounts** pages through the reader's own blocks and lists their subscribed
   block lists, saying in words when a list is larger than we mirror. It only offers Unblock for
   blocks they made: someone else's decision is not theirs to undo, and a button that pretended

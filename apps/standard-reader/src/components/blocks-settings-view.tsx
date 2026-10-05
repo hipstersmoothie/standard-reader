@@ -32,6 +32,7 @@ import type {
 } from "#/integrations/tanstack-query/api-blocks.functions";
 import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
 import { useFormatters } from "#/lib/use-formatters";
+import { useRespectBlocks } from "#/lib/use-respect-blocks";
 
 import { FeedLoadMore } from "./reader/feed-load-more";
 import { Masthead, ReaderContent } from "./reader/primitives";
@@ -181,6 +182,7 @@ export function BlocksSettingsView() {
   const fmt = useFormatters();
   const queryClient = useQueryClient();
   const settings = useQuery(blocksApi.getBlocksSettingsQueryOptions());
+  const { enabled: respectBlocks } = useRespectBlocks();
 
   // Pages past the first, appended. Reset whenever the first page is refetched
   // so an unblock can't leave a stale tail behind the row it removed.
@@ -266,7 +268,23 @@ export function BlocksSettingsView() {
         }
       />
 
-      {data && !data.canWrite ? (
+      {/* Said up top: with the switch off, every list below is still real —
+          it is on the reader's account and applies on Bluesky — but none of it
+          hides anything here, and the masthead dek above says it does. */}
+      {respectBlocks ? null : (
+        <p {...stylex.props(styles.warnNote)}>
+          <TriangleAlert size={16} aria-hidden="true" />
+          <span>
+            <Trans>
+              Blocks aren't hiding anything in Standard Reader right now. Turn
+              on <Link to="/settings">Hide blocked accounts</Link> in Settings
+              to hide them again.
+            </Trans>
+          </span>
+        </p>
+      )}
+
+      {data && !data.canWrite && respectBlocks ? (
         <p {...stylex.props(styles.note)}>
           <Trans>
             Your blocks are enforced here already. To add or remove one from
