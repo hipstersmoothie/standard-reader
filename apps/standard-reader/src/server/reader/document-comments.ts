@@ -28,6 +28,7 @@ import { blockedDidsAmong } from "#/server/blocks/blocks";
 import { buildCanonicalUrl } from "#/server/ingest/mappers";
 import type { LeafletCommentContext } from "#/server/leaflet/comments";
 import { fetchLeafletCommentsForDocument } from "#/server/leaflet/comments";
+import { logEvent } from "#/server/observability/log";
 import { fetchNotesForDocument } from "#/server/pckt/notes";
 import { listQuoteSharesForDocument } from "#/server/reader/quote-shares";
 
@@ -216,6 +217,38 @@ const COMMENTS_CACHE_TTL_MS = 5 * 60 * 1000;
 const COMMENTS_CACHE_MAX_ENTRIES = 500;
 const COUNT_CACHE_MAX_ENTRIES = 5000;
 
+/**
+ * Longest any one source may hold up a Discussion build. Above the 8s
+ * per-request timeout the sources use internally, so a source that honours its
+ * own timeout still answers for itself first.
+ */
+const SOURCE_DEADLINE_MS = 10_000;
+/**
+ * Hard cap on a whole build. Every request for a document joins its in-flight
+ * build, so one that never settles would leave that document's Discussion
+ * loading forever — for every reader, until the process restarts.
+ */
+const BUILD_DEADLINE_MS = 25_000;
+
+const TIMED_OUT = Symbol("timed out");
+
+function within<T>(
+  promise: Promise<T>,
+  ms: number,
+): Promise<T | typeof TIMED_OUT> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<typeof TIMED_OUT>((resolve) => {
+    timer = setTimeout(() => resolve(TIMED_OUT), ms);
+  });
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
+
+interface CommentsBuild {
+  comments: Array<DocumentComment>;
+  /** False when a source timed out or failed and its items are missing. */
+  complete: boolean;
+}
+
 interface CommentsCacheEntry {
   comments: Array<DocumentComment>;
   expiresAt: number;
@@ -295,8 +328,18 @@ function loadDocumentComments(
   const inflight = commentsInflight.get(documentUri);
   if (inflight) return inflight;
 
-  const promise = buildDocumentComments(dbClient, schemaModule, documentUri)
-    .then((comments) => {
+  const promise = within(
+    buildDocumentComments(dbClient, schemaModule, documentUri),
+    BUILD_DEADLINE_MS,
+  )
+    .then((build) => {
+      if (build === TIMED_OUT) {
+        throw new Error(`Discussion build timed out for ${documentUri}`);
+      }
+      const { comments, complete } = build;
+      // A partial list would drop the badge below its real count and pin the
+      // short list for the cache TTL; serve it to this request only.
+      if (!complete) return comments;
       setCapped(
         commentsCache,
         documentUri,
@@ -441,7 +484,8 @@ async function loadDocumentCommentTargets(
 ): Promise<{
   targets: Array<CommentTarget>;
   stripUrls: Array<string>;
-  bskyPostUri: string | null;
+  /** The author's announcement post, stored or inferred from their feed. */
+  resolveBskyPostUri: () => Promise<string | null>;
   leaflet: LeafletCommentContext;
 } | null> {
   const d = schemaModule.documents;
@@ -484,18 +528,18 @@ async function loadDocumentCommentTargets(
   );
 
   const linkTargets = targets.map((target) => target.url);
-  const bskyPostUri = await resolveBskyPostUri(
-    documentUri,
-    doc.bskyPostUri,
-    doc.did,
-    doc.publishedAt,
-    linkTargets,
-  );
 
   return {
     targets,
     stripUrls: linkTargets,
-    bskyPostUri,
+    resolveBskyPostUri: () =>
+      resolveBskyPostUri(
+        documentUri,
+        doc.bskyPostUri,
+        doc.did,
+        doc.publishedAt,
+        linkTargets,
+      ),
     leaflet: {
       content: doc.contentJson,
       canonicalUrl,
@@ -597,23 +641,75 @@ async function buildDocumentComments(
   dbClient: typeof db,
   schemaModule: typeof schema,
   documentUri: string,
-): Promise<Array<DocumentComment>> {
+): Promise<CommentsBuild> {
   const context = await loadDocumentCommentTargets(
     dbClient,
     schemaModule,
     documentUri,
   );
-  if (!context) return [];
+  if (!context) return { comments: [], complete: true };
 
-  const { targets, stripUrls, bskyPostUri, leaflet } = context;
+  const { targets, stripUrls, leaflet } = context;
   const linkUrls = targets.map((target) => target.url);
+
+  // Each source is third-party and best-effort: one that hangs or throws drops
+  // its own items rather than the whole Discussion.
+  let complete = true;
+  const settle = async <T>(
+    source: string,
+    promise: Promise<T>,
+    fallback: T,
+  ): Promise<T> => {
+    let failure: unknown;
+    const result = await within(
+      promise.catch((error: unknown): typeof TIMED_OUT => {
+        failure = error;
+        return TIMED_OUT;
+      }),
+      SOURCE_DEADLINE_MS,
+    );
+    if (result === TIMED_OUT) {
+      complete = false;
+      // Outbound calls aren't traced, so this is the only record of which
+      // source stalled.
+      logEvent("comments.sourceDropped", {
+        documentUri,
+        source,
+        reason: failure === undefined ? "timeout" : "error",
+        error:
+          failure === undefined
+            ? undefined
+            : failure instanceof Error
+              ? failure.message
+              : String(failure),
+      });
+      return fallback;
+    }
+    return result;
+  };
+
+  // An inference that misses the deadline keeps running and caches its answer
+  // for the next build.
+  const bskyPostUri = await settle(
+    "announcement",
+    context.resolveBskyPostUri(),
+    null,
+  );
 
   const [discovery, marginComments, noteComments, leafletComments] =
     await Promise.all([
-      discoverDocumentComments(targets, bskyPostUri),
-      fetchMarginNotesForUrls(linkUrls),
-      fetchNotesForDocument(documentUri),
-      fetchLeafletCommentsForDocument(documentUri, leaflet),
+      settle("bluesky", discoverDocumentComments(targets, bskyPostUri), {
+        postMeta: new Map<string, PostLinkMeta>(),
+        authorPostReplyUris: new Set<string>(),
+        bskyPostUri,
+      }),
+      settle("margin", fetchMarginNotesForUrls(linkUrls), []),
+      settle("notes", fetchNotesForDocument(documentUri), []),
+      settle(
+        "leaflet",
+        fetchLeafletCommentsForDocument(documentUri, leaflet),
+        [],
+      ),
     ]);
 
   const comments: Array<DocumentComment> = [
@@ -656,9 +752,13 @@ async function buildDocumentComments(
     }
   }
 
-  return comments.toSorted(
-    (a, b) => new Date(a.indexedAt).getTime() - new Date(b.indexedAt).getTime(),
-  );
+  return {
+    comments: comments.toSorted(
+      (a, b) =>
+        new Date(a.indexedAt).getTime() - new Date(b.indexedAt).getTime(),
+    ),
+    complete,
+  };
 }
 
 /**

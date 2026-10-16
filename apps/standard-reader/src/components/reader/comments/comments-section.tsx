@@ -27,7 +27,7 @@ function CommentsSkeleton() {
 export function CommentsSection({ article }: { article: ArticleDetail }) {
   const { t } = useLingui();
   const [addOpen, setAddOpen] = useState(false);
-  const { data, isPending } = useQuery(
+  const { data, isPending, isError } = useQuery(
     commentsApi.getDocumentCommentsQueryOptions(article.uri),
   );
   const comments = data?.comments;
@@ -51,7 +51,11 @@ export function CommentsSection({ article }: { article: ArticleDetail }) {
           ) : undefined
         }
       />
-      {isPending || comments === undefined ? (
+      {isError && comments === undefined ? (
+        <p {...stylex.props(commentStyles.empty)}>
+          <Trans>Couldn't load the discussion. Try again in a moment.</Trans>
+        </p>
+      ) : isPending || comments === undefined ? (
         <CommentsSkeleton />
       ) : comments.length === 0 ? (
         <p {...stylex.props(commentStyles.empty)}>

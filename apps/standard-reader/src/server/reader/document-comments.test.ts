@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { db } from "#/db/index.server";
 import type * as schema from "#/db/schema";
@@ -309,6 +309,65 @@ describe("document comment counts", () => {
     expect(targets).toContain(APP_URL);
     expect(targets).not.toContain("https://standard-reader.app");
     expect(targets).not.toContain("https://standard-reader.app/");
+  });
+
+  /**
+   * Regression test: every request joins a document's in-flight build, so a
+   * source that never answered left that article's Discussion loading forever
+   * — the section sat on its skeleton for every reader until a restart.
+   */
+  describe("when a source hangs", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("serves the other sources without caching the short list", async () => {
+      const postUri = "at://did:plc:commenter/app.bsky.feed.post/only";
+      getPostBacklinksForTarget.mockResolvedValue([backlink("only")]);
+      getPosts.mockResolvedValue([postView({ uri: postUri })]);
+      fetchLeafletCommentsForDocument.mockReturnValue(new Promise(() => {}));
+
+      const { countDocumentComments, fetchDocumentComments } =
+        await importModule();
+      const dbClient = fakeDb(documentRow);
+
+      const pending = fetchDocumentComments(dbClient, fakeSchema, DOCUMENT_URI);
+      await vi.advanceTimersByTimeAsync(10_000);
+      const result = await pending;
+
+      expect(result.comments.map((comment) => comment.postUri)).toEqual([
+        postUri,
+      ]);
+      await expect(
+        countDocumentComments(dbClient, fakeSchema, DOCUMENT_URI),
+      ).resolves.toBe(0);
+    });
+
+    it("gives up on a stuck build so the next request starts fresh", async () => {
+      getPostBacklinksForTarget.mockResolvedValue([backlink("only")]);
+      getPosts.mockReturnValueOnce(new Promise(() => {}));
+
+      const { fetchDocumentComments } = await importModule();
+      const dbClient = fakeDb(documentRow);
+
+      const stuck = fetchDocumentComments(dbClient, fakeSchema, DOCUMENT_URI);
+      const assertion = expect(stuck).rejects.toThrow(/timed out/);
+      await vi.advanceTimersByTimeAsync(25_000);
+      await assertion;
+
+      getPosts.mockResolvedValue([
+        postView({ uri: "at://did:plc:commenter/app.bsky.feed.post/only" }),
+      ]);
+      const retried = await fetchDocumentComments(
+        dbClient,
+        fakeSchema,
+        DOCUMENT_URI,
+      );
+      expect(retried.comments).toHaveLength(1);
+    });
   });
 
   it("reports 0 for a document with no discussion", async () => {

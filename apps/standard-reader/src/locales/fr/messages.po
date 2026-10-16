@@ -1538,6 +1538,10 @@ msgstr ""
 msgid "Getting help"
 msgstr ""
 
+#: src/components/reader/comments/comments-section.tsx
+msgid "Couldn't load the discussion. Try again in a moment."
+msgstr ""
+
 #: src/components/reader/article-view.tsx
 msgid "Did you enjoy this article?"
 msgstr "Avez-vous aimé cet article ?"
