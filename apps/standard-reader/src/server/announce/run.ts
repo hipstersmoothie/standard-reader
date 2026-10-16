@@ -1,11 +1,9 @@
-import {
-  articleReaderUrl,
-  collectionPieceReadUrl,
-} from "#/components/reader/format";
 /**
  * Weekly "hottest articles" Bluesky thread runner. Selects the top network
- * articles over the past week, composes a reply-chained thread of rich link
- * cards back to Standard Reader, and posts it as the reader bot — then exits.
+ * articles over the past week and posts them as the reader bot — then exits.
+ * The thread root links to the week's page on Standard Reader (`/weekly/$week`,
+ * with its OG image as the card thumbnail); each reply is one article whose
+ * card links to its canonical URL on the author's site, not back to us.
  *
  * Invoked by the short-lived `thread-cron` job entrypoint
  * (`scripts/post-weekly-thread.ts`), deliberately in its own scheduled process
@@ -34,8 +32,10 @@ import {
  * week's thread already went out — which now means a genuinely second thread,
  * not a rewrite of the first.
  */
+import { articleReaderUrl } from "#/components/reader/format";
 import type { ArticleCard } from "#/integrations/tanstack-query/api-shapes";
 import { getPublicUrl } from "#/lib/public-url";
+import { weeklyPicksOgImageUrl, weeklyPicksUrl } from "#/lib/weekly-picks";
 import { weekInReviewArticles } from "#/server/reader/queries";
 
 import { db } from "../../db/index.ts";
@@ -55,6 +55,7 @@ import {
   claimWeek,
   markRootPosted,
   markThreadComplete,
+  recordWeekPicks,
   releaseWeek,
 } from "./ledger.ts";
 import {
@@ -99,32 +100,55 @@ function byline(
   return null;
 }
 
-/** In-app reader when renderable, else the publication site, else the app. */
+/**
+ * Where an article's card points: the canonical URL on the author's own site.
+ * The thread root already carries the Standard Reader link, so every article
+ * links to its source — that is the link the author wants shared, and the one
+ * sensemaking tools (Semble et al.) key their connections on. The in-app
+ * reader is only the fallback for a document with no canonical URL.
+ */
 function articleUrl(card: ArticleCard, baseUrl: string): string {
-  return (
-    collectionPieceReadUrl(card, baseUrl) ??
-    articleReaderUrl(card.uri, baseUrl) ??
-    card.canonicalUrl ??
-    baseUrl
-  );
+  return card.canonicalUrl ?? articleReaderUrl(card.uri, baseUrl) ?? baseUrl;
 }
 
-/** Compose one numbered article post (the first also carries the intro header). */
-function articleSpec(
-  card: ArticleCard,
-  index: number,
-  total: number,
+/**
+ * The thread root: the headline, with a link card to the week's page on
+ * Standard Reader (`/weekly/$week`) that lists every pick.
+ */
+function rootSpec(
+  cards: Array<ArticleCard>,
+  periodKey: string,
   baseUrl: string,
   thumb?: Record<string, unknown> | null,
 ): PostSpec {
-  const n = index + 1;
+  const text = `🔥 The ${cards.length} ${THREAD_ROOT_MARKER}`;
+  const description = cards
+    .map((card, i) => `${i + 1}. ${card.title.trim()}`)
+    .join(" · ");
+  return {
+    text,
+    external: {
+      uri: weeklyPicksUrl(baseUrl, periodKey),
+      title: `The ${cards.length} hottest reads this week`,
+      description: capGraphemes(description, 300),
+      ...(thumb ? { thumb } : {}),
+    },
+  };
+}
+
+/** Compose one numbered article reply, linking to the article's own site. */
+function articleSpec(
+  card: ArticleCard,
+  index: number,
+  baseUrl: string,
+  thumb?: Record<string, unknown> | null,
+): PostSpec {
+  const prefix = `${index + 1}. `;
   const rawTitle = card.title.trim();
   const by = byline(card);
 
-  // Reserve budget for the numbering/intro prefix and the byline suffix so the
+  // Reserve budget for the numbering prefix and the byline suffix so the
   // author @mention at the end is never truncated away by the 300-char cap.
-  const prefix =
-    index === 0 ? `🔥 The ${total} ${THREAD_ROOT_MARKER}\n\n${n}. ` : `${n}. `;
   const suffix = by ? ` — ${by.text}` : "";
   const titleBudget =
     BSKY_POST_MAX_GRAPHEMES - graphemeCount(prefix) - graphemeCount(suffix);
@@ -233,10 +257,14 @@ async function runDryThread(baseUrl: string): Promise<WeeklyThreadSummary> {
     };
   }
 
-  const specs = cards.map((card, i) =>
-    articleSpec(card, i, cards.length, baseUrl),
-  );
-  specs.push(ctaSpec(baseUrl));
+  // Nothing is claimed on a dry run, so there is no page behind this link —
+  // it shows where the real run's root card would point.
+  const periodKey = isoWeekKey(new Date());
+  const specs = [
+    rootSpec(cards, periodKey, baseUrl),
+    ...cards.map((card, i) => articleSpec(card, i, baseUrl)),
+    ctaSpec(baseUrl),
+  ];
   console.info(`[thread] DRY RUN — ${specs.length} posts composed:`);
   for (const [i, spec] of specs.entries()) {
     console.info(`\n--- post ${i + 1} ---\n${spec.text}`);
@@ -258,7 +286,7 @@ async function runDryThread(baseUrl: string): Promise<WeeklyThreadSummary> {
       86_400_000
     ).toFixed(1);
     console.info(
-      `  post ${i + 1} published ${card.publishedAt} (${ageDays}d ago) · cover image: ${card.coverImageUrl ?? "none"}`,
+      `  post ${i + 2} published ${card.publishedAt} (${ageDays}d ago) · cover image: ${card.coverImageUrl ?? "none"}`,
     );
   }
   return {
@@ -320,10 +348,24 @@ async function postWeeklyThread(
     }
   }
 
-  const specs: Array<PostSpec> = [];
+  // The root card links to `/weekly/$week`, which renders these picks — and its
+  // thumbnail is that page's OG image, rendered from them too. Both read the
+  // ledger row, so the picks go in before either is fetched.
+  await recordWeekPicks(
+    periodKey,
+    cards.map((card) => card.uri),
+  );
+
+  const rootThumb = await fetchThumbBlob(
+    client,
+    weeklyPicksOgImageUrl(baseUrl, periodKey),
+  );
+  const specs: Array<PostSpec> = [
+    rootSpec(cards, periodKey, baseUrl, rootThumb),
+  ];
   for (let i = 0; i < cards.length; i++) {
     const thumb = await fetchThumbBlob(client, cards[i].coverImageUrl);
-    specs.push(articleSpec(cards[i], i, cards.length, baseUrl, thumb));
+    specs.push(articleSpec(cards[i], i, baseUrl, thumb));
   }
   specs.push(ctaSpec(baseUrl));
 

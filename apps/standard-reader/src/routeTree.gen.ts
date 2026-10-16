@@ -87,6 +87,8 @@ import { Route as LayoutTagTagRouteImport } from './routes/_layout.tag.$tag'
 import { Route as LayoutTopicsIndexRouteImport } from './routes/_layout.topics.index'
 import { Route as LayoutTopicsSlugRouteImport } from './routes/_layout.topics.$slug'
 import { Route as LayoutUDidRouteImport } from './routes/_layout.u.$did'
+import { Route as LayoutWeeklyIndexRouteImport } from './routes/_layout.weekly.index'
+import { Route as LayoutWeeklyWeekRouteImport } from './routes/_layout.weekly.$week'
 import { Route as ApiBskyPostRouteImport } from './routes/api/bsky/post'
 import { Route as ApiDevDigestPreviewRouteImport } from './routes/api/dev/digest-preview'
 import { Route as ApiDevWelcomePreviewRouteImport } from './routes/api/dev/welcome-preview'
@@ -132,6 +134,7 @@ import { Route as ApiAuthAtprotoJwksDotjsonRouteImport } from './routes/api/auth
 import { Route as ApiAuthAtprotoMetadataDotjsonRouteImport } from './routes/api/auth/atproto/metadata[.]json'
 import { Route as ApiAuthAtprotoSignupRouteImport } from './routes/api/auth/atproto/signup'
 import { Route as ApiOgPageSlugRouteImport } from './routes/api/og/page.$slug'
+import { Route as ApiOgWeeklyWeekRouteImport } from './routes/api/og/weekly.$week'
 import { Route as BookADidChar123rkeyChar125DotcbzRouteImport } from './routes/book.a.$did.{$rkey}[.]cbz'
 import { Route as BookADidChar123rkeyChar125DotepubRouteImport } from './routes/book.a.$did.{$rkey}[.]epub'
 import { Route as BookCDidChar123rkeyChar125DotepubRouteImport } from './routes/book.c.$did.{$rkey}[.]epub'
@@ -561,6 +564,16 @@ const LayoutUDidRoute = LayoutUDidRouteImport.update({
   path: '/u/$did',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutWeeklyIndexRoute = LayoutWeeklyIndexRouteImport.update({
+  id: '/weekly/',
+  path: '/weekly/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutWeeklyWeekRoute = LayoutWeeklyWeekRouteImport.update({
+  id: '/weekly/$week',
+  path: '/weekly/$week',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const ApiBskyPostRoute = ApiBskyPostRouteImport.update({
   id: '/api/bsky/post',
   path: '/api/bsky/post',
@@ -790,6 +803,11 @@ const ApiOgPageSlugRoute = ApiOgPageSlugRouteImport.update({
   path: '/api/og/page/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOgWeeklyWeekRoute = ApiOgWeeklyWeekRouteImport.update({
+  id: '/api/og/weekly/$week',
+  path: '/api/og/weekly/$week',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BookADidChar123rkeyChar125DotcbzRoute =
   BookADidChar123rkeyChar125DotcbzRouteImport.update({
     id: '/book/a/$did/{$rkey}.cbz',
@@ -997,6 +1015,7 @@ export interface FileRoutesByFullPath {
   '/tag/$tag': typeof LayoutTagTagRoute
   '/topics/$slug': typeof LayoutTopicsSlugRoute
   '/u/$did': typeof LayoutUDidRoute
+  '/weekly/$week': typeof LayoutWeeklyWeekRoute
   '/api/bsky/post': typeof ApiBskyPostRoute
   '/api/dev/digest-preview': typeof ApiDevDigestPreviewRoute
   '/api/dev/welcome-preview': typeof ApiDevWelcomePreviewRoute
@@ -1038,6 +1057,7 @@ export interface FileRoutesByFullPath {
   '/labelers/': typeof LayoutLabelersIndexRoute
   '/settings/': typeof LayoutSettingsIndexRoute
   '/topics/': typeof LayoutTopicsIndexRoute
+  '/weekly/': typeof LayoutWeeklyIndexRoute
   '/a/$did/$rkey': typeof LayoutADidRkeyRoute
   '/collections/edit/$rkey': typeof LayoutCollectionsEditRkeyRoute
   '/l/$did/$rkey': typeof LayoutLDidRkeyRoute
@@ -1048,6 +1068,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
   '/api/auth/atproto/signup': typeof ApiAuthAtprotoSignupRoute
   '/api/og/page/$slug': typeof ApiOgPageSlugRoute
+  '/api/og/weekly/$week': typeof ApiOgWeeklyWeekRoute
   '/book/a/$did/{$rkey}.cbz': typeof BookADidChar123rkeyChar125DotcbzRoute
   '/book/a/$did/{$rkey}.epub': typeof BookADidChar123rkeyChar125DotepubRoute
   '/book/c/$did/{$rkey}.epub': typeof BookCDidChar123rkeyChar125DotepubRoute
@@ -1143,6 +1164,7 @@ export interface FileRoutesByTo {
   '/tag/$tag': typeof LayoutTagTagRoute
   '/topics/$slug': typeof LayoutTopicsSlugRoute
   '/u/$did': typeof LayoutUDidRoute
+  '/weekly/$week': typeof LayoutWeeklyWeekRoute
   '/api/bsky/post': typeof ApiBskyPostRoute
   '/api/dev/digest-preview': typeof ApiDevDigestPreviewRoute
   '/api/dev/welcome-preview': typeof ApiDevWelcomePreviewRoute
@@ -1184,6 +1206,7 @@ export interface FileRoutesByTo {
   '/labelers': typeof LayoutLabelersIndexRoute
   '/settings': typeof LayoutSettingsIndexRoute
   '/topics': typeof LayoutTopicsIndexRoute
+  '/weekly': typeof LayoutWeeklyIndexRoute
   '/a/$did/$rkey': typeof LayoutADidRkeyRoute
   '/collections/edit/$rkey': typeof LayoutCollectionsEditRkeyRoute
   '/l/$did/$rkey': typeof LayoutLDidRkeyRoute
@@ -1194,6 +1217,7 @@ export interface FileRoutesByTo {
   '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
   '/api/auth/atproto/signup': typeof ApiAuthAtprotoSignupRoute
   '/api/og/page/$slug': typeof ApiOgPageSlugRoute
+  '/api/og/weekly/$week': typeof ApiOgWeeklyWeekRoute
   '/book/a/$did/{$rkey}.cbz': typeof BookADidChar123rkeyChar125DotcbzRoute
   '/book/a/$did/{$rkey}.epub': typeof BookADidChar123rkeyChar125DotepubRoute
   '/book/c/$did/{$rkey}.epub': typeof BookCDidChar123rkeyChar125DotepubRoute
@@ -1294,6 +1318,7 @@ export interface FileRoutesById {
   '/_layout/tag/$tag': typeof LayoutTagTagRoute
   '/_layout/topics/$slug': typeof LayoutTopicsSlugRoute
   '/_layout/u/$did': typeof LayoutUDidRoute
+  '/_layout/weekly/$week': typeof LayoutWeeklyWeekRoute
   '/api/bsky/post': typeof ApiBskyPostRoute
   '/api/dev/digest-preview': typeof ApiDevDigestPreviewRoute
   '/api/dev/welcome-preview': typeof ApiDevWelcomePreviewRoute
@@ -1335,6 +1360,7 @@ export interface FileRoutesById {
   '/_layout/labelers/': typeof LayoutLabelersIndexRoute
   '/_layout/settings/': typeof LayoutSettingsIndexRoute
   '/_layout/topics/': typeof LayoutTopicsIndexRoute
+  '/_layout/weekly/': typeof LayoutWeeklyIndexRoute
   '/_layout/a/$did/$rkey': typeof LayoutADidRkeyRoute
   '/_layout/collections/edit/$rkey': typeof LayoutCollectionsEditRkeyRoute
   '/_layout/l/$did/$rkey': typeof LayoutLDidRkeyRoute
@@ -1345,6 +1371,7 @@ export interface FileRoutesById {
   '/api/auth/atproto/metadata.json': typeof ApiAuthAtprotoMetadataDotjsonRoute
   '/api/auth/atproto/signup': typeof ApiAuthAtprotoSignupRoute
   '/api/og/page/$slug': typeof ApiOgPageSlugRoute
+  '/api/og/weekly/$week': typeof ApiOgWeeklyWeekRoute
   '/book/a/$did/{$rkey}.cbz': typeof BookADidChar123rkeyChar125DotcbzRoute
   '/book/a/$did/{$rkey}.epub': typeof BookADidChar123rkeyChar125DotepubRoute
   '/book/c/$did/{$rkey}.epub': typeof BookCDidChar123rkeyChar125DotepubRoute
@@ -1443,6 +1470,7 @@ export interface FileRouteTypes {
     | '/tag/$tag'
     | '/topics/$slug'
     | '/u/$did'
+    | '/weekly/$week'
     | '/api/bsky/post'
     | '/api/dev/digest-preview'
     | '/api/dev/welcome-preview'
@@ -1484,6 +1512,7 @@ export interface FileRouteTypes {
     | '/labelers/'
     | '/settings/'
     | '/topics/'
+    | '/weekly/'
     | '/a/$did/$rkey'
     | '/collections/edit/$rkey'
     | '/l/$did/$rkey'
@@ -1494,6 +1523,7 @@ export interface FileRouteTypes {
     | '/api/auth/atproto/metadata.json'
     | '/api/auth/atproto/signup'
     | '/api/og/page/$slug'
+    | '/api/og/weekly/$week'
     | '/book/a/$did/{$rkey}.cbz'
     | '/book/a/$did/{$rkey}.epub'
     | '/book/c/$did/{$rkey}.epub'
@@ -1589,6 +1619,7 @@ export interface FileRouteTypes {
     | '/tag/$tag'
     | '/topics/$slug'
     | '/u/$did'
+    | '/weekly/$week'
     | '/api/bsky/post'
     | '/api/dev/digest-preview'
     | '/api/dev/welcome-preview'
@@ -1630,6 +1661,7 @@ export interface FileRouteTypes {
     | '/labelers'
     | '/settings'
     | '/topics'
+    | '/weekly'
     | '/a/$did/$rkey'
     | '/collections/edit/$rkey'
     | '/l/$did/$rkey'
@@ -1640,6 +1672,7 @@ export interface FileRouteTypes {
     | '/api/auth/atproto/metadata.json'
     | '/api/auth/atproto/signup'
     | '/api/og/page/$slug'
+    | '/api/og/weekly/$week'
     | '/book/a/$did/{$rkey}.cbz'
     | '/book/a/$did/{$rkey}.epub'
     | '/book/c/$did/{$rkey}.epub'
@@ -1739,6 +1772,7 @@ export interface FileRouteTypes {
     | '/_layout/tag/$tag'
     | '/_layout/topics/$slug'
     | '/_layout/u/$did'
+    | '/_layout/weekly/$week'
     | '/api/bsky/post'
     | '/api/dev/digest-preview'
     | '/api/dev/welcome-preview'
@@ -1780,6 +1814,7 @@ export interface FileRouteTypes {
     | '/_layout/labelers/'
     | '/_layout/settings/'
     | '/_layout/topics/'
+    | '/_layout/weekly/'
     | '/_layout/a/$did/$rkey'
     | '/_layout/collections/edit/$rkey'
     | '/_layout/l/$did/$rkey'
@@ -1790,6 +1825,7 @@ export interface FileRouteTypes {
     | '/api/auth/atproto/metadata.json'
     | '/api/auth/atproto/signup'
     | '/api/og/page/$slug'
+    | '/api/og/weekly/$week'
     | '/book/a/$did/{$rkey}.cbz'
     | '/book/a/$did/{$rkey}.epub'
     | '/book/c/$did/{$rkey}.epub'
@@ -1889,6 +1925,7 @@ export interface RootRouteChildren {
   ApiAuthAtprotoMetadataDotjsonRoute: typeof ApiAuthAtprotoMetadataDotjsonRoute
   ApiAuthAtprotoSignupRoute: typeof ApiAuthAtprotoSignupRoute
   ApiOgPageSlugRoute: typeof ApiOgPageSlugRoute
+  ApiOgWeeklyWeekRoute: typeof ApiOgWeeklyWeekRoute
   BookADidChar123rkeyChar125DotcbzRoute: typeof BookADidChar123rkeyChar125DotcbzRoute
   BookADidChar123rkeyChar125DotepubRoute: typeof BookADidChar123rkeyChar125DotepubRoute
   BookCDidChar123rkeyChar125DotepubRoute: typeof BookCDidChar123rkeyChar125DotepubRoute
@@ -2464,6 +2501,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutUDidRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/weekly/': {
+      id: '/_layout/weekly/'
+      path: '/weekly'
+      fullPath: '/weekly/'
+      preLoaderRoute: typeof LayoutWeeklyIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/weekly/$week': {
+      id: '/_layout/weekly/$week'
+      path: '/weekly/$week'
+      fullPath: '/weekly/$week'
+      preLoaderRoute: typeof LayoutWeeklyWeekRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/api/bsky/post': {
       id: '/api/bsky/post'
       path: '/api/bsky/post'
@@ -2779,6 +2830,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOgPageSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/og/weekly/$week': {
+      id: '/api/og/weekly/$week'
+      path: '/api/og/weekly/$week'
+      fullPath: '/api/og/weekly/$week'
+      preLoaderRoute: typeof ApiOgWeeklyWeekRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/book/a/$did/{$rkey}.cbz': {
       id: '/book/a/$did/{$rkey}.cbz'
       path: '/book/a/$did/{$rkey}.cbz'
@@ -3065,10 +3123,12 @@ interface LayoutRouteChildren {
   LayoutTagTagRoute: typeof LayoutTagTagRoute
   LayoutTopicsSlugRoute: typeof LayoutTopicsSlugRoute
   LayoutUDidRoute: typeof LayoutUDidRoute
+  LayoutWeeklyWeekRoute: typeof LayoutWeeklyWeekRoute
   LayoutFeedbackIndexRoute: typeof LayoutFeedbackIndexRoute
   LayoutLabelersIndexRoute: typeof LayoutLabelersIndexRoute
   LayoutSettingsIndexRoute: typeof LayoutSettingsIndexRoute
   LayoutTopicsIndexRoute: typeof LayoutTopicsIndexRoute
+  LayoutWeeklyIndexRoute: typeof LayoutWeeklyIndexRoute
   LayoutADidRkeyRoute: typeof LayoutADidRkeyRoute
   LayoutLDidRkeyRoute: typeof LayoutLDidRkeyRoute
   LayoutPDidRkeyRoute: typeof LayoutPDidRkeyRoute
@@ -3096,10 +3156,12 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutTagTagRoute: LayoutTagTagRoute,
   LayoutTopicsSlugRoute: LayoutTopicsSlugRoute,
   LayoutUDidRoute: LayoutUDidRoute,
+  LayoutWeeklyWeekRoute: LayoutWeeklyWeekRoute,
   LayoutFeedbackIndexRoute: LayoutFeedbackIndexRoute,
   LayoutLabelersIndexRoute: LayoutLabelersIndexRoute,
   LayoutSettingsIndexRoute: LayoutSettingsIndexRoute,
   LayoutTopicsIndexRoute: LayoutTopicsIndexRoute,
+  LayoutWeeklyIndexRoute: LayoutWeeklyIndexRoute,
   LayoutADidRkeyRoute: LayoutADidRkeyRoute,
   LayoutLDidRkeyRoute: LayoutLDidRkeyRoute,
   LayoutPDidRkeyRoute: LayoutPDidRkeyRoute,
@@ -3183,6 +3245,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthAtprotoMetadataDotjsonRoute: ApiAuthAtprotoMetadataDotjsonRoute,
   ApiAuthAtprotoSignupRoute: ApiAuthAtprotoSignupRoute,
   ApiOgPageSlugRoute: ApiOgPageSlugRoute,
+  ApiOgWeeklyWeekRoute: ApiOgWeeklyWeekRoute,
   BookADidChar123rkeyChar125DotcbzRoute: BookADidChar123rkeyChar125DotcbzRoute,
   BookADidChar123rkeyChar125DotepubRoute:
     BookADidChar123rkeyChar125DotepubRoute,

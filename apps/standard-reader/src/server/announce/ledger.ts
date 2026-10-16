@@ -18,9 +18,10 @@
  * (`findWeekThreadRoot` in `./thread.ts`), which catches the cases this row
  * cannot know about — a wiped table, a different database, a hand-run.
  */
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { db } from "../../db/index.ts";
+import { weeklyThreadRuns } from "../../db/schema.ts";
 
 /** States a week's row can be in. */
 export type WeeklyThreadState = "running" | "posted" | "skipped" | "failed";
@@ -148,6 +149,25 @@ export async function markRootPosted(
        set state = 'posted', root_uri = ${rootUri}, updated_at = now()
      where period_key = ${periodKey}
   `);
+}
+
+/**
+ * Record the week's picks, in rank order, before anything is posted. The
+ * thread root links to `/weekly/$week`, which renders these — so they must be
+ * in place before the root post exists. A re-claimed week overwrites them with
+ * whatever the run that actually posts selected.
+ *
+ * Query builder rather than `db.execute`: a JS array interpolated into a raw
+ * `sql` template binds as one scalar, not a `text[]`.
+ */
+export async function recordWeekPicks(
+  periodKey: string,
+  articleUris: Array<string>,
+): Promise<void> {
+  await db
+    .update(weeklyThreadRuns)
+    .set({ articleUris, pickedAt: new Date(), updatedAt: new Date() })
+    .where(eq(weeklyThreadRuns.periodKey, periodKey));
 }
 
 /** Stamp the finished run's post count. */

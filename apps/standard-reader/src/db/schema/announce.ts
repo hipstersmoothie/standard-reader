@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 /**
@@ -42,6 +43,20 @@ export const weeklyThreadRuns = pgTable("weekly_thread_runs", {
   postCount: integer("post_count").notNull().default(0),
   /** Last failure, kept for inspecting `failed` rows. */
   lastError: text("last_error"),
+
+  /**
+   * The week's picks, in rank order — the document AT-URIs the thread posted.
+   * The `/weekly/$week` page the thread root links to renders exactly these,
+   * because the ranking is relative to `now()` and recomputing it later would
+   * not reproduce what went out. Stamped before the root post, so the page is
+   * live by the time anyone taps the card.
+   */
+  articleUris: text("article_uris")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  /** When the picks were ranked — the end of the week the page covers. */
+  pickedAt: timestamp("picked_at", { withTimezone: true }),
 
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

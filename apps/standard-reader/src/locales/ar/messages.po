@@ -318,6 +318,10 @@ msgstr ""
 msgid "This list is empty — add publications or people to it."
 msgstr "هذه القائمة فارغة — أضف إليها منشورات أو أشخاصًا."
 
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Every pick this week is from an account you've blocked or muted."
+msgstr ""
+
 #: src/components/docs/api-docs-intro.tsx
 #~ msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us. To run your own:"
 #~ msgstr "المصنِّف هو أي DID ينشر تصنيفات AT Proto. يضيف القرّاء مصنِّفًا عبر الـ DID من صفحة <0>المصنِّفات</0>، فيعرض Standard Reader تصنيفات ذلك المصنِّف — ويمكنه التحذير من المنشورات المصنَّفة أو إخفاؤها — أثناء القراءة. يُكتشف المصنِّفون بالطريقة القياسية؛ ولا شيء فيهم خاص بنا. لتشغيل مصنِّف خاص بك:"
@@ -841,6 +845,12 @@ msgstr "تقبل نقاط نهاية حالة القارئ أيضًا معامل
 #. placeholder {0}: index + 1
 #: src/routes/_layout.feedback.index.tsx
 msgid "Attachment {0} on “{title}”"
+msgstr ""
+
+#. placeholder {0}: splitWeekKey(data.next).week
+#. placeholder {0}: splitWeekKey(data.previous).week
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Week {0}"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -3190,6 +3200,10 @@ msgstr ""
 #: src/components/user-settings-view.tsx
 msgid "Theme"
 msgstr "السمة"
+
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Join the conversation"
+msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "The latest writing from the publications you subscribe to."
@@ -6661,6 +6675,10 @@ msgstr "يحتاج Standard Reader إلى صلاحية الكتابة في من�
 msgid "Block lists"
 msgstr ""
 
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Other weeks"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "All articles you have saved for later."
 msgstr "جميع المقالات التي حفظتها لوقت لاحق."
@@ -7870,6 +7888,10 @@ msgstr ""
 msgid "{unreadCount} unread"
 msgstr "{unreadCount} غير مقروءة"
 
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Picked every Friday from a week of recommendations, with the most recent counting most, and posted as a thread on Bluesky."
+msgstr ""
+
 #: src/components/ereader-settings.tsx
 msgid "Log in with this as your username — there is no separate sync account."
 msgstr ""
@@ -8037,6 +8059,10 @@ msgstr ""
 #: src/components/reader/cards.tsx
 msgid "This publication opted out of discovery, so it's hidden everywhere except here on your own profile."
 msgstr "اختارت هذه المنشورة عدم الظهور في الاستكشاف، لذا فهي مخفية في كل مكان عدا هنا في ملفك الشخصي."
+
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Weekly · {year}"
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "{count, plural, one {# upvote} other {# upvotes}} — sign in to upvote"
@@ -8573,6 +8599,10 @@ msgstr "إيقاف"
 msgid "Close the note"
 msgstr ""
 
+#: src/routes/_layout.weekly.$week.tsx
+msgid "The week's hottest reads"
+msgstr ""
+
 #: src/components/guide/pages/your-data-guide-page.tsx
 #: src/components/user-settings-view.tsx
 #: src/lib/guide/navigation.ts
@@ -8719,6 +8749,10 @@ msgstr ""
 #: src/components/reader/share-menu.tsx
 msgid "Add this anchor anywhere on your site and style it however you like. It opens the subscribe flow when clicked."
 msgstr "أضف هذا الرابط في أي موضع من موقعك ونسّقه كما تشاء. يفتح مسار الاشتراك عند النقر عليه."
+
+#: src/routes/_layout.weekly.$week.tsx
+msgid "What readers across the network recommended most, {start} to {end}. Each one is written and published by an independent author on their own site."
+msgstr ""
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "This unsubscribes from {publicationCount, plural, one {# publication} other {# publications}} and unfollows {peopleCount, plural, one {# person} other {# people}}. Their articles leave your feed, and unfollowing someone also drops the subscriptions that follow created. You can subscribe again at any time."
@@ -9064,6 +9098,10 @@ msgstr ""
 
 #: src/components/reader/read-on-platform.tsx
 msgid "Read this on {name}"
+msgstr ""
+
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Week"
 msgstr ""
 
 #. placeholder {0}: topic.authorCount
