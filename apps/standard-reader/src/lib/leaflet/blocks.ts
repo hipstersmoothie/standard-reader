@@ -2,16 +2,20 @@ import { narrationImageLines } from "#/lib/document/structured-content/image";
 
 import type {
   LeafletBlockquoteBlock,
+  LeafletCanvasFrame,
+  LeafletCanvasPlacement,
   LeafletBskyPostBlock,
   LeafletButtonBlock,
   LeafletCodeBlock,
   LeafletContent,
+  LeafletDrawingBlock,
   LeafletHeaderBlock,
   LeafletHtmlBlock,
   LeafletIframeBlock,
   LeafletImageBlock,
   LeafletImageGalleryBlock,
   LeafletMathBlock,
+  LeafletMembersOnlyDelimiterBlock,
   LeafletOrderedListBlock,
   LeafletPollBlock,
   LeafletRenderableBlock,
@@ -26,6 +30,21 @@ import { LEAFLET_BLOCK, LEAFLET_CONTENT, LEAFLET_PAGE } from "./types";
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
+/**
+ * Blocks Leaflet fills in at render time from data outside the record: the
+ * post's own header (title, byline — the reader draws its own), the
+ * publication's post list and recommendations, and reader questions and
+ * replies. None carries content of its own, so there is nothing to show and
+ * nothing to flag as unsupported.
+ */
+const LEAFLET_RENDER_TIME_BLOCKS = new Set<string>([
+  LEAFLET_BLOCK.postHeader,
+  LEAFLET_BLOCK.postsList,
+  LEAFLET_BLOCK.recommendedPubs,
+  LEAFLET_BLOCK.questions,
+  LEAFLET_BLOCK.reply,
+]);
 
 function unwrapPageBlock(entry: unknown): Record<string, unknown> | null {
   if (!isRecord(entry)) return null;
@@ -232,6 +251,30 @@ function asRenderableBlock(value: unknown): LeafletRenderableBlock | null {
     return { kind: "horizontalRule" };
   }
 
+  if (value.$type === LEAFLET_BLOCK.drawing) {
+    const strokes = Array.isArray(value.strokes) ? value.strokes : [];
+    const fills = Array.isArray(value.fills) ? value.fills : [];
+    if (strokes.length === 0 && fills.length === 0) return null;
+    return {
+      kind: "drawing",
+      block: value as unknown as LeafletDrawingBlock,
+    };
+  }
+
+  if (value.$type === LEAFLET_BLOCK.membersOnlyDelimiter) {
+    return {
+      kind: "membersOnlyDelimiter",
+      block: value as unknown as LeafletMembersOnlyDelimiterBlock,
+    };
+  }
+
+  if (
+    typeof value.$type === "string" &&
+    LEAFLET_RENDER_TIME_BLOCKS.has(value.$type)
+  ) {
+    return null;
+  }
+
   const blockType =
     typeof value.$type === "string" ? value.$type : "unknown block";
   return { kind: "unknown", blockType };
@@ -245,22 +288,18 @@ function collectReferencedPageIds(page: unknown): Array<string> {
   const ids: Array<string> = [];
   for (const entry of blocks) {
     const inner = unwrapPageBlock(entry);
-    if (inner?.$type === LEAFLET_BLOCK.page && typeof inner.id === "string") {
+    if (!inner) continue;
+    if (
+      (inner.$type === LEAFLET_BLOCK.page ||
+        inner.$type === LEAFLET_BLOCK.embeddedCanvas) &&
+      typeof inner.id === "string"
+    ) {
       ids.push(inner.id);
+    } else if (inner.$type === LEAFLET_PAGE.linearDocument) {
+      ids.push(...collectReferencedPageIds(inner));
     }
   }
   return ids;
-}
-
-function blocksForReferencedPage(
-  referenced: Record<string, unknown>,
-  pagesById: Map<string, unknown>,
-  visiting: Set<string>,
-): Array<LeafletRenderableBlock> {
-  if (referenced.$type === LEAFLET_PAGE.canvas) {
-    return blocksFromCanvasPage(referenced, pagesById, visiting);
-  }
-  return resolvePageBlocks(referenced, pagesById, visiting);
 }
 
 function appendReferencedPageBlocks(
@@ -301,55 +340,213 @@ function resolvePageBlocks(
   const result: Array<LeafletRenderableBlock> = [];
   for (const entry of blocks) {
     const inner = unwrapPageBlock(entry);
-    if (!inner) continue;
-
-    if (inner.$type === LEAFLET_BLOCK.page) {
-      const pageId = typeof inner.id === "string" ? inner.id : null;
-      if (pageId)
-        appendReferencedPageBlocks(pageId, pagesById, visiting, result);
-      continue;
-    }
-
-    const parsed = asRenderableBlock(inner);
-    if (parsed) result.push(parsed);
+    if (inner) appendEntryBlocks(inner, pagesById, visiting, result);
   }
   return result;
 }
 
-function blocksFromCanvasPage(
-  page: unknown,
+/** Inline the canvas an `embeddedCanvas` block shows in full. */
+function appendEmbeddedCanvasBlocks(
+  inner: Record<string, unknown>,
   pagesById: Map<string, unknown>,
-  visiting: Set<string> = new Set(),
+  visiting: Set<string>,
+  result: Array<LeafletRenderableBlock>,
+): void {
+  const pageId = typeof inner.id === "string" ? inner.id : null;
+  if (!pageId || visiting.has(pageId)) return;
+  const referenced = pagesById.get(pageId);
+  if (!isRecord(referenced)) return;
+
+  visiting.add(pageId);
+  try {
+    if (referenced.$type === LEAFLET_PAGE.canvas) {
+      const alt = typeof inner.alt === "string" ? inner.alt : undefined;
+      result.push(
+        ...blocksFromCanvasPage(referenced, pagesById, visiting, {
+          root: false,
+          alt,
+        }),
+      );
+    } else {
+      result.push(...resolvePageBlocks(referenced, pagesById, visiting));
+    }
+  } finally {
+    visiting.delete(pageId);
+  }
+}
+
+/**
+ * Append what one page entry contributes: the block itself, the page a `page`
+ * ref links to, the canvas an `embeddedCanvas` shows, or — on a canvas — the
+ * blocks of a linear document placed there as one unit.
+ */
+function appendEntryBlocks(
+  inner: Record<string, unknown>,
+  pagesById: Map<string, unknown>,
+  visiting: Set<string>,
+  result: Array<LeafletRenderableBlock>,
+): void {
+  if (inner.$type === LEAFLET_BLOCK.page) {
+    const pageId = typeof inner.id === "string" ? inner.id : null;
+    if (pageId) appendReferencedPageBlocks(pageId, pagesById, visiting, result);
+    return;
+  }
+
+  if (inner.$type === LEAFLET_BLOCK.embeddedCanvas) {
+    appendEmbeddedCanvasBlocks(inner, pagesById, visiting, result);
+    return;
+  }
+
+  if (inner.$type === LEAFLET_PAGE.linearDocument) {
+    result.push(...resolvePageBlocks(inner, pagesById, visiting));
+    return;
+  }
+
+  const parsed = asRenderableBlock(inner);
+  if (parsed) result.push(parsed);
+}
+
+function finiteNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
+}
+
+function positiveNumber(value: unknown): number | undefined {
+  const number = finiteNumber(value);
+  return number !== undefined && number > 0 ? number : undefined;
+}
+
+interface CanvasEntry {
+  record: Record<string, unknown>;
+  x: number;
+  y: number;
+  stackOrder?: string;
+}
+
+/** Leaflet's reading order for canvas blocks: top to bottom, then left to right. */
+function canvasReadingOrder(left: CanvasEntry, right: CanvasEntry): number {
+  return left.y === right.y ? left.x - right.x : left.y - right.y;
+}
+
+/**
+ * Leaflet's paint order, lowest first: blocks without a `stackOrder` predate
+ * layering and sit below every layered block, in reading order; the rest
+ * compare their fractional-index keys by code unit, not locale.
+ */
+function canvasPaintOrder(left: CanvasEntry, right: CanvasEntry): number {
+  if (left.stackOrder === right.stackOrder) {
+    return canvasReadingOrder(left, right);
+  }
+  if (left.stackOrder === undefined) return -1;
+  if (right.stackOrder === undefined) return 1;
+  return left.stackOrder < right.stackOrder ? -1 : 1;
+}
+
+/** The outermost canvas a block's placement chain hangs from. */
+function outermostPlacement(
+  placement: LeafletCanvasPlacement,
+): LeafletCanvasPlacement {
+  let current = placement;
+  while (current.parent) current = current.parent;
+  return current;
+}
+
+/**
+ * A canvas page's blocks in reading order, each carrying where it sits. A
+ * canvas shown on this one (an `embeddedCanvas` entry) keeps its own
+ * placements, hung from this entry's.
+ */
+function blocksFromCanvasPage(
+  page: Record<string, unknown>,
+  pagesById: Map<string, unknown>,
+  visiting: Set<string>,
+  options: { root: boolean; alt?: string },
 ): Array<LeafletRenderableBlock> {
-  if (!isRecord(page)) return [];
   const blocks = page.blocks;
   if (!Array.isArray(blocks)) return [];
 
-  const sorted = blocks.toSorted((left, right) => {
-    const leftY = isRecord(left) && typeof left.y === "number" ? left.y : 0;
-    const rightY = isRecord(right) && typeof right.y === "number" ? right.y : 0;
-    if (leftY !== rightY) return leftY - rightY;
-    const leftX = isRecord(left) && typeof left.x === "number" ? left.x : 0;
-    const rightX = isRecord(right) && typeof right.x === "number" ? right.x : 0;
-    return leftX - rightX;
-  });
+  const background = isRecord(page.background) ? page.background : null;
+  const frame: LeafletCanvasFrame = {
+    pageId: typeof page.id === "string" ? page.id : "",
+    width: positiveNumber(page.width),
+    height: positiveNumber(page.height),
+    pattern: typeof page.pattern === "string" ? page.pattern : undefined,
+    background: background?.image
+      ? {
+          image: background.image,
+          width: positiveNumber(background.width),
+          opacity: finiteNumber(background.opacity),
+        }
+      : undefined,
+    mobileView:
+      typeof page.mobileView === "string" ? page.mobileView : undefined,
+    alt: options.alt,
+    root: options.root,
+  };
+
+  const entries: Array<CanvasEntry> = blocks
+    .filter((entry) => isRecord(entry))
+    .map((record) => ({
+      record,
+      x: finiteNumber(record.x) ?? 0,
+      y: finiteNumber(record.y) ?? 0,
+      stackOrder:
+        typeof record.stackOrder === "string" ? record.stackOrder : undefined,
+    }));
+  const layers = new Map(
+    entries
+      .toSorted(canvasPaintOrder)
+      .map((entry, index) => [entry, index + 1]),
+  );
 
   const result: Array<LeafletRenderableBlock> = [];
-  for (const entry of sorted) {
-    const inner = unwrapPageBlock(entry);
+  for (const [index, entry] of entries.toSorted(canvasReadingOrder).entries()) {
+    const inner = unwrapPageBlock(entry.record);
     if (!inner) continue;
 
-    if (inner.$type === LEAFLET_BLOCK.page) {
-      const pageId = typeof inner.id === "string" ? inner.id : null;
-      if (pageId)
-        appendReferencedPageBlocks(pageId, pagesById, visiting, result);
-      continue;
-    }
+    const placement: LeafletCanvasPlacement = {
+      frame,
+      entry: index,
+      x: entry.x,
+      y: entry.y,
+      width: positiveNumber(entry.record.width) ?? 0,
+      height: positiveNumber(entry.record.height),
+      rotation: finiteNumber(entry.record.rotation) || undefined,
+      layer: layers.get(entry) ?? 0,
+      alignment:
+        typeof entry.record.alignment === "string"
+          ? entry.record.alignment
+          : undefined,
+    };
 
-    const parsed = asRenderableBlock(inner);
-    if (parsed) result.push(parsed);
+    const entryBlocks: Array<LeafletRenderableBlock> = [];
+    appendEntryBlocks(inner, pagesById, visiting, entryBlocks);
+    for (const block of entryBlocks) {
+      if (block.canvas) {
+        // Already placed on a canvas shown inside this entry.
+        const outermost = outermostPlacement(block.canvas);
+        if (outermost.frame !== frame) outermost.parent ??= placement;
+        result.push(block);
+      } else {
+        result.push({ ...block, canvas: placement });
+      }
+    }
   }
   return result;
+}
+
+function blocksForReferencedPage(
+  referenced: Record<string, unknown>,
+  pagesById: Map<string, unknown>,
+  visiting: Set<string>,
+): Array<LeafletRenderableBlock> {
+  if (referenced.$type === LEAFLET_PAGE.canvas) {
+    return blocksFromCanvasPage(referenced, pagesById, visiting, {
+      root: false,
+    });
+  }
+  return resolvePageBlocks(referenced, pagesById, visiting);
 }
 
 function blocksFromPage(
@@ -358,7 +555,7 @@ function blocksFromPage(
 ): Array<LeafletRenderableBlock> {
   if (!isRecord(page)) return [];
   if (page.$type === LEAFLET_PAGE.canvas) {
-    return blocksFromCanvasPage(page, pagesById, new Set());
+    return blocksFromCanvasPage(page, pagesById, new Set(), { root: true });
   }
   return resolvePageBlocks(page, pagesById, new Set());
 }
@@ -390,6 +587,16 @@ export function leafletBlocks(content: unknown): Array<LeafletRenderableBlock> {
   const pagesToRender = rootPages.length > 0 ? rootPages : pages;
 
   return pagesToRender.flatMap((page) => blocksFromPage(page, pagesById));
+}
+
+/**
+ * Whether one of the document's own pages is a canvas (as opposed to a canvas
+ * shown inside a linear page), so the reader can give it a canvas-wide column.
+ */
+export function leafletHasRootCanvas(content: unknown): boolean {
+  return leafletBlocks(content).some(
+    (block) => block.canvas && outermostPlacement(block.canvas).frame.root,
+  );
 }
 
 /** AT-URIs of every embedded Bluesky post block, in document order. */
@@ -488,6 +695,8 @@ export function plaintextLinesFromBlock(
       return images.flatMap((image) => narrationImageLines(image.alt));
     }
     case "signup":
+    case "drawing":
+    case "membersOnlyDelimiter":
     case "horizontalRule":
     case "separator":
     case "poll":

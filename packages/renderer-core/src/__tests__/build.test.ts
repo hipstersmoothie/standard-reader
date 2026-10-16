@@ -133,6 +133,60 @@ describe("buildRenderTree — leaflet", () => {
     expect(tree.children.map((n) => n.type)).toEqual(["paragraph"]);
   });
 
+  it("drops the blocks Leaflet fills in at render time", () => {
+    const tree = build(
+      leafletDoc([
+        { $type: "pub.leaflet.blocks.postHeader" },
+        lf.text("Body"),
+        { $type: "pub.leaflet.blocks.recommendedPubs" },
+        { $type: "pub.leaflet.blocks.reply" },
+      ]),
+    );
+    expect(tree.children.map((n) => n.type)).toEqual(["paragraph"]);
+  });
+
+  it("renders a drawing as a self-contained SVG image", () => {
+    const tree = build(
+      leafletDoc([
+        {
+          $type: "pub.leaflet.blocks.drawing",
+          viewBox: { x: 0, y: 0, width: 200, height: 100 },
+          strokes: [
+            { points: [0, 0, 500, 10, 10, 500], color: "primary", size: 8 },
+          ],
+        },
+      ]),
+    );
+    const image = tree.children[0] as Extract<BlockNode, { type: "image" }>;
+    expect(image.type).toBe("image");
+    expect(image.aspectRatio).toBe(2);
+    expect(image.alt).toBe("");
+    const svg = decodeURIComponent(
+      image.src.replace("data:image/svg+xml,", ""),
+    );
+    expect(svg).toContain('viewBox="0 0 200 100"');
+    expect(svg).toContain('d="M0 0L10 10"');
+    expect(svg).toContain('class="stroke-primary"');
+    expect(svg).toContain("prefers-color-scheme:dark");
+  });
+
+  it("marks where a members-only post's gated part begins", () => {
+    const tree = build(
+      leafletDoc([
+        lf.text("Free part"),
+        {
+          $type: "pub.leaflet.blocks.membersOnlyDelimiter",
+          audience: "paid",
+        },
+      ]),
+    );
+    expect(tree.children[1]).toMatchObject({
+      type: "callout",
+      kind: "note",
+      text: { plaintext: "The rest of this post is for paid members." },
+    });
+  });
+
   it("builds nested list items", () => {
     const tree = build(leafletDoc([lf.unorderedList(["a", "b"])]));
     const list = tree.children[0] as Extract<BlockNode, { type: "bulletList" }>;

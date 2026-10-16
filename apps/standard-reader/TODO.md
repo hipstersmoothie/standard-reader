@@ -1519,6 +1519,40 @@ Backend/API exists; UI or copy is missing.
       `srcdoc` iframe sandboxed to `allow-scripts` only, sharing the sizing frame with
       `iframe-embed.tsx`. The converter carries it natively to Leaflet and as a sandboxed
       `<iframe srcdoc>` to Markpub; Offprint and pckt have no block for it and report it dropped.
+- [x] **Leaflet canvas posts + the rest of Leaflet's blocks** — a reader
+      [reported](https://bsky.app/profile/debbieohi.com/post/3mx2a6ria4k23) a canvas post opening
+      on "Unsupported block: pub.leaflet.blocks.postHeader" with a 146px decorative vine blown up
+      to the full column. A 30-day prod scan found nine Leaflet types we did not know, all in real
+      posts: `postHeader` (17 docs), `drawing` (13), `membersOnlyDelimiter` (12), `postsList`,
+      `recommendedPubs`, `embeddedCanvas`, `questions`, `reply` — plus linear documents nested
+      in canvas blocks. Render-time blocks are dropped, nested linear documents and embedded
+      canvases are inlined, canvas widths cap images and drawings,
+      [`leaflet-drawing.tsx`](src/components/reader/content/renderers/leaflet-drawing.tsx) draws
+      ink as SVG, and
+      [`leaflet-members-only.tsx`](src/components/reader/content/renderers/leaflet-members-only.tsx)
+      ends a gated post with a notice. `renderer-core` carries the same parser and maps drawings
+      to an SVG `data:` image and the delimiter to a `note` callout, so no framework renderer or
+      converter target needed a new node.
+- [x] **Leaflet canvas layout** — canvas posts now render as laid out rather than as one
+      column ([`leaflet-canvas.tsx`](src/components/reader/content/renderers/leaflet-canvas.tsx)):
+      the parser keeps each block's placement (x/y, width, rotation, Leaflet's stack order, the
+      canvas's size/pattern/background/mobileView, and a parent chain for a canvas shown on a
+      canvas) on the flat block list, and `LeafletBlockList` regroups runs of placed blocks into
+      a CSS-grid overlay scaled with `zoom: calc(100cqw / 1272px)`. WebKit computes the
+      `tan(atan2())` form Leaflet itself uses wrongly with `cqw`, hence the typed division plus a
+      `ResizeObserver` fallback. Narrow screens reflow via a `leaflet-canvas` container query and
+      offer the original layout in Leaflet's 520px mobile-view frame. Verified on Debbie Ridpath
+      Ohi's "Celebration of Life", a character-sheet canvas, and an embedded 624×416 drawing, in
+      Chromium and WebKit at 1440px and 390px.
+- [ ] **Canvas `postHeader` in place** — the header block is still dropped, leaving the gap it
+      occupied (the reader's own header sits above the canvas). Drawing a compact header card in
+      its slot would match Leaflet but repeats the title right under ours.
+- [ ] **Leaflet publication theme fonts/colours on canvas posts** — positions were authored in
+      the publication's font (e.g. JetBrains Mono at 18px); the reader's serif at 16px wraps a
+      little differently, which can nudge text into a neighbour on dense canvases.
+- [ ] **`page.cavu.blocks.*`** — a third-party app writes its own `screenplay`, `pageBreak` and
+      `toc` blocks into `pub.leaflet.content` (3 docs in 30 days); they still show the
+      unsupported placeholder.
 - [x] **Alternate Bluesky client embeds** — links to `social-app` forks (Witchsky, Mu,
       deer.social, Blacksky) were only ever plain link cards, so an article citing
       `witchsky.app/profile/…/feed/…` showed a bare "Witchsky" card. The client host list moved

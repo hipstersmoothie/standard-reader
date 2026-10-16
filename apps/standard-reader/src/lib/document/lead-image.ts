@@ -131,7 +131,8 @@ function firstBlockImage(
         ? leafletDocumentContent(contentJson)
         : contentJson;
     const first = leafletBlocks(content)[0];
-    if (first?.kind === "image") {
+    // An image on a canvas belongs to the layout, not the header.
+    if (first?.kind === "image" && !first.canvas) {
       return leadingImage(
         leafletImageUrl(first.block, did),
         aspectRatioOf(first.block.aspectRatio),

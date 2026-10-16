@@ -6,6 +6,7 @@ import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-tr
 import type { LeafletFacet } from "#/lib/leaflet/types";
 
 import { articleBodyStyles } from "../../body-styles";
+import { canvasBlockStyles } from "../leaflet-canvas-styles";
 import { HighlightedFacetedPlaintext } from "./faceted-text";
 
 const styles = stylex.create({
@@ -24,9 +25,12 @@ export interface BlockquoteParagraph {
 export function BlockquoteBlockView({
   paragraphs,
   embedded = false,
+  canvas = false,
 }: {
   paragraphs: Array<BlockquoteParagraph>;
   embedded?: boolean;
+  /** Inside a Leaflet canvas block: Leaflet's quote, in canvas px. */
+  canvas?: boolean;
 }) {
   const tracker = useQuoteHighlightTracker();
   const items = paragraphs.filter((item) => item.plaintext.trim());
@@ -37,6 +41,7 @@ export function BlockquoteBlockView({
       {...stylex.props(
         articleBodyStyles.pullquote,
         embedded && articleBodyStyles.pageEmbedBlockSpacing,
+        canvas && canvasBlockStyles.blockquote,
       )}
     >
       {items.map((item, index) => {
@@ -47,6 +52,7 @@ export function BlockquoteBlockView({
             {...stylex.props(
               articleBodyStyles.paragraph,
               embedded && articleBodyStyles.pageEmbedBlockInner,
+              canvas && canvasBlockStyles.paragraph,
               index === items.length - 1 && styles.lastParagraph,
             )}
           >

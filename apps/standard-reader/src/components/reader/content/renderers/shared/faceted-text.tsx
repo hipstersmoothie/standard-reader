@@ -44,6 +44,7 @@ import type { QuoteHighlightRange } from "#/lib/quote-highlight-text";
 import { useReadingTypography } from "#/lib/use-reading-typography";
 
 import { articleBodyStyles, readingDropCapStyleProps } from "../../body-styles";
+import { canvasBlockStyles } from "../leaflet-canvas-styles";
 import type { FacetFeature } from "./facets";
 import { findFacetFeature, hasFacetKind } from "./facets";
 import { useFootnoteNumber } from "./footnote-context";
@@ -527,11 +528,17 @@ export function TextBlockView({
   facets,
   dropCap = false,
   embedded = false,
+  textSize,
+  canvas = false,
 }: {
   plaintext: string;
   facets?: Array<LeafletFacet> | Array<unknown>;
   dropCap?: boolean;
   embedded?: boolean;
+  /** Leaflet's `small` / `large` text size. */
+  textSize?: string;
+  /** Inside a Leaflet canvas block: Leaflet's paragraph gap, in canvas px. */
+  canvas?: boolean;
 }) {
   const tracker = useQuoteHighlightTracker();
   const { preference } = useReadingTypography();
@@ -539,9 +546,14 @@ export function TextBlockView({
 
   if (!plaintext) return null;
 
-  const paragraphStyle = embedded
-    ? articleBodyStyles.pageEmbedBlockSpacing
-    : articleBodyStyles.paragraph;
+  const paragraphStyle = [
+    embedded
+      ? articleBodyStyles.pageEmbedBlockSpacing
+      : articleBodyStyles.paragraph,
+    canvas && canvasBlockStyles.paragraph,
+    textSize === "small" && canvasBlockStyles.textSmall,
+    textSize === "large" && canvasBlockStyles.textLarge,
+  ];
 
   if (dropCap) {
     const chars = [...plaintext];

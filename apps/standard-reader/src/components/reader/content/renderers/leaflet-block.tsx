@@ -5,6 +5,7 @@ import {
   DisclosurePanel,
   DisclosureTitle,
 } from "@standard-reader/design-system/disclosure";
+import { use } from "react";
 
 import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 import { leafletPageEmbedLabel, leafletWebsiteSrc } from "#/lib/leaflet/blocks";
@@ -15,12 +16,16 @@ import type { CodeHighlightsByScheme } from "#/lib/theme";
 import { articleBodyStyles } from "../body-styles";
 import type { ContentBlobContext } from "../types";
 import { LeafletButtonBlockView } from "./leaflet-button";
+import { LeafletBlockList } from "./leaflet-canvas";
+import { LeafletCanvasContext } from "./leaflet-canvas-context";
+import { LeafletDrawingBlockView } from "./leaflet-drawing";
 import { LeafletImageGalleryBlockView } from "./leaflet-image-gallery";
 import {
   LeafletOrderedListBlockView,
   LeafletUnorderedListBlockView,
 } from "./leaflet-list";
 import { LeafletMathBlockView } from "./leaflet-math";
+import { LeafletMembersOnlyBlockView } from "./leaflet-members-only";
 import { LeafletPollBlockView } from "./leaflet-poll";
 import { LeafletSeparatorView } from "./leaflet-separator";
 import { LeafletSignupBlockView } from "./leaflet-signup";
@@ -42,23 +47,29 @@ export function LeafletBlockView({
   block,
   blobContext,
   codeHighlights,
+  articleUrl,
   dropCap = false,
   embedded = false,
 }: {
   block: LeafletRenderableBlock;
   blobContext?: ContentBlobContext;
   codeHighlights?: CodeHighlightsByScheme;
+  /** The post on its own site. */
+  articleUrl?: string | null;
   dropCap?: boolean;
   embedded?: boolean;
 }) {
+  const canvas = use(LeafletCanvasContext);
   switch (block.kind) {
     case "text": {
       return (
         <TextBlockView
           plaintext={block.block.plaintext}
           facets={block.block.facets}
-          dropCap={dropCap}
+          textSize={block.block.textSize}
+          dropCap={dropCap && !canvas}
           embedded={embedded}
+          canvas={canvas}
         />
       );
     }
@@ -69,6 +80,7 @@ export function LeafletBlockView({
           level={block.block.level}
           facets={block.block.facets}
           embedded={embedded}
+          canvas={canvas}
         />
       );
     }
@@ -82,6 +94,7 @@ export function LeafletBlockView({
             },
           ]}
           embedded={embedded}
+          canvas={canvas}
         />
       );
     }
@@ -116,6 +129,7 @@ export function LeafletBlockView({
           fullBleed={block.block.fullBleed}
           lightboxEnabled
           fit="natural"
+          canvas={canvas}
         />
       );
     }
@@ -186,12 +200,24 @@ export function LeafletBlockView({
     case "signup": {
       return <LeafletSignupBlockView />;
     }
+    case "drawing": {
+      return <LeafletDrawingBlockView block={block.block} canvas={canvas} />;
+    }
+    case "membersOnlyDelimiter": {
+      return (
+        <LeafletMembersOnlyBlockView
+          block={block.block}
+          articleUrl={articleUrl}
+        />
+      );
+    }
     case "pageEmbed": {
       return (
         <LeafletPageEmbedView
           blocks={block.blocks}
           blobContext={blobContext}
           codeHighlights={codeHighlights}
+          articleUrl={articleUrl}
         />
       );
     }
@@ -205,10 +231,12 @@ function LeafletPageEmbedView({
   blocks,
   blobContext,
   codeHighlights,
+  articleUrl,
 }: {
   blocks: Array<LeafletRenderableBlock>;
   blobContext?: ContentBlobContext;
   codeHighlights?: CodeHighlightsByScheme;
+  articleUrl?: string | null;
 }) {
   if (blocks.length === 0) return null;
 
@@ -234,15 +262,24 @@ function LeafletPageEmbedView({
       <DisclosureTitle aria-label={`Toggle ${label}`}>{label}</DisclosureTitle>
       {bodyBlocks.length > 0 ? (
         <DisclosurePanel contentStyle={articleBodyStyles.pageEmbedPanelContent}>
-          {bodyBlocks.map((block, index) => (
-            <LeafletBlockView
-              key={index}
-              block={block}
+          {/* A linked page's own blocks start a fresh canvas nesting: the
+              page embed itself may sit on a canvas, but what it opens does
+              not. */}
+          <LeafletCanvasContext value={false}>
+            <LeafletBlockList
+              entries={bodyBlocks.map((block, index) => ({ block, index }))}
               blobContext={blobContext}
-              codeHighlights={codeHighlights}
-              embedded
+              renderBlock={(block) => (
+                <LeafletBlockView
+                  block={block}
+                  blobContext={blobContext}
+                  codeHighlights={codeHighlights}
+                  articleUrl={articleUrl}
+                  embedded
+                />
+              )}
             />
-          ))}
+          </LeafletCanvasContext>
         </DisclosurePanel>
       ) : null}
     </Disclosure>

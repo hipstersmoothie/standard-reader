@@ -539,6 +539,10 @@ msgstr ""
 #~ msgid "For a complete, minimal reference implementation (Jetstream → detect → sign → SQLite → serve), see the <0>claudeslop</0> labeler in <1>services/claudeslop</1>."
 #~ msgstr "Eine vollständige, minimale Referenzimplementierung (Jetstream → erkennen → signieren → SQLite → ausliefern) finden Sie im <0>claudeslop</0>-Labeler unter <1>services/claudeslop</1>."
 
+#: src/components/reader/content/renderers/leaflet-canvas.tsx
+msgid "Show the original layout"
+msgstr ""
+
 #: src/components/guide/pages/collections-guide-page.tsx
 msgid "Several collections can be grouped into a <0>series</0> — a run of issues under one name. A series behaves like a publication of your own: it has a page, readers can follow it, and each new edition reaches them the way any other publication would."
 msgstr ""
@@ -575,6 +579,10 @@ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Every piece is a door to the next one"
+msgstr ""
+
+#: src/components/reader/content/renderers/leaflet-members-only.tsx
+msgid "Members can keep reading on the original site."
 msgstr ""
 
 #: src/components/comic/comic-not-found.tsx
@@ -1941,6 +1949,10 @@ msgstr ""
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "If you already know what you want, <0>Discover</0> lists everything on the network, and <1>Finding things to read</1> covers every way to get there."
+msgstr ""
+
+#: src/components/reader/content/renderers/leaflet-canvas.tsx
+msgid "Show as one column"
 msgstr ""
 
 #: src/components/offline-sync-debug.tsx
@@ -4086,6 +4098,10 @@ msgstr "{pubName} öffnen"
 msgid "Cover"
 msgstr "Titelbild"
 
+#: src/components/reader/content/renderers/leaflet-members-only.tsx
+msgid "The rest of this post is for subscribers"
+msgstr ""
+
 #: src/components/reader/page-reader-bar.tsx
 msgid "Pause"
 msgstr "Pause"
@@ -4793,6 +4809,10 @@ msgstr ""
 
 #: src/components/guide/pages/embeds-guide-page.tsx
 msgid "A subscribe button for a publication, or a follow button for you — dropped onto your own site as a small card, so a reader who found you there can start following you without going looking for you somewhere else."
+msgstr ""
+
+#: src/components/reader/content/renderers/leaflet-members-only.tsx
+msgid "The rest of this post is for paid members"
 msgstr ""
 
 #: src/components/push-diagnostics.tsx

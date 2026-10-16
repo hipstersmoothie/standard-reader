@@ -37,6 +37,14 @@ export const LEAFLET_BLOCK = {
   imageGallery: "pub.leaflet.blocks.imageGallery",
   imageGalleryImage: "pub.leaflet.blocks.imageGallery#image",
   signup: "pub.leaflet.blocks.signup",
+  drawing: "pub.leaflet.blocks.drawing",
+  embeddedCanvas: "pub.leaflet.blocks.embeddedCanvas",
+  membersOnlyDelimiter: "pub.leaflet.blocks.membersOnlyDelimiter",
+  postHeader: "pub.leaflet.blocks.postHeader",
+  postsList: "pub.leaflet.blocks.postsList",
+  questions: "pub.leaflet.blocks.questions",
+  recommendedPubs: "pub.leaflet.blocks.recommendedPubs",
+  reply: "pub.leaflet.blocks.reply",
 } as const;
 
 export const LEAFLET_PAGE = {
@@ -76,6 +84,8 @@ export interface LeafletFacet {
 export interface LeafletTextBlock {
   $type?: string;
   plaintext: string;
+  /** `default`, `small`, or `large`. */
+  textSize?: string;
   facets?: Array<LeafletFacet>;
 }
 
@@ -200,6 +210,53 @@ export interface LeafletSignupBlock {
   $type?: string;
 }
 
+/** Rectangle of drawing space a `drawing` block shows. */
+export interface LeafletDrawingViewBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * One pen stroke. `points` is flattened `x, y, pressure` triples — x and y in
+ * drawing space, pressure 0–1000.
+ */
+export interface LeafletDrawingStroke {
+  points?: Array<number>;
+  /** CSS hex, or a theme color name: `primary`, `accent`, `tertiary`. */
+  color?: string;
+  /** Base diameter in drawing space. */
+  size?: number;
+  simulatePressure?: boolean;
+}
+
+/** A filled polygon; `points` is flattened `x, y` pairs. */
+export interface LeafletDrawingFill {
+  points?: Array<number>;
+  color?: string;
+}
+
+/** Freehand ink, scaled so `viewBox` fills the block's width. */
+export interface LeafletDrawingBlock {
+  $type?: string;
+  viewBox?: LeafletDrawingViewBox;
+  strokes?: Array<LeafletDrawingStroke>;
+  /** Painted in order, beneath the strokes. */
+  fills?: Array<LeafletDrawingFill>;
+}
+
+/**
+ * Where members-only content begins. The gated blocks are not in the public
+ * record, so this is always the last thing a non-member's copy carries.
+ */
+export interface LeafletMembersOnlyDelimiterBlock {
+  $type?: string;
+  /** `subscribers`, `paid`, or `tiers`. */
+  audience?: string;
+  tierIds?: Array<string>;
+}
+
 export interface LeafletListItem {
   $type?: string;
   content?: LeafletTextBlock | Record<string, unknown>;
@@ -219,7 +276,55 @@ export interface LeafletOrderedListBlock {
   children?: Array<LeafletListItem>;
 }
 
-export type LeafletRenderableBlock =
+/** Tiled image under a canvas's pattern and blocks. */
+export interface LeafletCanvasBackground {
+  image?: unknown;
+  /** Tile width in canvas px; defaults to 500. */
+  width?: number;
+  /** Percentage; defaults to 100. */
+  opacity?: number;
+}
+
+/**
+ * A canvas page as the renderer frames it, shared by every block placed on
+ * it. Without a fixed size the canvas is Leaflet's 1272px wide and grows down
+ * to fit its blocks.
+ */
+export interface LeafletCanvasFrame {
+  pageId: string;
+  width?: number;
+  height?: number;
+  /** `grid`, `dot`, or `plain`; absent, a growing canvas shows the grid. */
+  pattern?: string;
+  background?: LeafletCanvasBackground;
+  /** `unconstrained`, `left`, or `center`. */
+  mobileView?: string;
+  /** Alt text an `embeddedCanvas` gave the canvas as a picture. */
+  alt?: string;
+  /** One of the document's own pages, rather than one shown inside another. */
+  root: boolean;
+}
+
+/** Where a block sits on a canvas page. */
+export interface LeafletCanvasPlacement {
+  frame: LeafletCanvasFrame;
+  /** The canvas entry; every block of a placed linear document shares it. */
+  entry: number;
+  x: number;
+  y: number;
+  width: number;
+  height?: number;
+  /** Degrees. */
+  rotation?: number;
+  /** Paint order among the canvas's entries, lowest first, from 1. */
+  layer: number;
+  /** Text alignment token (`…#textAlignCenter`) for a single block. */
+  alignment?: string;
+  /** Set when this canvas is itself shown on another canvas. */
+  parent?: LeafletCanvasPlacement;
+}
+
+type LeafletBlockVariant =
   | { kind: "text"; block: LeafletTextBlock }
   | { kind: "header"; block: LeafletHeaderBlock }
   | { kind: "blockquote"; block: LeafletBlockquoteBlock }
@@ -243,6 +348,8 @@ export type LeafletRenderableBlock =
     }
   | { kind: "imageGallery"; block: LeafletImageGalleryBlock }
   | { kind: "signup" }
+  | { kind: "drawing"; block: LeafletDrawingBlock }
+  | { kind: "membersOnlyDelimiter"; block: LeafletMembersOnlyDelimiterBlock }
   | {
       kind: "pageEmbed";
       pageId: string;
@@ -250,6 +357,14 @@ export type LeafletRenderableBlock =
       blocks: Array<LeafletRenderableBlock>;
     }
   | { kind: "unknown"; blockType: string };
+
+/**
+ * A block in document order. Blocks from a canvas page carry where they sit on
+ * it; everything that only needs reading order can ignore that.
+ */
+export type LeafletRenderableBlock = LeafletBlockVariant & {
+  canvas?: LeafletCanvasPlacement;
+};
 
 export interface LeafletPageBlock {
   $type?: string;
