@@ -1,7 +1,8 @@
 /**
  * Build and post the weekly "hottest articles" thread as `app.bsky.feed.post`
- * records: each article gets a rich `app.bsky.embed.external` link card back to
- * Standard Reader, replies are chained root→parent, and the final CTA post
+ * records: the root and each article carry a rich `app.bsky.embed.external`
+ * link card (the root to the week's Standard Reader page, articles to their
+ * canonical URLs), replies are chained root→parent, and the final CTA post
  * carries a link facet to the app.
  *
  * Posts are created SEQUENTIALLY: every reply references the previous post's

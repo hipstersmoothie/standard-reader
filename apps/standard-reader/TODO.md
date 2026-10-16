@@ -46,7 +46,12 @@ Check items off as they land.
     and every thread whose six posts shared a timestamp lost five of them from the bot's profile —
     records written fine and hydratable by `getPosts`, but only the last-written post of the group
     reached the feed, so the profile's Posts tab showed no thread at all. `postThread` now stamps
-    each post as it writes it; do not hoist that back out.
+    each post as it writes it; do not hoist that back out. The thread roots on `/weekly/$week` (a
+    ranked Standard Reader page, OG image as the card thumb) and each reply links its article's
+    **canonical URL**, not our `/a/…` mirror; the run stamps its picks into
+    `weekly_thread_runs.article_uris` (migration `0047_weekly_thread_picks`) before posting so the
+    page shows exactly what went out. **Run `pnpm db:migrate` before the `thread-cron` service
+    picks up this code**, or the Friday run fails writing the picks.
   - **Runbook gotcha:** Railway auto-detects only the root `railway.json`, so every non-web service
     in this monorepo needs its **Config File Path** set explicitly (Dashboard → service → Settings →
     Config-as-code, or `serviceInstanceUpdate{ railwayConfigFile }` via the GraphQL API) to

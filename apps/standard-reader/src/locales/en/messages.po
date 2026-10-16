@@ -318,6 +318,10 @@ msgstr "Send to your e-reader"
 msgid "This list is empty — add publications or people to it."
 msgstr "This list is empty — add publications or people to it."
 
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Every pick this week is from an account you've blocked or muted."
+msgstr "Every pick this week is from an account you've blocked or muted."
+
 #: src/components/docs/api-docs-intro.tsx
 #~ msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us. To run your own:"
 #~ msgstr "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us. To run your own:"
@@ -842,6 +846,12 @@ msgstr "Reader state endpoints also accept an optional <0>did</0> query param to
 #: src/routes/_layout.feedback.index.tsx
 msgid "Attachment {0} on “{title}”"
 msgstr "Attachment {0} on “{title}”"
+
+#. placeholder {0}: splitWeekKey(data.next).week
+#. placeholder {0}: splitWeekKey(data.previous).week
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Week {0}"
+msgstr "Week {0}"
 
 #: src/components/user-settings-view.tsx
 msgid "Permanently remove data stored in your account. These actions delete records from your account and cannot be undone."
@@ -3190,6 +3200,10 @@ msgstr "Read on"
 #: src/components/user-settings-view.tsx
 msgid "Theme"
 msgstr "Theme"
+
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Join the conversation"
+msgstr "Join the conversation"
 
 #: src/routes/_layout.index.tsx
 msgid "The latest writing from the publications you subscribe to."
@@ -6661,6 +6675,10 @@ msgstr "Standard Reader needs write access to your site.standard publications an
 msgid "Block lists"
 msgstr "Block lists"
 
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Other weeks"
+msgstr "Other weeks"
+
 #: src/components/user-settings-view.tsx
 msgid "All articles you have saved for later."
 msgstr "All articles you have saved for later."
@@ -7870,6 +7888,10 @@ msgstr "Blocked by a list you use"
 msgid "{unreadCount} unread"
 msgstr "{unreadCount} unread"
 
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Picked every Friday from a week of recommendations, with the most recent counting most, and posted as a thread on Bluesky."
+msgstr "Picked every Friday from a week of recommendations, with the most recent counting most, and posted as a thread on Bluesky."
+
 #: src/components/ereader-settings.tsx
 msgid "Log in with this as your username — there is no separate sync account."
 msgstr "Log in with this as your username — there is no separate sync account."
@@ -8037,6 +8059,10 @@ msgstr "Select <0>New list</0> from the sidebar's Subscriptions controls."
 #: src/components/reader/cards.tsx
 msgid "This publication opted out of discovery, so it's hidden everywhere except here on your own profile."
 msgstr "This publication opted out of discovery, so it's hidden everywhere except here on your own profile."
+
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Weekly · {year}"
+msgstr "Weekly · {year}"
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "{count, plural, one {# upvote} other {# upvotes}} — sign in to upvote"
@@ -8573,6 +8599,10 @@ msgstr "Stop"
 msgid "Close the note"
 msgstr "Close the note"
 
+#: src/routes/_layout.weekly.$week.tsx
+msgid "The week's hottest reads"
+msgstr "The week's hottest reads"
+
 #: src/components/guide/pages/your-data-guide-page.tsx
 #: src/components/user-settings-view.tsx
 #: src/lib/guide/navigation.ts
@@ -8719,6 +8749,10 @@ msgstr "Unsubscribing from {publicationCount, plural, one {this publication} oth
 #: src/components/reader/share-menu.tsx
 msgid "Add this anchor anywhere on your site and style it however you like. It opens the subscribe flow when clicked."
 msgstr "Add this anchor anywhere on your site and style it however you like. It opens the subscribe flow when clicked."
+
+#: src/routes/_layout.weekly.$week.tsx
+msgid "What readers across the network recommended most, {start} to {end}. Each one is written and published by an independent author on their own site."
+msgstr "What readers across the network recommended most, {start} to {end}. Each one is written and published by an independent author on their own site."
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "This unsubscribes from {publicationCount, plural, one {# publication} other {# publications}} and unfollows {peopleCount, plural, one {# person} other {# people}}. Their articles leave your feed, and unfollowing someone also drops the subscriptions that follow created. You can subscribe again at any time."
@@ -9065,6 +9099,10 @@ msgstr "MCP server"
 #: src/components/reader/read-on-platform.tsx
 msgid "Read this on {name}"
 msgstr "Read this on {name}"
+
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Week"
+msgstr "Week"
 
 #. placeholder {0}: topic.authorCount
 #: src/components/reader/topic-cards.tsx

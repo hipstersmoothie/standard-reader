@@ -1712,6 +1712,19 @@ A `thread-cron` Railway service (`railway.thread.json` → `pnpm thread:post` �
 `src/server/announce/`) posts the week's five hottest network articles as a
 reply-chained Bluesky thread from the reader bot, Fridays 16:00 UTC.
 
+The thread **roots on a Standard Reader page and links everything else to its
+source**. The root post's card goes to `/weekly/$week` (e.g. `/weekly/2026-W42`):
+a ranked editorial page of the week's picks, whose OG image
+(`/api/og/weekly/$week`) is also uploaded as the card's thumbnail. Each reply is
+one article — `n. Title — @author` — whose card links to the article's
+**canonical URL** on the author's own site, falling back to the in-app reader
+only when there is none. Writers asked for the source link: it is the one they
+want shared, and the one sensemaking tools (Semble et al.) key connections on.
+The page renders the picks the job stamped into `weekly_thread_runs.article_uris`
+before it posted — never a re-run of the ranking, which is relative to `now()` —
+so the page always agrees with the thread. `/weekly` redirects to the newest
+week.
+
 It must post **exactly once a week**, and the scheduled tick is not the only
 thing that starts it: Railway runs a cron service's start command on every
 redeploy and restart, and `pnpm thread:post` is a hand-run away. So the job is
@@ -1724,13 +1737,13 @@ where`, so concurrent runs can never both win (the same shape as the push
   A run that loses the claim exits without posting. The row is handed back
   (`skipped` / `failed`) when a run posts nothing, so a genuine retry still
   works, and a claim left stale by a killed process is reaped after 30 minutes.
-- **The write itself is idempotent.** Posts go to record keys derived from the
-  week — TIDs seeded from that week's Friday with a pinned clock id — via
-  `putRecord`, with `createdAt` anchored to the same instant. A run that gets
-  past the claim anyway (DB unreachable, `THREAD_FORCE=1`, a bug) therefore
-  _overwrites_ that week's thread instead of publishing a second one. The
-  original `createRecord`-at-a-fresh-TID is precisely how the job duplicated
-  itself.
+- **It checks the bot's own repo before it composes.** `findWeekThreadRoot`
+  looks for a root already carrying this week's marker, for when the ledger
+  cannot be trusted (a wiped row, a different database, a hand-run). Posts are
+  `createRecord` at fresh TIDs and never rewritten: an earlier scheme that
+  `putRecord`-ed the thread at week-derived rkeys silently mutated posts the
+  network had already replied to and liked. A duplicate is prevented before the
+  write or not at all.
 
 The ledger is stamped with the root URI the moment the root post lands, before
 the replies go out: past that point the thread is public, so a mid-thread crash

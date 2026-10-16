@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type * as LedgerModule from "./ledger.ts";
 import type { ClaimResult } from "./ledger.ts";
 import type * as ThreadModule from "./thread.ts";
-import type { PostThreadOptions, StrongRef } from "./thread.ts";
+import type { PostSpec, PostThreadOptions, StrongRef } from "./thread.ts";
 
 vi.mock("../../db/index.ts", () => ({ db: {} }));
 vi.mock("../../db/schema.ts", () => ({}));
@@ -27,6 +27,12 @@ vi.mock("./client.ts", () => ({
 }));
 
 const postThread = vi.fn();
+const fetchThumbBlob = vi.fn(
+  async (
+    _client: unknown,
+    _url: string | null,
+  ): Promise<Record<string, unknown> | null> => null,
+);
 const findWeekThreadRoot = vi.fn(
   async (
     _client: unknown,
@@ -36,7 +42,8 @@ const findWeekThreadRoot = vi.fn(
 );
 vi.mock("./thread.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof ThreadModule>()),
-  fetchThumbBlob: async () => null,
+  fetchThumbBlob: (client: unknown, url: string | null) =>
+    fetchThumbBlob(client, url),
   findWeekThreadRoot: (client: unknown, repo: string, periodKey: string) =>
     findWeekThreadRoot(client, repo, periodKey),
   postThread: (
@@ -54,6 +61,9 @@ const markRootPosted = vi.fn(
 const markThreadComplete = vi.fn(
   async (_periodKey: string, _postCount: number) => {},
 );
+const recordWeekPicks = vi.fn(
+  async (_periodKey: string, _articleUris: Array<string>) => {},
+);
 const releaseWeek = vi.fn(
   async (
     _periodKey: string,
@@ -69,6 +79,8 @@ vi.mock("./ledger.ts", async (importOriginal) => ({
     markRootPosted(periodKey, rootUri),
   markThreadComplete: (periodKey: string, postCount: number) =>
     markThreadComplete(periodKey, postCount),
+  recordWeekPicks: (periodKey: string, articleUris: Array<string>) =>
+    recordWeekPicks(periodKey, articleUris),
   releaseWeek: (
     periodKey: string,
     state: "skipped" | "failed",
@@ -143,7 +155,7 @@ describe("runWeeklyThread once-a-week guard", () => {
 
     expect(claimWeek).toHaveBeenCalledWith("2026-W33", { force: false });
     expect(postThread).toHaveBeenCalledTimes(1);
-    expect(summary.posted).toBe(3); // 2 articles + the CTA post
+    expect(summary.posted).toBe(4); // root + 2 articles + the CTA post
     expect(summary.skipped).toBeUndefined();
   });
 
@@ -268,7 +280,7 @@ describe("runWeeklyThread once-a-week guard", () => {
       "2026-W33",
       "at://did:plc:bot/app.bsky.feed.post/0",
     );
-    expect(markThreadComplete).toHaveBeenCalledWith("2026-W33", 3);
+    expect(markThreadComplete).toHaveBeenCalledWith("2026-W33", 4);
   });
 
   it("hands the week back when the run fails before posting", async () => {
@@ -303,7 +315,7 @@ describe("runWeeklyThread once-a-week guard", () => {
 
     const summary = await runWeeklyThread();
 
-    expect(summary.posted).toBe(3);
+    expect(summary.posted).toBe(4);
   });
 
   it("neither claims nor posts on a dry run", async () => {
@@ -331,5 +343,71 @@ describe("runWeeklyThread once-a-week guard", () => {
     // the first one's records to rewrite them.
     expect(findWeekThreadRoot).not.toHaveBeenCalled();
     expect(postThread).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("runWeeklyThread thread shape", () => {
+  function postedSpecs(): Array<PostSpec> {
+    return postThread.mock.calls[0][2] as Array<PostSpec>;
+  }
+
+  it("roots the thread on the week's Standard Reader page", async () => {
+    await runWeeklyThread();
+
+    const root = postedSpecs()[0];
+    expect(root.text).toBe(
+      "🔥 The 2 hottest reads on Standard Reader this week",
+    );
+    expect(root.external?.uri).toBe(
+      "https://standard-reader.app/weekly/2026-W33",
+    );
+    expect(root.external?.description).toBe("1. Article 1 · 2. Article 2");
+  });
+
+  it("links every article reply to its canonical URL, not back to us", async () => {
+    await runWeeklyThread();
+
+    const [, first, second] = postedSpecs();
+    expect(first.text).toBe("1. Article 1 — @ada.example");
+    expect(first.external?.uri).toBe("https://example.com/1");
+    expect(second.text).toBe("2. Article 2 — @ada.example");
+    expect(second.external?.uri).toBe("https://example.com/2");
+  });
+
+  it("falls back to the in-app reader when an article has no canonical URL", async () => {
+    weekInReviewArticles.mockResolvedValue([
+      { ...card(1), canonicalUrl: null },
+    ]);
+
+    await runWeeklyThread();
+
+    expect(postedSpecs()[1].external?.uri).toBe(
+      "https://standard-reader.app/a/did%3Aplc%3Aada/1",
+    );
+  });
+
+  it("records the picks before fetching the page's OG image for the root card", async () => {
+    await runWeeklyThread();
+
+    expect(recordWeekPicks).toHaveBeenCalledWith("2026-W33", [
+      "at://did:plc:ada/site.standard.document/1",
+      "at://did:plc:ada/site.standard.document/2",
+    ]);
+    expect(fetchThumbBlob).toHaveBeenCalledWith(
+      expect.anything(),
+      "https://standard-reader.app/api/og/weekly/2026-W33",
+    );
+    expect(recordWeekPicks.mock.invocationCallOrder[0]).toBeLessThan(
+      fetchThumbBlob.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("records no picks on a dry run", async () => {
+    process.env.THREAD_DRY_RUN = "1";
+    vi.spyOn(console, "info").mockImplementation(() => {});
+
+    await runWeeklyThread();
+
+    expect(recordWeekPicks).not.toHaveBeenCalled();
   });
 });

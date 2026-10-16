@@ -318,6 +318,10 @@ msgstr ""
 msgid "This list is empty — add publications or people to it."
 msgstr "このリストは空です。発行物やユーザーを追加してください。"
 
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Every pick this week is from an account you've blocked or muted."
+msgstr ""
+
 #: src/components/docs/api-docs-intro.tsx
 #~ msgid "A labeler is any DID that publishes AT Proto labels. Readers add one by DID on the <0>Labelers</0> page, and Standard Reader then shows that labeler's labels — and can warn on or hide labeled posts — as they read. Labelers are discovered the standard way; nothing about them is specific to us. To run your own:"
 #~ msgstr "ラベラーとは、AT Proto のラベルを公開する DID のことです。読者は<0>ラベラー</0>ページで DID を指定して追加でき、Standard Reader はそのラベラーのラベルを表示し、ラベルの付いた投稿を警告表示したり非表示にしたりできます。ラベラーは標準的な方法で検出され、独自の仕組みは一切ありません。自分で運用するには:"
@@ -841,6 +845,12 @@ msgstr "読者状態のエンドポイントは、任意の <0>did</0> クエリ
 #. placeholder {0}: index + 1
 #: src/routes/_layout.feedback.index.tsx
 msgid "Attachment {0} on “{title}”"
+msgstr ""
+
+#. placeholder {0}: splitWeekKey(data.next).week
+#. placeholder {0}: splitWeekKey(data.previous).week
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Week {0}"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -3190,6 +3200,10 @@ msgstr ""
 #: src/components/user-settings-view.tsx
 msgid "Theme"
 msgstr "テーマ"
+
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Join the conversation"
+msgstr ""
 
 #: src/routes/_layout.index.tsx
 msgid "The latest writing from the publications you subscribe to."
@@ -6661,6 +6675,10 @@ msgstr "コレクションを作成するには、Standard Reader が site.stand
 msgid "Block lists"
 msgstr ""
 
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Other weeks"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "All articles you have saved for later."
 msgstr "後で読むために保存したすべての記事です。"
@@ -7870,6 +7888,10 @@ msgstr ""
 msgid "{unreadCount} unread"
 msgstr "未読 {unreadCount} 件"
 
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Picked every Friday from a week of recommendations, with the most recent counting most, and posted as a thread on Bluesky."
+msgstr ""
+
 #: src/components/ereader-settings.tsx
 msgid "Log in with this as your username — there is no separate sync account."
 msgstr ""
@@ -8037,6 +8059,10 @@ msgstr ""
 #: src/components/reader/cards.tsx
 msgid "This publication opted out of discovery, so it's hidden everywhere except here on your own profile."
 msgstr "この発行物はディスカバリーへの掲載を停止しているため、ご自身のプロフィール以外では表示されません。"
+
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Weekly · {year}"
+msgstr ""
 
 #: src/routes/_layout.feedback.index.tsx
 msgid "{count, plural, one {# upvote} other {# upvotes}} — sign in to upvote"
@@ -8573,6 +8599,10 @@ msgstr "停止"
 msgid "Close the note"
 msgstr ""
 
+#: src/routes/_layout.weekly.$week.tsx
+msgid "The week's hottest reads"
+msgstr ""
+
 #: src/components/guide/pages/your-data-guide-page.tsx
 #: src/components/user-settings-view.tsx
 #: src/lib/guide/navigation.ts
@@ -8719,6 +8749,10 @@ msgstr ""
 #: src/components/reader/share-menu.tsx
 msgid "Add this anchor anywhere on your site and style it however you like. It opens the subscribe flow when clicked."
 msgstr "このアンカーはサイトのどこにでも設置でき、自由にスタイルを変えられます。クリックすると購読フローが開きます。"
+
+#: src/routes/_layout.weekly.$week.tsx
+msgid "What readers across the network recommended most, {start} to {end}. Each one is written and published by an independent author on their own site."
+msgstr ""
 
 #: src/components/reader/subscriptions-unsubscribe-dialog.tsx
 msgid "This unsubscribes from {publicationCount, plural, one {# publication} other {# publications}} and unfollows {peopleCount, plural, one {# person} other {# people}}. Their articles leave your feed, and unfollowing someone also drops the subscriptions that follow created. You can subscribe again at any time."
@@ -9064,6 +9098,10 @@ msgstr ""
 
 #: src/components/reader/read-on-platform.tsx
 msgid "Read this on {name}"
+msgstr ""
+
+#: src/routes/_layout.weekly.$week.tsx
+msgid "Week"
 msgstr ""
 
 #. placeholder {0}: topic.authorCount
