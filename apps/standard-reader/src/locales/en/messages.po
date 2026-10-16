@@ -1538,6 +1538,10 @@ msgstr "This browser doesn’t support web notifications."
 msgid "Getting help"
 msgstr "Getting help"
 
+#: src/components/reader/comments/comments-section.tsx
+msgid "Couldn't load the discussion. Try again in a moment."
+msgstr "Couldn't load the discussion. Try again in a moment."
+
 #: src/components/reader/article-view.tsx
 msgid "Did you enjoy this article?"
 msgstr "Did you enjoy this article?"

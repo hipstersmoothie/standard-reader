@@ -57,6 +57,7 @@ export async function fetchBlueskyPublicProfileFields(
     url.searchParams.set("actor", did);
     const response = await fetch(url.toString(), {
       headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(8000),
     });
     if (!response.ok) return null;
     return normalizeProfileResponse(await response.json());
