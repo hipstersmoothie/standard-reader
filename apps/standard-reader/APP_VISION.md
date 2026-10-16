@@ -227,6 +227,25 @@ Topics are **derived, never curated** — see
   sandboxed `srcdoc` iframe at the height the block asks for, matching what the lexicon
   specifies. The sandbox grants scripts only: `allow-same-origin` on a `srcdoc` frame would
   run the author's markup in the reader's own origin.
+  Leaflet **canvas** posts (free-form pages where blocks sit at x/y positions) render as their
+  author laid them out: every block at its position, width and rotation, stacked in Leaflet's
+  paint order over the canvas's grid/dot pattern and tiled background, with the whole canvas
+  scaled to fit (never past 1:1) and a root canvas getting a column as wide as Leaflet's 1272px
+  page. Text inside sizes to Leaflet's canvas px (16px base, its heading/quote/paragraph metrics)
+  so it wraps as authored instead of running into the block below. The scale is pure CSS (a
+  typed `calc()` division, with a script fallback where that's unsupported), so server-rendered
+  HTML is already at size. Below 48rem a full-width canvas would shrink text under ~60%, so it
+  reflows into one column in reading order — images and drawings capped at their canvas width —
+  with a "Show the original layout" toggle that frames Leaflet's 520px mobile-view area at
+  readable size and scrolls sideways. A fixed-size canvas (an `embeddedCanvas` drawing) always
+  keeps its layout. Blocks stay one flat list in reading order with their placement attached, so
+  search text, narration, footnotes and quote highlights read a canvas exactly as before.
+  Drawings render as inline SVG, with Leaflet's theme ink (`primary` / `accent` / `tertiary`) mapped to the reader's own
+  tokens so they follow light/dark. A `membersOnlyDelimiter` — the gated part never reaches the
+  public record — ends the article with a notice and a link to the original. Blocks Leaflet
+  resolves at render time from data outside the record (`postHeader`, `postsList`,
+  `recommendedPubs`, `questions`, `reply`) render nothing: the reader draws its own header, and
+  the rest is Leaflet-hosted interaction.
   Leaflet image galleries use CSS
   `grid-lanes` where supported with plain CSS Grid fallback elsewhere. Every rendered image in
   a document body — Leaflet galleries and single-image blocks, PCKT image and gallery blocks,

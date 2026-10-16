@@ -76,8 +76,13 @@ import { labelerApi } from "#/integrations/tanstack-query/api-labelers.functions
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { user } from "#/integrations/tanstack-query/api-user.functions";
+import {
+  LEAFLET_DOCUMENT_FORMAT,
+  leafletDocumentContent,
+} from "#/lib/document/content-formats";
 import { documentImages } from "#/lib/document/images";
 import { resolveArticleHeroImage } from "#/lib/document/lead-image";
+import { leafletHasRootCanvas } from "#/lib/leaflet/blocks";
 import { articleCbzUrl, articleEpubUrl } from "#/lib/opds/urls";
 import { usePageReader } from "#/lib/page-reader/page-reader-context";
 import { getPublicUrlClient } from "#/lib/public-url";
@@ -98,6 +103,7 @@ import {
   articleReadingText,
   articleSpeechText,
 } from "./content/extract-text";
+import { canvasSizes } from "./content/renderers/leaflet-canvas.stylex";
 import { MarkdownArticle } from "./content/renderers/shared/markdown-article";
 import { DocumentShareMenu } from "./document-share-menu";
 import { useEngagementCountsVisible } from "./engagement-visibility";
@@ -392,6 +398,11 @@ const styles = stylex.create({
     // article needs less of its own lead-in there; unchanged without a canvas.
     paddingTop: `var(--pub-page-content-top, ${spacing["14"]})`,
     width: "100%",
+  },
+  /** A Leaflet canvas post gets the canvas's own width (plus the article's
+   *  side padding), so it draws at full size instead of fitting the measure. */
+  canvasMeasure: {
+    maxWidth: `calc(${canvasSizes.width} + 2 * ${spacing["6"]})`,
   },
   kicker: {
     gap: gap.sm,
@@ -1127,6 +1138,15 @@ function ArticleViewBody({
   const readingLabel = formatReadingTime(articleReadingText(article));
   const date = fmt.date(article.publishedAt);
   const publicationArticleUrl = articlePublicationUrl(article);
+  const canvasPost = useMemo(
+    () =>
+      leafletHasRootCanvas(
+        article.contentFormat === LEAFLET_DOCUMENT_FORMAT
+          ? leafletDocumentContent(article.contentJson)
+          : article.contentJson,
+      ),
+    [article.contentFormat, article.contentJson],
+  );
   const linkParams = documentLinkParams(article.uri);
   // Leaflet / pckt / Offprint get their own mark in place of the generic
   // external-link glyph, so the destination is legible before the click.
@@ -1435,14 +1455,18 @@ function ArticleViewBody({
       <div
         {...stylex.props(
           publicationPageCard.card,
-          articleMeasureStyle(readingTypography),
+          canvasPost
+            ? styles.canvasMeasure
+            : articleMeasureStyle(readingTypography),
         )}
       >
         <article
           ref={articleRef}
           {...stylex.props(
             styles.article,
-            articleMeasureStyle(readingTypography),
+            canvasPost
+              ? styles.canvasMeasure
+              : articleMeasureStyle(readingTypography),
           )}
         >
           {showMagazineIntro ? (

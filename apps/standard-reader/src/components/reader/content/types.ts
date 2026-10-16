@@ -17,6 +17,8 @@ export interface ContentRendererProps {
   leadDescription?: string | null;
   blobContext?: ContentBlobContext;
   codeHighlights?: CodeHighlightsByScheme;
+  /** The post on its own site, for blocks that hand the reader off to it. */
+  articleUrl?: string | null;
 }
 
 export type ContentRenderer = React.ComponentType<ContentRendererProps>;

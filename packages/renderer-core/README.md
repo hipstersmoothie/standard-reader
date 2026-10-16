@@ -128,6 +128,19 @@ The raw per-format parsers and vocabulary types are available too:
   to `htmlEmbed` and the default components render it. A markdown source's raw
   markup maps to `html` instead, which renders nothing until the host supplies
   a component with its own sanitizer.
+- **Leaflet canvas posts** are read in y/x order, with a linear document placed
+  on the canvas flattened into its blocks and an `embeddedCanvas` shown inline.
+  `leafletBlocks` keeps each such block's placement on `block.canvas` (x/y,
+  width, rotation, paint `layer`, the canvas `frame`, and a `parent` for a
+  canvas shown on another canvas) for hosts that lay the canvas out; the render
+  tree itself stays in reading order.
+  A `drawing` becomes an `image` whose `src` is a self-contained SVG `data:`
+  URL (theme colors follow `prefers-color-scheme`; `leafletDrawingGeometry` /
+  `leafletDrawingSvg` are exported for hosts that want to draw it themselves).
+  A `membersOnlyDelimiter` becomes a `note` callout, since the gated part is
+  not in the public record. Blocks Leaflet resolves at render time from data
+  outside the record — `postHeader`, `postsList`, `recommendedPubs`,
+  `questions`, `reply` — produce no node.
 - **Markpub** (`at.markpub.markdown`) carries facets over the _markdown source_.
   Facet-only constructs (headers, strong, horizontal rules, front matter) are
   rewritten back into markdown syntax before parsing, so they arrive as real

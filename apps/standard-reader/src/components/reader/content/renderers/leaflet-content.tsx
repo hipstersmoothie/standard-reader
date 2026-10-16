@@ -6,12 +6,14 @@ import type { LeafletContent } from "#/lib/leaflet/types";
 
 import type { ContentRendererProps } from "../types";
 import { LeafletBlockView } from "./leaflet-block";
+import { LeafletBlockList } from "./leaflet-canvas";
 import { ArticleBody } from "./shared/article-body";
 import { FootnoteNumberProvider } from "./shared/footnote-context";
 import { FootnotesSection } from "./shared/footnotes-section";
 
 /** Renders `pub.leaflet.content` — linear pages of typed blocks. */
 export function LeafletContentRenderer({
+  articleUrl,
   blobContext,
   codeHighlights,
   content,
@@ -21,31 +23,35 @@ export function LeafletContentRenderer({
   const blocks = leafletBlocks(content as LeafletContent);
   if (blocks.length === 0) return null;
 
-  const firstTextIndex = blocks.findIndex((block, index) => {
-    if (skipFirstBlock && index === 0 && block.kind === "image") return false;
-    return block.kind === "text";
-  });
+  // A canvas block keeps its place on the canvas: it is never lifted into the
+  // header as a hero, and its text gets no drop cap.
+  const skipsFirst =
+    skipFirstBlock && blocks[0]?.kind === "image" && !blocks[0].canvas;
+  const firstTextIndex = blocks.findIndex(
+    (block, index) =>
+      !(skipsFirst && index === 0) && block.kind === "text" && !block.canvas,
+  );
 
   const { footnotes, numberById } = collectLeafletFootnotes(blocks);
 
   return (
     <ArticleBody hasHero={hasHero}>
       <FootnoteNumberProvider value={numberById}>
-        {blocks.map((block, index) => {
-          if (skipFirstBlock && index === 0 && block.kind === "image") {
-            return null;
-          }
-          const dropCap = block.kind === "text" && index === firstTextIndex;
-          return (
+        <LeafletBlockList
+          entries={blocks
+            .map((block, index) => ({ block, index }))
+            .filter(({ index }) => !(skipsFirst && index === 0))}
+          blobContext={blobContext}
+          renderBlock={(block, index) => (
             <LeafletBlockView
-              key={index}
               block={block}
               blobContext={blobContext}
               codeHighlights={codeHighlights}
-              dropCap={dropCap}
+              articleUrl={articleUrl}
+              dropCap={index === firstTextIndex}
             />
-          );
-        })}
+          )}
+        />
         <FootnotesSection footnotes={footnotes} />
       </FootnoteNumberProvider>
     </ArticleBody>

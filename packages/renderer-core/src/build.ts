@@ -18,6 +18,10 @@ import {
   leafletBlocks,
   leafletWebsiteSrc,
 } from "./leaflet/blocks.js";
+import {
+  leafletDrawingDataUrl,
+  leafletDrawingGeometry,
+} from "./leaflet/drawing.js";
 import { collectLeafletFootnotes } from "./leaflet/footnotes.js";
 import { leafletImageAspectRatio } from "./leaflet/image.js";
 import type {
@@ -414,6 +418,33 @@ function leafletToNode(
     }
     case "signup": {
       return { type: "leaflet.signup" };
+    }
+    case "drawing": {
+      // No drawing node: a self-contained SVG image renders everywhere an
+      // image does, with no per-framework component to keep in step.
+      const geometry = leafletDrawingGeometry(block.block);
+      if (!geometry) return null;
+      return {
+        type: "image",
+        src: leafletDrawingDataUrl(geometry),
+        alt: "",
+        aspectRatio: geometry.viewBox.width / geometry.viewBox.height,
+      };
+    }
+    case "membersOnlyDelimiter": {
+      // The members-only part is not in the public record; say so rather than
+      // let the document just stop.
+      const paid =
+        block.block.audience === "paid" || block.block.audience === "tiers";
+      return {
+        type: "callout",
+        kind: "note",
+        text: {
+          plaintext: paid
+            ? "The rest of this post is for paid members."
+            : "The rest of this post is for subscribers.",
+        },
+      };
     }
     case "pageEmbed": {
       return {

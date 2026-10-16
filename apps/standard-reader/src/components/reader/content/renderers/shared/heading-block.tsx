@@ -8,6 +8,7 @@ import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-tr
 import type { LeafletFacet } from "#/lib/leaflet/types";
 
 import { articleBodyStyles } from "../../body-styles";
+import { canvasBlockStyles } from "../leaflet-canvas-styles";
 import { HighlightedFacetedPlaintext } from "./faceted-text";
 
 export function HeadingBlockView({
@@ -15,11 +16,14 @@ export function HeadingBlockView({
   level = 2,
   facets,
   embedded = false,
+  canvas = false,
 }: {
   plaintext: string;
   level?: number;
   facets?: Array<LeafletFacet> | Array<unknown>;
   embedded?: boolean;
+  /** Inside a Leaflet canvas block: Leaflet's heading sizes, in canvas px. */
+  canvas?: boolean;
 }) {
   const tracker = useQuoteHighlightTracker();
   const highlightRange = tracker?.consume(plaintext.length) ?? null;
@@ -35,6 +39,12 @@ export function HeadingBlockView({
       ...stylex.props(
         style,
         embedded && articleBodyStyles.pageEmbedBlockSpacing,
+        canvas &&
+          (clamped <= 1
+            ? canvasBlockStyles.heading1
+            : clamped === 2
+              ? canvasBlockStyles.heading2
+              : canvasBlockStyles.heading3),
       ),
     },
     facets?.length ? (

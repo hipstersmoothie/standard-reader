@@ -20,6 +20,7 @@ import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 import { MagazineColorContext } from "#/magazine/context";
 
 import { articleBodyStyles } from "../../body-styles";
+import { canvasBlockStyles } from "../leaflet-canvas-styles";
 
 /** Caps how tall a naturally-proportioned image can render, matching the
  *  lightbox's own image cap so inline and expanded sizing feel consistent. */
@@ -62,6 +63,7 @@ export function ImageFigureView({
   fullBleed = false,
   lightboxEnabled = false,
   fit = "cover",
+  canvas = false,
 }: {
   src: string;
   alt?: string;
@@ -75,6 +77,10 @@ export function ImageFigureView({
    *  layout); "natural" shows the image's real proportions capped by
    *  `MAX_NATURAL_IMAGE_HEIGHT` instead of forcing a fixed box. */
   fit?: "cover" | "natural";
+  /** Drawn inside a Leaflet canvas block: fills the block, with no caption
+   *  (alt text stays on the image), and keeps the block's width as a cap once
+   *  the canvas reflows. */
+  canvas?: boolean;
 }) {
   const { t } = useLingui();
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -95,6 +101,7 @@ export function ImageFigureView({
         {...stylex.props(
           styles.naturalImage(aspectRatio),
           !fullBleed && styles.naturalImageRounded,
+          canvas && canvasBlockStyles.image,
         )}
       />
     </div>
@@ -109,6 +116,7 @@ export function ImageFigureView({
       {...stylex.props(
         articleBodyStyles.imageFigure,
         fullBleed && !magazine ? articleBodyStyles.imageFullBleed : undefined,
+        canvas && canvasBlockStyles.figure,
       )}
     >
       {magazine ? (
@@ -139,7 +147,7 @@ export function ImageFigureView({
       ) : (
         image
       )}
-      {captionText ? (
+      {captionText && !canvas ? (
         <figcaption
           // A caption that just repeats the alt text would be announced twice;
           // one that says something else is content in its own right.

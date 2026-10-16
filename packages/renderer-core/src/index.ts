@@ -43,6 +43,15 @@ export type {
   LeafletContent,
 } from "./leaflet/types.js";
 export { LEAFLET_CONTENT } from "./leaflet/types.js";
+export {
+  leafletDrawingDataUrl,
+  leafletDrawingGeometry,
+  leafletDrawingSvg,
+} from "./leaflet/drawing.js";
+export type {
+  LeafletDrawingColor,
+  LeafletDrawingGeometry,
+} from "./leaflet/drawing.js";
 
 export { pcktBlocks, asPcktContent } from "./pckt/blocks.js";
 export type { PcktRenderableBlock, PcktContent } from "./pckt/types.js";

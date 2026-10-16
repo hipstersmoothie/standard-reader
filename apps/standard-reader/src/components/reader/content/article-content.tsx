@@ -2,6 +2,7 @@
 
 import * as stylex from "@stylexjs/stylex";
 
+import { articlePublicationUrl } from "#/components/reader/format";
 import {
   DropCapChar,
   HighlightedPlaintext,
@@ -143,6 +144,7 @@ export function ArticleContent({
 
   if (Renderer) {
     const props: ContentRendererProps = {
+      articleUrl: articlePublicationUrl(article),
       blobContext: {
         authorDid: article.did,
       },
