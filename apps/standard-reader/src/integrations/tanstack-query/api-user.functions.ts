@@ -142,6 +142,7 @@ import {
 } from "#/lib/track-reading-history";
 import { maybeAuthMiddleware } from "#/middleware/auth";
 import { resolveIdentity } from "#/server/atproto/identity";
+import { invalidateBlockCache } from "#/server/blocks/blocks";
 import { observe } from "#/server/observability/log";
 import { loadShellSnapshot } from "#/server/reader/shell-snapshot.server";
 
@@ -1271,6 +1272,48 @@ const setBridgeExclusionPreference = createServerFn({ method: "POST" })
     },
   );
 
+// "Hide blocked accounts" — signed-in only, since a guest has no blocks. `null`
+// in the column means on, so only an explicit `false` turns enforcement off.
+const getRespectBlocksPreference = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .handler(async ({ context }): Promise<{ enabled: boolean }> => {
+    const session = context?.session;
+    if (!session?.user) return { enabled: true };
+
+    const row = await context.db.query.user.findFirst({
+      where: eq(context.schema.user.id, session.user.id),
+      columns: { respectBlocks: true },
+    });
+    return { enabled: row?.respectBlocks !== false };
+  });
+
+const getRespectBlocksPreferenceQueryOptions = queryOptions({
+  queryKey: ["respectBlocksPreference"] as const,
+  queryFn: () => getRespectBlocksPreference(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const setRespectBlocksPreference = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .validator(z.object({ enabled: z.boolean() }))
+  .handler(async ({ data, context }): Promise<{ enabled: boolean }> => {
+    if (!context?.session?.user) return { enabled: true };
+
+    const [row] = await context.db
+      .update(context.schema.user)
+      // Back to `null` rather than `true` when re-enabled, so "on" stays the
+      // one default state instead of two.
+      .set({ respectBlocks: data.enabled ? null : false })
+      .where(eq(context.schema.user.id, context.session.user.id))
+      .returning({ did: context.schema.user.did });
+
+    // Every block check reads a cached "does this reader have blocks in
+    // effect" answer; without this the switch would lag by up to its TTL.
+    if (row?.did) invalidateBlockCache(row.did);
+
+    return { enabled: data.enabled };
+  });
+
 // Feed presentation preferences — signed-in only, like the publication theme
 // above (the settings page is behind auth), so no cookie mirror for guests.
 const getHideFeedMetricsPreference = createServerFn({ method: "GET" })
@@ -1647,6 +1690,9 @@ export const user = {
   getBridgeExclusionPreference,
   getBridgeExclusionPreferenceQueryOptions,
   setBridgeExclusionPreference,
+  getRespectBlocksPreference,
+  getRespectBlocksPreferenceQueryOptions,
+  setRespectBlocksPreference,
   getHideFeedMetricsPreference,
   getHideFeedMetricsPreferenceQueryOptions,
   setHideFeedMetricsPreference,

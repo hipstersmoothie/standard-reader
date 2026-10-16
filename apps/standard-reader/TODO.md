@@ -2268,6 +2268,11 @@ A reader's Bluesky blocks apply here, in both directions, with no setup. See
       their subscribed block lists with each list's mirrored size, a Partial badge past the cap and
       a sentence saying what Partial means. Refresh starts a background sweep and says so rather
       than holding the request open for hundreds of round trips.
+- [x] **Let readers turn block enforcement off** (migration `0047`) — Settings → Moderation → "Hide
+      blocked accounts" writes `user.respect_blocks = false`; `readerHasBlocks` folds it into its
+      existing cached query, so every feed predicate, post-filter, blocked-page notice and the
+      digest drop out at once. Push fan-out checks the column itself. Covers all four directions;
+      the records themselves are untouched and `/settings/blocks` says they aren't enforced.
 - [ ] **Mutes** — `app.bsky.graph.muteActor` / mute lists are a separate, softer signal (hide from
       feeds but keep the profile reachable) and are not mirrored yet.
 - [ ] **Full mirror for large blocklists** — lists past `MAX_LIST_PAGES` are stored truncated and

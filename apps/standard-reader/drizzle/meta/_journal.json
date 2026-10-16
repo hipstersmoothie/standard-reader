@@ -330,6 +330,13 @@
       "when": 1790208000000,
       "tag": "0046_exclude_all_bridges",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1791158400000,
+      "tag": "0047_respect_blocks",
+      "breakpoints": true
     }
   ]
 }

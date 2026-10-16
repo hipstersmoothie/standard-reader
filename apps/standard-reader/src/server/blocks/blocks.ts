@@ -136,17 +136,28 @@ const HAS_BLOCKS_CACHE_MAX = 10_000;
 
 const hasBlocksCache = new Map<string, { value: boolean; expires: number }>();
 
-/** Drop a reader's cached answer, after they block or unblock anything. */
+/**
+ * Drop a reader's cached answer, after they block or unblock anything — or turn
+ * {@link readerHasBlocks}'s `respect_blocks` switch on or off.
+ */
 export function invalidateBlockCache(did: string): void {
   hasBlocksCache.delete(did);
 }
 
 /**
- * Whether this viewer has any blocks at all, in either direction.
+ * Whether this viewer has any blocks at all, in either direction, *and* wants
+ * them enforced.
  *
  * The guard in front of every other helper here, and in front of every SQL
  * predicate {@link notBlockedByViewer} would otherwise add — and the
- * overwhelmingly common answer is "no". Cached two ways for that reason:
+ * overwhelmingly common answer is "no". That makes it the one place the
+ * reader's "Hide blocked accounts" switch (`user.respect_blocks = false`) has
+ * to land: answering "no" here turns off every feed predicate, post-filter,
+ * blocked-page notice and digest filter at once, without any of them knowing
+ * the setting exists. Push fan-out is the exception — it probes the block
+ * tables for many recipients at once and checks the column itself.
+ *
+ * Cached two ways for that reason:
  * per-request via {@link reactCache} (one page filters several card sets), and
  * across requests in-process for {@link HAS_BLOCKS_TTL_MS}, so a signed-in
  * reader who has never blocked anybody costs nothing at all on the steady path.
@@ -164,21 +175,30 @@ async function readerHasBlocksImpl(
   const b = schema.blocks;
   const bl = schema.blockLists;
   const bli = schema.blockListItems;
+  const u = schema.user;
+  // The opt-out rides on the same round trip, so a reader who turned blocks
+  // off costs exactly what a reader with none does: one cached `false`.
   const result = await db.execute(sql`
     select (
-      exists(
-        select 1 from ${b}
-        where (${b.blockerDid} = ${viewerDid} or ${b.subjectDid} = ${viewerDid})
-          and ${b.deleted} = false
+      not exists(
+        select 1 from ${u}
+        where ${u.did} = ${viewerDid} and ${u.respectBlocks} = false
       )
-      or exists(
-        select 1 from ${bl}
-        where ${bl.blockerDid} = ${viewerDid} and ${bl.deleted} = false
-      )
-      or exists(
-        select 1 from ${bli}
-        join ${bl} on ${bl.listUri} = ${bli.listUri}
-        where ${bli.subjectDid} = ${viewerDid} and ${bl.deleted} = false
+      and (
+        exists(
+          select 1 from ${b}
+          where (${b.blockerDid} = ${viewerDid} or ${b.subjectDid} = ${viewerDid})
+            and ${b.deleted} = false
+        )
+        or exists(
+          select 1 from ${bl}
+          where ${bl.blockerDid} = ${viewerDid} and ${bl.deleted} = false
+        )
+        or exists(
+          select 1 from ${bli}
+          join ${bl} on ${bl.listUri} = ${bli.listUri}
+          where ${bli.subjectDid} = ${viewerDid} and ${bl.deleted} = false
+        )
       )
     ) as has
   `);
