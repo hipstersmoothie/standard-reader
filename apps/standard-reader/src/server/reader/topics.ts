@@ -14,6 +14,7 @@ import { WEB_BRIDGE_HANDLE_PATTERN } from "#/lib/atproto/bridged-repo";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
 import { cdnImageUrl } from "#/server/atproto/blob";
 
+import { documentInLanguagesSql } from "./language-filters.ts";
 import type { ArticleCardSort } from "./queries.ts";
 import { rotateRail, ROTATION_POOL_MULTIPLIER } from "./rail-rotation.ts";
 
@@ -483,12 +484,15 @@ export async function selectTopicDocumentUris(
     sort = "recent",
     limit,
     offset = 0,
+    languages,
   }: {
     slug: string;
     tags: Array<string>;
     sort?: ArticleCardSort;
     limit: number;
     offset?: number;
+    /** See `ArticleCardQuery.languages` — topic pages are network-wide. */
+    languages?: ReadonlyArray<string>;
   },
 ): Promise<Array<string>> {
   if (tags.length === 0) return [];
@@ -528,6 +532,7 @@ export async function selectTopicDocumentUris(
              coalesce(d.backlink_count, 0) AS backlink_count${recommendCount}
       ${topicDocumentFrom(slug)}
       WHERE ${topicDocumentWhere(tags)}
+        ${documentInLanguagesSql(sql`d.lang`, languages)}
     )
     SELECT m.uri FROM matched m
     ORDER BY ${orderBy}
@@ -542,12 +547,14 @@ export async function countTopicDocuments(
   db: Db,
   slug: string,
   tags: Array<string>,
+  languages?: ReadonlyArray<string>,
 ): Promise<number> {
   if (tags.length === 0) return 0;
   const rows = await db.execute(sql`
     SELECT count(*)::int AS count
     ${topicDocumentFrom(slug)}
     WHERE ${topicDocumentWhere(tags)}
+      ${documentInLanguagesSql(sql`d.lang`, languages)}
   `);
   return Number(executeRows<{ count: number }>(rows)[0]?.count ?? 0);
 }
