@@ -31,10 +31,12 @@ describe("documentInLanguagesWhere", () => {
     const where = documentInLanguagesWhere(schema, ["en"]);
     expect(where).toBeDefined();
     const query = render(where);
-    // `lang IS NULL OR lang IN (…)` — a filter narrows on positive evidence
-    // only, so a document the detector declined to place is never hidden.
-    expect(query.sql).toContain("is null");
-    expect(query.sql).toContain("or");
+    // "Not tagged as something else" — a filter narrows on positive evidence
+    // only, so a document the detector declined to place (NULL `lang`) or never
+    // looked at (no row) is never hidden.
+    expect(query.sql).toContain("NOT EXISTS");
+    expect(query.sql).toContain("lang IS NOT NULL");
+    expect(query.sql).toContain("NOT IN");
     expect(query.params).toContain("en");
   });
 
@@ -46,14 +48,14 @@ describe("documentInLanguagesWhere", () => {
 
 describe("documentInLanguagesSql", () => {
   it("renders nothing to interpolate when there is no filter", () => {
-    expect(render(documentInLanguagesSql(sql`d.lang`)).sql).toBe("");
-    expect(render(documentInLanguagesSql(sql`d.lang`, [])).sql).toBe("");
+    expect(render(documentInLanguagesSql(sql`d.uri`)).sql).toBe("");
+    expect(render(documentInLanguagesSql(sql`d.uri`, [])).sql).toBe("");
   });
 
   it("renders a leading AND so it can be spliced into a WHERE unconditionally", () => {
-    const query = render(documentInLanguagesSql(sql`d.lang`, ["en"]));
+    const query = render(documentInLanguagesSql(sql`d.uri`, ["en"]));
     expect(query.sql.trim().startsWith("AND")).toBe(true);
-    expect(query.sql).toContain("IS NULL");
+    expect(query.sql).toContain("NOT EXISTS");
     expect(query.params).toEqual(["en"]);
   });
 
@@ -61,14 +63,14 @@ describe("documentInLanguagesSql", () => {
     // Interpolating the array directly renders `IN (($1, $2, $3))`, which
     // Postgres parses as a row comparison and rejects at runtime — and only
     // for readers who actually set a filter, so nothing else would catch it.
-    const query = render(documentInLanguagesSql(sql`d.lang`, ["en", "ja"]));
-    expect(query.sql).toContain("IN ($1, $2)");
+    const query = render(documentInLanguagesSql(sql`d.uri`, ["en", "ja"]));
+    expect(query.sql).toContain("NOT IN ($1, $2)");
     expect(query.sql).not.toContain("(($1");
     expect(query.params).toEqual(["en", "ja"]);
   });
 
   it("uses the caller's column, since these queries alias documents", () => {
-    const query = render(documentInLanguagesSql(sql`t.lang`, ["ja"]));
-    expect(query.sql).toContain("t.lang");
+    const query = render(documentInLanguagesSql(sql`t.uri`, ["ja"]));
+    expect(query.sql).toContain("= t.uri");
   });
 });

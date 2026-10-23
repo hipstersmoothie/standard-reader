@@ -21,10 +21,11 @@ import {
 } from "#/lib/document/search-text";
 import { EXCLUDED_PUBLICATION_URL_PATTERN } from "#/lib/publication/exclusions";
 import { SERIAL_DIRECTION } from "#/lib/publication/serial";
-import { detectDocumentLanguage, languageColumns } from "#/server/lang/detect";
+import { detectDocumentLanguage, languageRow } from "#/server/lang/detect";
 import { loadGlotlid } from "#/server/lang/glotlid";
 import { isJevConfigured, jevLanguage } from "#/server/lang/jev";
 import { documentLanguageSample } from "#/server/lang/sample";
+import { writeDocumentLanguages } from "#/server/lang/store";
 import { deriveSerialKind } from "#/server/reader/series";
 import {
   ARTICLE_BLEND,
@@ -39,6 +40,7 @@ import {
 import { db } from "../../db/index.ts";
 import * as schema from "../../db/schema.ts";
 import {
+  documentLanguages,
   documents,
   NETWORK_DOCUMENT_COUNT_KEY,
   NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY,
@@ -47,6 +49,7 @@ import {
   publications,
   UNTAGGED_LANGUAGE_KEY,
 } from "../../db/schema.ts";
+import type { NewDocumentLanguage } from "../../db/schema.ts";
 import { getBacklinkCountForTarget } from "../atproto/constellation.ts";
 import {
   INVALID_HANDLE,
@@ -753,14 +756,16 @@ export async function recomputeNetworkStats(): Promise<void> {
     SELECT stat.key, stat.value, ${recomputedAt}
     FROM (
       SELECT
-        coalesce(d.lang, ${UNTAGGED_LANGUAGE_KEY}) AS lang,
-        GROUPING(d.lang) AS is_total,
+        coalesce(dl.lang, ${UNTAGGED_LANGUAGE_KEY}) AS lang,
+        GROUPING(dl.lang) AS is_total,
         count(*) AS all_documents,
         count(*) FILTER (
           WHERE wba.did IS NULL AND wbp.did IS NULL
         ) AS documents_without_web_bridge
       FROM documents d
       LEFT JOIN publications p ON p.uri = d.publication_uri
+      -- Primary key, so this cannot duplicate a document either.
+      LEFT JOIN document_languages dl ON dl.document_uri = d.uri
       LEFT JOIN (
         SELECT did FROM profiles WHERE handle ILIKE ${WEB_BRIDGE_HANDLE_PATTERN}
       ) wba ON wba.did = d.did
@@ -780,7 +785,7 @@ export async function recomputeNetworkStats(): Promise<void> {
       -- One scan, two levels: the grand total (the two headline scalars) and
       -- the per-language breakdown the language filter's badge sums. GROUPING()
       -- is 1 for the rollup row and 0 for the per-language ones.
-      GROUP BY GROUPING SETS ((), (d.lang))
+      GROUP BY GROUPING SETS ((), (dl.lang))
     ) totals
     CROSS JOIN LATERAL (VALUES
       (
@@ -999,67 +1004,62 @@ export async function backfillRenderableBody(): Promise<number> {
 }
 
 /**
- * Tag documents the language detector has never looked at.
+ * Tag the documents queued for detection.
  *
  * `upsertDocument` detects on write in the ingest worker, so in steady state
- * this pass finds little: the rows that predate language tagging, the ones the
- * web server indexed on demand (it never loads the model — see
- * `#/server/lang/glotlid`), and the handful ingest can still leave behind (a
- * body that arrived out of order, a write that raced a deploy). The work queue
- * is `lang_detected_at IS NULL`, served by the partial
- * `documents_lang_pending_idx`, so the query cost shrinks toward zero as the
- * corpus is covered rather than scanning 3.4M rows every hour.
+ * this pass finds little: the documents the web server indexed on demand (it
+ * never loads the model — see `#/server/lang/glotlid` — so it queues them as
+ * `pending`). The queue is served by the partial
+ * `document_languages_pending_idx`, so the sweep costs nothing when it is
+ * empty.
  *
  * **Bounded on purpose.** Detection is ~0.3 ms of CPU per document plus the
  * read, and this runs in the ingest worker, in front of the live stream.
- * {@link LANGUAGE_SWEEP_CAP} is what keeps a cold corpus from monopolising a
- * sweep; the initial pass over an existing corpus belongs in
- * `scripts/backfill-document-languages.ts`, which can take as long as it likes.
+ * {@link LANGUAGE_SWEEP_CAP} keeps a burst of on-demand indexing from
+ * monopolising a sweep. Documents with no row at all — the corpus from before
+ * language tagging — are not this sweep's job; see
+ * {@link tagUntaggedDocuments}.
  *
- * Stamps `lang_detected_at` whether or not a language came out, so a document
- * with nothing detectable in it is examined once and never again. Idempotent.
- * Returns how many documents were examined.
+ * Writes a row whether or not a language came out, so a document with nothing
+ * detectable in it leaves the queue. Idempotent. Returns how many documents
+ * were examined.
  */
 export async function backfillDocumentLanguages(
   opts: {
     /** Stop after this many documents. The sweep's cap by default. */
     limit?: number;
-    /** Called after each batch, for the backfill script's progress line. */
-    onProgress?: (examined: number) => void;
   } = {},
 ): Promise<number> {
-  await loadGlotlid();
   const limit = opts.limit ?? LANGUAGE_SWEEP_CAP;
   const READ_BATCH = 500;
   let examined = 0;
+  let loaded = false;
 
   while (examined < limit) {
     const rows = await db
-      .select({
-        description: documents.description,
-        textContent: documents.textContent,
-        title: documents.title,
-        uri: documents.uri,
-      })
-      .from(documents)
+      .select(languageSampleColumns)
+      .from(documentLanguages)
+      .innerJoin(documents, eq(documents.uri, documentLanguages.documentUri))
       .where(
-        and(eq(documents.deleted, false), isNull(documents.langDetectedAt)),
+        and(
+          eq(documentLanguages.source, "pending"),
+          eq(documents.deleted, false),
+        ),
       )
-      .orderBy(desc(documents.publishedAt))
       .limit(Math.min(READ_BATCH, limit - examined));
 
     if (rows.length === 0) break;
+    if (!loaded) {
+      await loadGlotlid();
+      loaded = true;
+    }
 
-    await writeLanguageColumns(
-      rows.map((row) => ({
-        uri: row.uri,
-        // Never `undefined` here: the model was loaded above.
-        ...languageColumns(detectDocumentLanguage(row)),
-      })),
+    await writeDocumentLanguages(
+      // Never `undefined` here: the model was loaded above.
+      rows.map((row) => languageRow(row.uri, detectDocumentLanguage(row))),
     );
 
     examined += rows.length;
-    opts.onProgress?.(examined);
     if (rows.length < READ_BATCH) break;
   }
 
@@ -1070,56 +1070,99 @@ export async function backfillDocumentLanguages(
 }
 
 /**
- * Write per-document language columns in one statement per chunk.
+ * Tag every document that has no `document_languages` row yet — the corpus
+ * from before language tagging. Run by `scripts/backfill-document-languages.ts`,
+ * not the hourly sweep: it walks the whole of `documents`, which is fine once
+ * and wasteful every hour.
  *
- * Every row carries its own confidence, so rows can't be grouped into one
- * UPDATE per language; a `VALUES` list joined on `uri` keeps it to a single
- * round trip per {@link WRITE_CHUNK} rows instead of one per document — the
- * difference that matters when the database is a continent away from the
- * worker.
+ * Newest first, so the documents readers actually see on network surfaces are
+ * tagged within the first minutes of a run. Keyset-paginated on
+ * `(published_at, uri)` over `documents_published_idx`; an interrupted run
+ * re-started from the top skips through the already-tagged head at index
+ * speed (one primary-key probe per row). Idempotent and resumable.
+ *
+ * Only writes `document_languages` — never `documents`, whose every UPDATE
+ * rewrites the row, its stored `search_vector` and seventeen index entries.
  */
-async function writeLanguageColumns(
-  rows: Array<{
-    uri: string;
-    lang: string | null;
-    langConfidence: number | null;
-    langDetectedAt: Date | null;
-    langSource: string | null;
-  }>,
-): Promise<void> {
-  const WRITE_CHUNK = 250;
-  for (let i = 0; i < rows.length; i += WRITE_CHUNK) {
-    const part = rows.slice(i, i + WRITE_CHUNK);
-    const values = sql.join(
-      part.map(
-        (row) =>
-          sql`(${row.uri}, ${row.lang}::text, ${row.langConfidence}::double precision, ${row.langSource}::text, ${row.langDetectedAt?.toISOString() ?? null}::timestamptz)`,
-      ),
-      sql`, `,
+export async function tagUntaggedDocuments(
+  opts: {
+    /** Called after each batch, for the backfill script's progress line. */
+    onProgress?: (examined: number, cursor: Date) => void;
+  } = {},
+): Promise<number> {
+  await loadGlotlid();
+  const READ_BATCH = 500;
+  let examined = 0;
+  let cursor: { publishedAt: Date; uri: string } | null = null;
+
+  for (;;) {
+    const rows: Array<{
+      description: string | null;
+      publishedAt: Date;
+      textContent: string | null;
+      title: string;
+      uri: string;
+    }> = await db
+      .select({ ...languageSampleColumns, publishedAt: documents.publishedAt })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.deleted, false),
+          // Spelled out rather than as a row comparison
+          // (`(published_at, uri) < (…)`), which the planner cannot turn into
+          // an index bound — it seq-scanned the 14 GB table for every batch.
+          cursor
+            ? sql`${documents.publishedAt} <= ${cursor.publishedAt.toISOString()}::timestamptz and (${documents.publishedAt} < ${cursor.publishedAt.toISOString()}::timestamptz or ${documents.uri} < ${cursor.uri})`
+            : undefined,
+          sql`not exists (select 1 from ${documentLanguages} where ${documentLanguages.documentUri} = ${documents.uri})`,
+        ),
+      )
+      // `nulls last` to match `documents_published_idx`; a bare `desc` means
+      // NULLS FIRST, which the index cannot serve, and the batch became a
+      // parallel seq scan + top-N sort (1.6 s against 10 ms). `published_at`
+      // is NOT NULL, so the two orders are the same rows.
+      .orderBy(
+        sql`${documents.publishedAt} desc nulls last`,
+        desc(documents.uri),
+      )
+      .limit(READ_BATCH);
+
+    if (rows.length === 0) break;
+    const last = rows.at(-1);
+    if (last) cursor = { publishedAt: last.publishedAt, uri: last.uri };
+
+    await writeDocumentLanguages(
+      // Never `undefined` here: the model was loaded above.
+      rows.map((row) => languageRow(row.uri, detectDocumentLanguage(row))),
     );
-    await db.execute(sql`
-      update documents as d
-      set lang = v.lang,
-          lang_confidence = v.lang_confidence,
-          lang_source = v.lang_source,
-          lang_detected_at = v.lang_detected_at
-      from (values ${values}) as v(uri, lang, lang_confidence, lang_source, lang_detected_at)
-      where d.uri = v.uri
-    `);
+
+    examined += rows.length;
+    if (cursor) opts.onProgress?.(examined, cursor.publishedAt);
+    if (rows.length < READ_BATCH) break;
   }
+
+  return examined;
 }
+
+/** The `documents` columns detection reads — see `documentLanguageSample`. */
+const languageSampleColumns = {
+  description: documents.description,
+  textContent: documents.textContent,
+  title: documents.title,
+  uri: documents.uri,
+};
 
 /**
  * Ask Jev about the documents GlotLID wasn't sure of.
  *
- * The queue is `lang_source = 'glotlid-unsure'` (~2% of documents), served by
- * `documents_lang_tiebreak_idx`. Each call is one Jev request (~1,400 input
+ * The queue is `source = 'glotlid-unsure'` (~2% of documents), served by
+ * `document_languages_tiebreak_idx`. Each call is one Jev request (~1,400 input
  * tokens, fractions of a cent); {@link JEV_TIEBREAK_CAP} bounds a sweep to a few
  * minutes and a few cents even when a backfill has just queued thousands.
  *
  * A failed call leaves the document queued for the next sweep; a run of them
  * ends this one early rather than burning the sweep on an outage. A call that
- * *succeeds* is terminal (`lang_source = 'jev'`) whatever it says, so a
+ * *succeeds* is terminal (`source = 'jev'`) whatever it says, so a
  * document neither model can place is asked about once, not every hour.
  *
  * No-op when `JEV_API_KEY` isn't set. Returns how many documents were settled.
@@ -1143,17 +1186,13 @@ export async function tiebreakDocumentLanguages(
 
   while (settled + skipped.size < limit) {
     const rows = await db
-      .select({
-        description: documents.description,
-        textContent: documents.textContent,
-        title: documents.title,
-        uri: documents.uri,
-      })
-      .from(documents)
+      .select(languageSampleColumns)
+      .from(documentLanguages)
+      .innerJoin(documents, eq(documents.uri, documentLanguages.documentUri))
       .where(
         and(
           eq(documents.deleted, false),
-          eq(documents.langSource, "glotlid-unsure"),
+          eq(documentLanguages.source, "glotlid-unsure"),
           skipped.size > 0
             ? sql`${documents.uri} not in (${sql.join(
                 [...skipped].map((uri) => sql`${uri}`),
@@ -1178,7 +1217,7 @@ export async function tiebreakDocumentLanguages(
       },
     );
 
-    const writes: Parameters<typeof writeLanguageColumns>[0] = [];
+    const writes: Array<NewDocumentLanguage> = [];
     for (const [i, row] of rows.entries()) {
       const verdict = verdicts[i];
       if (!verdict) {
@@ -1187,14 +1226,14 @@ export async function tiebreakDocumentLanguages(
         continue;
       }
       writes.push({
+        confidence: Number(verdict.probability.toFixed(3)),
+        detectedAt: new Date(),
+        documentUri: row.uri,
         lang: verdict.code,
-        langConfidence: Number(verdict.probability.toFixed(3)),
-        langDetectedAt: new Date(),
-        langSource: "jev",
-        uri: row.uri,
+        source: "jev",
       });
     }
-    await writeLanguageColumns(writes);
+    await writeDocumentLanguages(writes);
     settled += writes.length;
     opts.onProgress?.(settled);
 

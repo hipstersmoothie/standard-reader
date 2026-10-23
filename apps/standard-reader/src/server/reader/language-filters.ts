@@ -22,21 +22,23 @@
  */
 
 import type { SQL } from "drizzle-orm";
-import { inArray, isNull, or, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 import type { Schema } from "#/integrations/tanstack-query/api-shapes";
 
 /**
  * Restrict to documents written in one of `languages`.
  *
- * **Untagged documents always pass.** `documents.lang` is NULL when the
- * detector had no answer — too little prose, or a language outside the
- * vocabulary — and that is a statement about our detector, not about the
- * document. Filtering those out would mean a reader who picks "English" stops
- * seeing every short post, every link post, and everything written in the 60
- * languages we do not list, without ever being told. The filter narrows on
- * positive evidence and nothing else, so its failure mode is showing a document
- * you did not ask for rather than hiding one you did.
+ * **Untagged documents always pass.** A document with no `document_languages`
+ * row, or one whose `lang` is NULL, is one the detector has not placed — too
+ * little prose, a language outside the vocabulary, or not looked at yet — and
+ * that is a statement about our detector, not about the document. Filtering
+ * those out would mean a reader who picks "English" stops seeing every short
+ * post, every link post, and everything written in the 60 languages we do not
+ * list, without ever being told. So the predicate is "not positively tagged as
+ * something else": the filter narrows on evidence and nothing else, and its
+ * failure mode is showing a document you did not ask for rather than hiding one
+ * you did.
  *
  * Returns `undefined` when there is nothing to filter by, so callers can spread
  * it into a conditions array without a branch. An empty selection is the
@@ -47,33 +49,41 @@ export function documentInLanguagesWhere(
   languages?: ReadonlyArray<string>,
 ): SQL | undefined {
   if (!languages || languages.length === 0) return undefined;
-  const d = schema.documents;
-  // `lang IS NULL OR lang IN (…)`. btree indexes NULLs, so both arms are served
-  // by the partial `documents_lang_published_idx` and the planner BitmapOrs
-  // them — see drizzle/0048_document_languages.sql.
-  return or(isNull(d.lang), inArray(d.lang, [...languages]));
+  return notTaggedOutside(sql`${schema.documents.uri}`, languages);
 }
 
 /**
  * The same predicate for the hand-written SQL feed queries, which build their
  * `WHERE` as template fragments rather than drizzle conditions and alias
- * `documents` themselves.
+ * `documents` themselves — pass the aliased `uri` column.
  *
  * Returns an empty fragment when there is nothing to filter by, so it can be
  * interpolated unconditionally.
  */
 export function documentInLanguagesSql(
-  langColumn: SQL,
+  uriColumn: SQL,
   languages?: ReadonlyArray<string>,
 ): SQL {
   if (!languages || languages.length === 0) return sql``;
+  return sql`AND ${notTaggedOutside(uriColumn, languages)}`;
+}
+
+/**
+ * `NOT EXISTS` a tag naming some other language. One primary-key probe of
+ * `document_languages` per candidate row, so a feed walking its own index under
+ * a `LIMIT` pays for the rows it returns, not for the corpus.
+ */
+function notTaggedOutside(
+  uriColumn: SQL,
+  languages: ReadonlyArray<string>,
+): SQL {
   // `sql.join`, not a bare array: interpolating a JS array renders its elements
-  // as a parenthesized placeholder list — `ANY(($1, $2, $3))` — which Postgres
+  // as a parenthesized placeholder list — `IN (($1, $2, $3))` — which Postgres
   // reads as a row constructor and rejects. Joining produces the plain
   // `IN ($1, $2, $3)` this needs.
   const list = sql.join(
     languages.map((code) => sql`${code}`),
     sql`, `,
   );
-  return sql`AND (${langColumn} IS NULL OR ${langColumn} IN (${list}))`;
+  return sql`NOT EXISTS (SELECT 1 FROM document_languages filter_lang WHERE filter_lang.document_uri = ${uriColumn} AND filter_lang.lang IS NOT NULL AND filter_lang.lang NOT IN (${list}))`;
 }

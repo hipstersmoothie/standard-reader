@@ -532,7 +532,7 @@ export async function selectTopicDocumentUris(
              coalesce(d.backlink_count, 0) AS backlink_count${recommendCount}
       ${topicDocumentFrom(slug)}
       WHERE ${topicDocumentWhere(tags)}
-        ${documentInLanguagesSql(sql`d.lang`, languages)}
+        ${documentInLanguagesSql(sql`d.uri`, languages)}
     )
     SELECT m.uri FROM matched m
     ORDER BY ${orderBy}
@@ -554,7 +554,7 @@ export async function countTopicDocuments(
     SELECT count(*)::int AS count
     ${topicDocumentFrom(slug)}
     WHERE ${topicDocumentWhere(tags)}
-      ${documentInLanguagesSql(sql`d.lang`, languages)}
+      ${documentInLanguagesSql(sql`d.uri`, languages)}
   `);
   return Number(executeRows<{ count: number }>(rows)[0]?.count ?? 0);
 }

@@ -10,7 +10,7 @@
  *
  * `site.standard.document` has no language field — nothing in the lexicon
  * records one — so the code is derived by the detector in `#/server/lang` and
- * stored on `documents.lang`. That makes this list a **closed vocabulary**: the
+ * stored in `document_languages.lang`. That makes this list a **closed vocabulary**: the
  * detector only ever emits a code from {@link CONTENT_LANGUAGES}, so every
  * value the column can hold has a row in the settings picker, and a reader can
  * never be shown a filter chip for a language nothing is tagged with.
@@ -25,7 +25,7 @@
 export type ContentLanguageCode = (typeof CONTENT_LANGUAGES)[number]["code"];
 
 export interface ContentLanguage {
-  /** BCP-47 primary subtag — what `documents.lang` stores. */
+  /** BCP-47 primary subtag — what `document_languages.lang` stores. */
   code: string;
   /**
    * The GlotLID label(s) — ISO 639-3 plus ISO 15924 script, e.g. `fas_Arab` —
@@ -52,7 +52,7 @@ export interface ContentLanguage {
  * Growing this list is cheap and safe — add the entry, and the next detection
  * sweep starts tagging documents with it. Removing one is not: rows already
  * carrying the code would stop matching any filter, so retire an entry by
- * clearing `documents.lang` for it in the same change.
+ * clearing `document_languages.lang` for it in the same change.
  */
 export const CONTENT_LANGUAGES = [
   {

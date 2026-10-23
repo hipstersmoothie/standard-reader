@@ -21,7 +21,8 @@ import {
   FETCHED_CONTENT_FORMATS,
   resolveFetchedContent,
 } from "#/server/content/resolve";
-import { detectDocumentLanguage, languageColumns } from "#/server/lang/detect";
+import { detectDocumentLanguage, languageRow } from "#/server/lang/detect";
+import { writeDocumentLanguages } from "#/server/lang/store";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
 import { fetchMochottArticleContent } from "#/server/mochott/resolve";
 import { invalidateMuteCache } from "#/server/mutes/mutes";
@@ -503,11 +504,12 @@ export async function upsertDocument(
   // reason: the text is already in hand and re-reading the corpus later to
   // derive it costs far more than deriving it now. `null` is a real answer
   // ("not enough prose", "not a language we list") and is never filtered out,
-  // so a miss here costs a reader nothing. `langDetectedAt` is stamped either
-  // way, which is what keeps the sweep's work queue from re-reading every
-  // undetectable document forever. Only the ingest worker has the model
-  // loaded; when the web server indexes a document on demand, detection comes
-  // back `undefined` and the row is left for the worker's hourly sweep.
+  // so a miss here costs a reader nothing; the row is written either way,
+  // which is what keeps the sweep from re-reading every undetectable document
+  // forever. Only the ingest worker has the model loaded; when the web server
+  // indexes a document on demand, detection comes back `undefined` and the row
+  // is queued `pending` for the worker's hourly sweep. Its own table, written
+  // after the document (it references it) — see `documentLanguages`.
   const detected = detectDocumentLanguage({
     title: record.title,
     description: cleanOptional(record.description),
@@ -543,7 +545,6 @@ export async function upsertDocument(
     // Drops tags that violate the lexicon's 128-grapheme limit rather than
     // letting one malformed field cost us the whole record — see `cleanTags`.
     tags: cleanTags(record.tags),
-    ...languageColumns(detected),
     bskyPostUri: record.bskyPostRef?.uri ?? null,
     bskyPostCid: record.bskyPostRef?.cid ?? null,
     publishedAt,
@@ -556,6 +557,7 @@ export async function upsertDocument(
     .insert(documents)
     .values(values)
     .onConflictDoUpdate({ target: documents.uri, set: values });
+  await writeDocumentLanguages([languageRow(uri, detected)]);
 
   // Replace contributor rows for this document.
   await db
@@ -1159,11 +1161,11 @@ export async function upsertMochottArticle(
         contentJson,
         contentFormat: MOCHOTT_ARTICLE,
       }),
-      ...languageColumns(detected),
       textContent: nextTextContent,
       updatedAt: sql`now()`,
     })
     .where(eq(documents.uri, row.uri));
+  await writeDocumentLanguages([languageRow(row.uri, detected)]);
 }
 
 /** Index an `app.standard-reader.collection` sidecar onto its document row. */

@@ -79,42 +79,6 @@ export const documents = pgTable(
     /** Free-form tags from the record. */
     tags: text("tags").array(),
 
-    /**
-     * App-derived: the language this document is written in, as a BCP-47
-     * primary subtag from the closed vocabulary in `#/lib/content-language`.
-     *
-     * `site.standard.document` has no language field — nothing in the lexicon
-     * records one — so this is detected from the indexed text by
-     * `#/server/lang/detect`, never read off the record. It backs the reader's
-     * "Languages" feed preference.
-     *
-     * NULL means the detector had no answer: too little prose, or a language
-     * outside the vocabulary. A NULL row is **never filtered out** — see
-     * `#/server/reader/language-filters`. A language filter narrows by positive
-     * evidence only.
-     */
-    lang: text("lang"),
-    /**
-     * 0–1, the deciding model's probability for its pick (see
-     * {@link langSource}). Not used to filter — a row is either tagged or it
-     * isn't — but kept so a bad threshold is diagnosable after the fact rather
-     * than only in the abstract.
-     */
-    langConfidence: doublePrecision("lang_confidence"),
-    /**
-     * Who settled {@link lang}: `glotlid`, `glotlid-unsure` (waiting on the Jev
-     * tiebreak the hourly sweep runs), or `jev`. NULL when there was too little
-     * prose to ask a model. See `LanguageSource` in `#/server/lang/detect`.
-     */
-    langSource: text("lang_source"),
-    /**
-     * When detection last ran, whatever its outcome. Distinct from
-     * `lang IS NULL`, which cannot tell "detector declined" from "never looked"
-     * — and the backfill sweep needs exactly that difference, or it re-reads
-     * every undetectable document on every pass forever.
-     */
-    langDetectedAt: timestamp("lang_detected_at", { withTimezone: true }),
-
     /** App-derived: featured for the masthead lead. Lexicon has no featured
      * flag, so this is set by our derivation/editorial logic. */
     featured: boolean("featured").notNull().default(false),
@@ -184,24 +148,6 @@ export const documents = pgTable(
       table.publishedAt.desc(),
     ),
     index("documents_site_idx").on(table.siteUri),
-    // Language-filtered network surfaces (Latest "All", Discover, search, tag
-    // pages). The predicate is `lang IS NULL OR lang IN (…)`; btree indexes
-    // NULLs, so Postgres can serve both arms from here and BitmapOr them
-    // together rather than falling back to a seq scan.
-    index("documents_lang_published_idx")
-      .on(table.lang, sql`${table.publishedAt} desc nulls last`)
-      .where(sql`deleted = false`),
-    // The detection sweep's work queue. Partial on the undetected rows, so it
-    // shrinks to nothing as the backfill lands instead of carrying the whole
-    // corpus forever.
-    index("documents_lang_pending_idx")
-      .on(table.publishedAt.desc())
-      .where(sql`lang_detected_at is null and deleted = false`),
-    // The Jev tiebreak's work queue: the ~2% of documents GlotLID wasn't sure
-    // of. Partial, so it only ever holds the rows still waiting.
-    index("documents_lang_tiebreak_idx")
-      .on(table.publishedAt.desc())
-      .where(sql`lang_source = 'glotlid-unsure' and deleted = false`),
     index("documents_search_idx").using("gin", table.searchVector),
     index("documents_trending_idx").on(table.trendingScore.desc()),
     // Extension page-URL resolution: lookup live documents by canonical URL.
@@ -240,7 +186,74 @@ export const documentContributors = pgTable(
   ],
 );
 
+/**
+ * App-derived: the language each document is written in. Backs the reader's
+ * "Languages" feed preference.
+ *
+ * `site.standard.document` has no language field — nothing in the lexicon
+ * records one — so this is detected from the indexed text by
+ * `#/server/lang/detect`, never read off the record.
+ *
+ * A table of its own rather than columns on `documents` on purpose. The
+ * columns would have to be indexed (the filter and both work queues read
+ * them), and changing an indexed column defeats Postgres's HOT update: every
+ * tag written would rewrite the whole `documents` row — including recomputing
+ * the stored `search_vector` from the full body — plus an entry in every one
+ * of its seventeen indexes. Tagging the existing corpus that way ran at ~20
+ * documents a second against prod (days, and a 14 GB table rewritten). Here a
+ * tag is one narrow insert.
+ *
+ * No row means detection has never looked at the document. A row with a NULL
+ * `lang` means it looked and had no answer — too little prose, or a language
+ * outside the vocabulary — and, like no row, is **never filtered out**: a
+ * language filter narrows by positive evidence only (see
+ * `#/server/reader/language-filters`).
+ */
+export const documentLanguages = pgTable(
+  "document_languages",
+  {
+    documentUri: text("document_uri")
+      .primaryKey()
+      .references(() => documents.uri, { onDelete: "cascade" }),
+    /**
+     * BCP-47 primary subtag from the closed vocabulary in
+     * `#/lib/content-language`, or NULL when the detector had no answer (or
+     * the row is `pending`).
+     */
+    lang: text("lang"),
+    /**
+     * 0–1, the deciding model's probability for its pick (see {@link source}).
+     * Not used to filter — a row is either tagged or it isn't — but kept so a
+     * bad threshold is diagnosable after the fact rather than only in the
+     * abstract.
+     */
+    confidence: doublePrecision("confidence"),
+    /**
+     * Who settled {@link lang}: `glotlid`, `glotlid-unsure` (waiting on the Jev
+     * tiebreak the hourly sweep runs), `jev`, or `pending` — written by a
+     * process without the model loaded (the web server indexing on demand) for
+     * the ingest worker's sweep to detect. NULL when there was too little prose
+     * to ask a model. See `LanguageSource` in `#/server/lang/detect`.
+     */
+    source: text("source"),
+    /** When detection last ran. NULL while `pending`. */
+    detectedAt: timestamp("detected_at", { withTimezone: true }),
+  },
+  (table) => [
+    // The two work queues. Partial, so each only ever holds the rows still
+    // waiting — in steady state, almost none.
+    index("document_languages_pending_idx")
+      .on(table.documentUri)
+      .where(sql`source = 'pending'`),
+    index("document_languages_tiebreak_idx")
+      .on(table.documentUri)
+      .where(sql`source = 'glotlid-unsure'`),
+  ],
+);
+
 export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;
 export type DocumentContributor = typeof documentContributors.$inferSelect;
 export type NewDocumentContributor = typeof documentContributors.$inferInsert;
+export type DocumentLanguage = typeof documentLanguages.$inferSelect;
+export type NewDocumentLanguage = typeof documentLanguages.$inferInsert;

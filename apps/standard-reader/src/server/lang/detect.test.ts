@@ -5,7 +5,7 @@ import { CONTENT_LANGUAGES } from "#/lib/content-language";
 import {
   detectDocumentLanguage,
   detectLanguage,
-  languageColumns,
+  languageRow,
 } from "./detect.ts";
 import { glotlidLabels, loadGlotlid } from "./glotlid.ts";
 import { documentLanguageSample, proseSample } from "./sample.ts";
@@ -130,22 +130,24 @@ describe("detectLanguage", () => {
   });
 });
 
-describe("languageColumns", () => {
-  it("clears every column when the model isn't loaded, queueing the sweep", () => {
+describe("languageRow", () => {
+  it("queues the document for the sweep when the model isn't loaded", () => {
     // The web server never loads GlotLID; its writes must land in the sweep's
-    // `lang_detected_at IS NULL` queue rather than as a stamped non-answer.
-    expect(languageColumns()).toEqual({
+    // `pending` queue, with no language, rather than as a stamped non-answer.
+    expect(languageRow("at://doc")).toEqual({
+      confidence: null,
+      detectedAt: null,
+      documentUri: "at://doc",
       lang: null,
-      langConfidence: null,
-      langDetectedAt: null,
-      langSource: null,
+      source: "pending",
     });
   });
 
   it("stamps a detection whether or not it found a language", () => {
-    const columns = languageColumns(UNTAGGED);
-    expect(columns.lang).toBeNull();
-    expect(columns.langDetectedAt).toBeInstanceOf(Date);
+    const row = languageRow("at://doc", UNTAGGED);
+    expect(row.lang).toBeNull();
+    expect(row.source).not.toBe("pending");
+    expect(row.detectedAt).toBeInstanceOf(Date);
   });
 });
 

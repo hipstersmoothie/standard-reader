@@ -1718,7 +1718,7 @@ the language is **ours to derive**, and it is derived once, on the write path.
   the full model doesn't fit the WASM fastText heap; `scripts/lang/quantize-glotlid.py` rebuilds
   it, and it lives in Git LFS under `models/`.
 - **The Jev tiebreak.** Below 0.5 probability GlotLID doesn't decide on its own: the document is
-  stored as `lang_source = 'glotlid-unsure'` (~1–2% of documents) and the hourly sweep asks Jev
+  stored as `source = 'glotlid-unsure'` (~1–2% of documents) and the hourly sweep asks Jev
   (TypeSafe's typed-decision model, `src/server/lang/jev.ts`) — one `choice` over the vocabulary
   plus an explicit "other". Jev must reach 0.8 to tag. On the documents GlotLID was least sure
   of it placed 31 of 35 to GlotLID's 26, but it is no better elsewhere and costs a network round
@@ -1727,16 +1727,23 @@ the language is **ours to derive**, and it is derived once, on the write path.
 - **Where it runs** — `upsertDocument` in the ingest worker, alongside `has_renderable_body` and
   `body_image_count` and for the same reason: the text is already in hand. ~0.3 ms a document;
   the worker loads the model (~150 ms, ~400 MB RSS) before it starts the stream. The **web server
-  never loads it**: a document it indexes on demand is written with `lang_detected_at` NULL and
+  never loads it**: a document it indexes on demand is queued as `source = 'pending'` and
   the worker's hourly sweep (`backfillDocumentLanguages`, then `tiebreakDocumentLanguages`) tags
   it, rather than every web replica carrying the model for a handful of documents. Both sweeps
   are bounded so a cold corpus can't monopolise one; the initial pass over an existing corpus is
   `pnpm backfill:languages`.
-- **`documents.lang` is a closed vocabulary, and NULL is a real answer.** The detector only ever
-  emits a code the settings picker lists, so a reader can never be offered a filter for a language
-  nothing is tagged with. `lang_detected_at` is stamped whichever way it goes, which is what
-  separates "declined" from "never looked" and keeps the sweep's work queue shrinking;
-  `lang_source` records who settled it (`glotlid`, `glotlid-unsure`, `jev`).
+- **Stored in `document_languages`, not on `documents`.** One row per document (`lang`,
+  `confidence`, `source`, `detected_at`), keyed by its URI. Columns on `documents` were tried
+  first and abandoned: they need indexes, changing an indexed column defeats HOT updates, and so
+  every tag rewrote the whole row — recomputing its stored `search_vector` — plus seventeen index
+  entries. The first prod backfill ran at ~20 documents/s that way (days, and the 14 GB table
+  rewritten). A tag is now one narrow insert, and the filter is one primary-key probe per
+  candidate row.
+- **A closed vocabulary, and NULL is a real answer.** The detector only ever emits a code the
+  settings picker lists, so a reader can never be offered a filter for a language nothing is
+  tagged with. A row is written whichever way detection goes, which is what separates "declined"
+  (a row, NULL `lang`) from "never looked" (no row) and keeps the work queues shrinking; `source`
+  records who settled it (`glotlid`, `glotlid-unsure`, `jev`, or `pending` while queued).
 - **The filter** (`user.feed_languages`, default empty = every language;
   `src/server/reader/language-filters.ts`) narrows the same network-wide surfaces
   "Hide mirrored websites" does — Latest "All" and its badge counts, home network/trending,

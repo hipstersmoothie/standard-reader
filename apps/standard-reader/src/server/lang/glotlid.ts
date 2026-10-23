@@ -1,5 +1,5 @@
 /**
- * GlotLID — the language-identification model behind `documents.lang`.
+ * GlotLID — the language-identification model behind `document_languages`.
  *
  * GlotLID v3 (cis-lmu/glotlid, Apache-2.0) is a fastText classifier over 2,102
  * language/script labels. It replaced trigram detection (franc) after a
@@ -18,8 +18,7 @@
  *
  * The model is loaded once per process and only where something asks for it —
  * the ingest worker and the backfill. The web server never loads it: a document
- * the web path writes is left with `lang_detected_at` NULL for the ingest
- * worker's sweep, rather than holding ~400 MB of model in every web replica for
+ * the web path writes is queued `pending` for the ingest worker's sweep, rather than holding ~400 MB of model in every web replica for
  * the handful of documents it indexes on demand.
  */
 

@@ -1440,8 +1440,8 @@ Backend/API exists; UI or copy is missing.
       [`exclude-web-bridge.ts`](src/lib/exclude-web-bridge.ts). The Latest "All" badge for
       "all" reuses the web-only `network_stats` scalar, like signed-out does — `*.ap.brid.gy`
       is a rounding error next to the mirrors.
-- [x] **Post language tagging + the "Languages" feed filter** — `documents.lang` /
-      `lang_confidence` / `lang_source` / `lang_detected_at` (`drizzle/0048_*`), derived by
+- [x] **Post language tagging + the "Languages" feed filter** — the `document_languages` table
+      (`lang` / `confidence` / `source` / `detected_at`, `drizzle/0048_*`), derived by
       [`src/server/lang/`](src/server/lang/detect.ts) from the indexed text, since
       `site.standard.document` has no language field. GlotLID (quantized, Git LFS in `models/`)
       over a cleaned prose sample, mapped onto the closed ~65-language vocabulary in
@@ -1459,20 +1459,22 @@ Backend/API exists; UI or copy is missing.
 - [x] **Benchmark the detector** — [`scripts/lang-bench/`](scripts/lang-bench/): franc vs GlotLID,
       OpenLID-v2, fastText lid.176, NLLB-LID, XLM-R and Jev on 1,049 labelled documents. Bad-tag
       rate: franc 15.7%, GlotLID 0.4%, Jev 1.7%. Picked GlotLID with a Jev tiebreak.
-- [ ] **Before deploying language tagging** — run `scripts/document-language-indexes.sql`
-      against prod (CONCURRENTLY; the migration's `IF NOT EXISTS` then no-ops), set `JEV_API_KEY`
-      on the ingest service, confirm the ingest log shows `ingest.languageModel loaded: true`
-      (falls back to a checksummed GitHub LFS download if the checkout has only the pointer), then
-      `pnpm backfill:languages` (~2–3 h, ~$4 of Jev).
+- [ ] **After deploying language tagging** — confirm the ingest log shows
+      `ingest.languageModel loaded: true` (falls back to a checksummed GitHub LFS download if the
+      checkout has only the pointer), then `pnpm backfill:languages` against prod (newest first;
+      `JEV_API_KEY` is set on the ingest service). Drop the abandoned first-attempt columns
+      (`documents.lang`, `lang_confidence`, `lang_source`, `lang_detected_at`) that were added to
+      prod out of band — `ALTER TABLE documents DROP COLUMN IF EXISTS …` with a short
+      `lock_timeout`; nothing reads them.
 - [ ] **Publication-level language** — Discover's publication rails and the directory currently
       ignore the language filter, because a publication has no single language and inferring one
-      needs a derivation of its own (dominant `documents.lang` per publication, recomputed with
+      needs a derivation of its own (dominant `document_languages.lang` per publication, recomputed with
       `publication_stats`). Worth doing once there is evidence readers expect the filter to reach
       the rails; a wrong publication-level language is worse than none, since it would hide a
       whole source.
 - [ ] **Re-examine low-confidence language tags** — once there is a tagged corpus, check whether
-      GlotLID's 0.5 and Jev's 0.8 floors are in the right place against `lang_confidence` /
-      `lang_source`, and whether a sweep should re-run detection after a document's body grows (a
+      GlotLID's 0.5 and Jev's 0.8 floors are in the right place against `confidence` /
+      `source`, and whether a sweep should re-run detection after a document's body grows (a
       stub indexed before its content resolved keeps the language detected from its title).
 - [x] **Reading typography preferences** — font size / measure (and optional sans body) on the
       article wrapper; cookie + optional `user` column (same pattern as [`open-links.ts`](src/lib/open-links.ts));

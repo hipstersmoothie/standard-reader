@@ -2699,7 +2699,7 @@ async function selectTagArticleUris(
       where deleted = false
         and (published_at is null or published_at <= now())
         and immutable_normalized_tags(tags) @> array[${normalizedTagSql(tag)}]
-        ${documentInLanguagesSql(sql`lang`, languages)}
+        ${documentInLanguagesSql(sql`${schema.documents.uri}`, languages)}
     )
     select t.uri
     from tagged t

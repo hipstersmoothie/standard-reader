@@ -20,6 +20,7 @@
  * the author made.
  */
 
+import type { NewDocumentLanguage } from "#/db/schema";
 import type { ContentLanguageCode } from "#/lib/content-language";
 import { contentLanguageFromDetectorLabel } from "#/lib/content-language";
 
@@ -41,7 +42,7 @@ import {
 export const GLOTLID_MIN_PROBABILITY = 0.5;
 
 /**
- * Who settled a document's `lang`, stored in `documents.lang_source`.
+ * Who settled a document's `lang`, stored in `document_languages.source`.
  *
  * - `glotlid` — GlotLID was sure (including sure it's a language we don't list).
  * - `glotlid-unsure` — GlotLID wasn't; waiting on the Jev tiebreak.
@@ -64,7 +65,7 @@ export interface LanguageDetection {
  *
  * Returns `undefined` — distinct from an untagged result — when GlotLID isn't
  * loaded in this process (the web server never loads it). The caller then
- * leaves `lang_detected_at` NULL so the ingest worker's sweep does the work.
+ * queues the document as `pending` so the ingest worker's sweep does the work.
  */
 export function detectLanguage(text: string): LanguageDetection | undefined {
   const sample = text.trim();
@@ -98,32 +99,32 @@ export function detectDocumentLanguage(
 }
 
 /**
- * The `documents` columns a detection writes.
+ * The `document_languages` row a detection writes.
  *
- * An `undefined` detection (GlotLID not loaded here) clears all four, so the
- * row lands in the sweep's `lang_detected_at IS NULL` queue and the ingest
- * worker tags it within the hour. Clearing rather than leaving the old values
- * matters on re-upsert: the text may have changed, and a stale tag is worse
- * than a brief absence of one.
+ * An `undefined` detection (GlotLID not loaded here) writes a `pending` row
+ * with no language, which the ingest worker's sweep picks up and tags within
+ * the hour. Clearing rather than keeping the old language matters on
+ * re-upsert: the text may have changed, and a stale tag is worse than a brief
+ * absence of one.
  */
-export function languageColumns(detected?: LanguageDetection): {
-  lang: string | null;
-  langConfidence: number | null;
-  langDetectedAt: Date | null;
-  langSource: LanguageSource | null;
-} {
+export function languageRow(
+  documentUri: string,
+  detected?: LanguageDetection,
+): NewDocumentLanguage {
   if (!detected) {
     return {
+      confidence: null,
+      detectedAt: null,
+      documentUri,
       lang: null,
-      langConfidence: null,
-      langDetectedAt: null,
-      langSource: null,
+      source: "pending",
     };
   }
   return {
+    confidence: detected.confidence,
+    detectedAt: new Date(),
+    documentUri,
     lang: detected.code,
-    langConfidence: detected.confidence,
-    langDetectedAt: new Date(),
-    langSource: detected.source,
+    source: detected.source,
   };
 }

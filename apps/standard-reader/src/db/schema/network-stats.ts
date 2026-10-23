@@ -44,7 +44,8 @@ export const NETWORK_DOCUMENT_COUNT_NO_WEB_BRIDGE_KEY =
   "network_document_count_no_web_bridge";
 
 /**
- * Stands in for `lang IS NULL` in a per-language key. Not a code in
+ * Stands in for an untagged document (no `document_languages` row, or a NULL
+ * `lang`) in a per-language key. Not a code in
  * `#/lib/content-language`, so it can never collide with a real one.
  */
 export const UNTAGGED_LANGUAGE_KEY = "und";

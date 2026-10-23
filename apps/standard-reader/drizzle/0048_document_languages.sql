@@ -1,37 +1,25 @@
--- Language tagging: a derived language per document, and the reader preference
+-- Language tagging: a detected language per document, and the reader preference
 -- that filters network-wide surfaces down to a chosen set of them.
 --
--- `site.standard.document` has no language field, so `lang` is detected from
--- indexed text by `src/server/lang/detect.ts` (GlotLID, with a Jev tiebreak for
--- the documents it isn't sure of) and is ours, not the author's.
--- NULL means the detector had no answer, and a NULL row is never filtered out —
--- see `src/server/reader/language-filters.ts`. `lang_detected_at` is what
--- separates "declined" from "never looked", which is the whole basis of the
--- backfill sweep's work queue.
+-- `site.standard.document` has no language field, so the language is detected
+-- from indexed text by `src/server/lang/detect.ts` (GlotLID, with a Jev
+-- tiebreak for the documents it isn't sure of) and is ours, not the author's.
 --
--- `lang_source` records who settled `lang`; `glotlid-unsure` is the tiebreak's
--- work queue.
---
--- Adding the columns is instant (nullable, no default). The three indexes are
--- not: `documents` is ~3.4M rows / ~14 GB, and a plain CREATE INDEX would run
--- inside Railway's `preDeployCommand` with traffic waiting on the lock. Build
--- all three CONCURRENTLY on prod out-of-band first via
--- `scripts/document-language-indexes.sql`; IF NOT EXISTS then makes this file a
--- no-op there while still creating them on fresh/local/CI databases. Same
--- pattern as `documents_meta_search_idx` in 0044 and `documents_tags_norm_idx`
--- in 0014.
+-- Its own table rather than columns on `documents`: the columns would need
+-- indexes, and changing an indexed column defeats HOT updates — every tag
+-- would rewrite the whole documents row, recompute its stored search_vector,
+-- and touch all seventeen of its indexes. A first backfill done that way ran at
+-- ~20 documents/s against prod. Every statement here is instant: the table is
+-- new and empty, and `feed_languages` is nullable with no default.
+CREATE TABLE "document_languages" (
+	"document_uri" text PRIMARY KEY NOT NULL,
+	"lang" text,
+	"confidence" double precision,
+	"source" text,
+	"detected_at" timestamp with time zone
+);
+--> statement-breakpoint
 ALTER TABLE "user" ADD COLUMN "feed_languages" text;--> statement-breakpoint
-ALTER TABLE "documents" ADD COLUMN "lang" text;--> statement-breakpoint
-ALTER TABLE "documents" ADD COLUMN "lang_confidence" double precision;--> statement-breakpoint
-ALTER TABLE "documents" ADD COLUMN "lang_source" text;--> statement-breakpoint
-ALTER TABLE "documents" ADD COLUMN "lang_detected_at" timestamp with time zone;--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "documents_lang_published_idx" ON "documents" USING btree ("lang","published_at" desc nulls last) WHERE deleted = false;--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "documents_lang_pending_idx" ON "documents" USING btree ("published_at" DESC NULLS LAST) WHERE lang_detected_at is null and deleted = false;--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "documents_lang_tiebreak_idx" ON "documents" USING btree ("published_at" DESC NULLS LAST) WHERE lang_source = 'glotlid-unsure' and deleted = false;--> statement-breakpoint
--- Give the planner statistics for the new columns now. Until `documents` is
--- analyzed, Postgres guesses `lang IS NULL` matches ~0.5% of rows when it
--- matches ~100% (nothing is tagged yet), and on the language-filtered Latest
--- "All" query that guess picked a plan measured at 61-107s — 427ms once
--- analyzed. ANALYZE samples ~30k rows and takes seconds; it holds no lock that
--- blocks reads or writes, so it is safe inside preDeploy.
-ANALYZE "documents";
+ALTER TABLE "document_languages" ADD CONSTRAINT "document_languages_document_uri_documents_uri_fk" FOREIGN KEY ("document_uri") REFERENCES "public"."documents"("uri") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "document_languages_pending_idx" ON "document_languages" USING btree ("document_uri") WHERE source = 'pending';--> statement-breakpoint
+CREATE INDEX "document_languages_tiebreak_idx" ON "document_languages" USING btree ("document_uri") WHERE source = 'glotlid-unsure';
