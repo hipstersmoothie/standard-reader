@@ -1459,13 +1459,10 @@ Backend/API exists; UI or copy is missing.
 - [x] **Benchmark the detector** — [`scripts/lang-bench/`](scripts/lang-bench/): franc vs GlotLID,
       OpenLID-v2, fastText lid.176, NLLB-LID, XLM-R and Jev on 1,049 labelled documents. Bad-tag
       rate: franc 15.7%, GlotLID 0.4%, Jev 1.7%. Picked GlotLID with a Jev tiebreak.
-- [ ] **After deploying language tagging** — confirm the ingest log shows
-      `ingest.languageModel loaded: true` (falls back to a checksummed GitHub LFS download if the
-      checkout has only the pointer), then `pnpm backfill:languages` against prod (newest first;
-      `JEV_API_KEY` is set on the ingest service). Drop the abandoned first-attempt columns
-      (`documents.lang`, `lang_confidence`, `lang_source`, `lang_detected_at`) that were added to
-      prod out of band — `ALTER TABLE documents DROP COLUMN IF EXISTS …` with a short
-      `lock_timeout`; nothing reads them.
+- [x] **After deploying language tagging** — ingest loads the model (`ingest.languageModel
+      loaded: true`), `JEV_API_KEY` is set on the ingest service, and the corpus is backfilled
+      (2026-10-23: 3.61M tagged by GlotLID, 14.5k settled by Jev, 561k with too little prose).
+      The abandoned first-draft columns on `documents` are dropped.
 - [ ] **Publication-level language** — Discover's publication rails and the directory currently
       ignore the language filter, because a publication has no single language and inferring one
       needs a derivation of its own (dominant `document_languages.lang` per publication, recomputed with
