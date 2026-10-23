@@ -8,6 +8,7 @@ import type { ContentLanguageCode } from "#/lib/content-language";
 import {
   DEFAULT_FEED_LANGUAGES,
   parseFeedLanguages,
+  trendingLanguagesFor,
 } from "#/lib/content-language";
 import {
   COUNT_OLD_POSTS_AS_UNREAD_COOKIE,
@@ -16,11 +17,13 @@ import {
   parseCountOldPostsAsUnreadCookie,
 } from "#/lib/count-old-posts-as-unread";
 import { dbValuesToBridgeExclusion } from "#/lib/exclude-web-bridge";
+import { LOCALE_COOKIE, dbValueToLocale, isLocale } from "#/lib/locale";
 import {
   TRACK_READING_HISTORY_COOKIE,
   dbValueToTrackReadingHistory,
   parseTrackReadingHistoryCookie,
 } from "#/lib/track-reading-history";
+import { localeFromAcceptLanguage } from "#/server/locale-preference";
 
 export interface ReaderSessionPreferences {
   trackReadingEnabled: boolean;
@@ -49,6 +52,12 @@ export interface ReaderSessionPreferences {
    * `excludeBridged`. See `#/lib/content-language`.
    */
   feedLanguages: ReadonlyArray<ContentLanguageCode>;
+  /**
+   * Languages Trending is narrowed to: {@link feedLanguages} when the reader
+   * chose some, otherwise English plus their interface language — guests
+   * included. See `trendingLanguagesFor`.
+   */
+  trendingLanguages: ReadonlyArray<ContentLanguageCode>;
 }
 
 /**
@@ -78,6 +87,18 @@ function readSessionTokenCookie(
   return undefined;
 }
 
+/**
+ * The interface language without a DB read: the locale cookie, then
+ * `Accept-Language`. A signed-in reader's saved `user.locale` wins over both —
+ * the caller passes it in. Mirrors `localeForRequest`.
+ */
+function requestUiLocale(savedLocale?: string | null): string {
+  if (isLocale(savedLocale)) return dbValueToLocale(savedLocale);
+  const cookie = getCookie(LOCALE_COOKIE);
+  if (isLocale(cookie)) return cookie;
+  return localeFromAcceptLanguage();
+}
+
 /** Cookie-only fallback, used off-request and for guests / expired sessions. */
 function preferencesFromCookies(): ReaderSessionPreferences {
   return {
@@ -90,6 +111,10 @@ function preferencesFromCookies(): ReaderSessionPreferences {
     excludeBridged: SIGNED_OUT_EXCLUDE_BRIDGED,
     hasReaderSession: false,
     feedLanguages: DEFAULT_FEED_LANGUAGES,
+    trendingLanguages: trendingLanguagesFor(
+      DEFAULT_FEED_LANGUAGES,
+      requestUiLocale(),
+    ),
   };
 }
 
@@ -121,6 +146,7 @@ export async function resolveReaderSessionPreferences(
       excludeBridged: false,
       hasReaderSession: false,
       feedLanguages: DEFAULT_FEED_LANGUAGES,
+      trendingLanguages: DEFAULT_FEED_LANGUAGES,
     };
   }
 
@@ -136,6 +162,7 @@ export async function resolveReaderSessionPreferences(
             excludeWebBridge: true,
             excludeAllBridges: true,
             feedLanguages: true,
+            locale: true,
           },
         },
       },
@@ -146,6 +173,7 @@ export async function resolveReaderSessionPreferences(
       sessionRow.expiresAt.getTime() > Date.now() &&
       sessionRow.user
     ) {
+      const feedLanguages = parseFeedLanguages(sessionRow.user.feedLanguages);
       return {
         trackReadingEnabled: dbValueToTrackReadingHistory(
           sessionRow.user.trackReadingHistory ?? null,
@@ -155,7 +183,11 @@ export async function resolveReaderSessionPreferences(
         ),
         excludeBridged: dbValuesToBridgeExclusion(sessionRow.user),
         hasReaderSession: true,
-        feedLanguages: parseFeedLanguages(sessionRow.user.feedLanguages),
+        feedLanguages,
+        trendingLanguages: trendingLanguagesFor(
+          feedLanguages,
+          requestUiLocale(sessionRow.user.locale),
+        ),
       };
     }
   }

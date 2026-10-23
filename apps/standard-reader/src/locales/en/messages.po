@@ -618,8 +618,8 @@ msgid "The spacing between things — tighter for more on screen, looser for mor
 msgstr "The spacing between things — tighter for more on screen, looser for more room to read."
 
 #: src/components/feed-languages-setting.tsx
-msgid "Every language is shown. Pick one or more to narrow your feed."
-msgstr "Every language is shown. Pick one or more to narrow your feed."
+#~ msgid "Every language is shown. Pick one or more to narrow your feed."
+#~ msgstr "Every language is shown. Pick one or more to narrow your feed."
 
 #: src/components/docs/api-docs-request-panel.tsx
 msgid "Sign in to run this example (curl uses Bearer $ACCESS_TOKEN)."
@@ -7340,6 +7340,10 @@ msgstr "Articles"
 #: src/components/reader/atstore-review-prompt.tsx
 msgid "Leave a review"
 msgstr "Leave a review"
+
+#: src/components/feed-languages-setting.tsx
+msgid "Every language is shown, except on Trending, which sticks to English and your interface language. Pick one or more to narrow your feed."
+msgstr "Every language is shown, except on Trending, which sticks to English and your interface language. Pick one or more to narrow your feed."
 
 #: src/routes/follow-login.$did.tsx
 #: src/routes/login.tsx

@@ -42,8 +42,14 @@ const styles = stylex.create({
   matchWidth: {
     minWidth: "max(var(--trigger-width), 180px)",
   },
+  // The listbox scrolls, not the popover around it. A virtualized list only
+  // renders the rows inside its own scroll viewport; when the overflow spilled
+  // out to the popover instead, the listbox never scrolled, so the virtualizer
+  // kept drawing the first screenful and the rest of the list came up blank.
+  // It also keeps a searchable select's search field pinned above the list.
   listBox: {
     maxHeight: "40vh",
+    overflowY: "auto",
   },
   searchField: {
     paddingInlineStart: horizontalSpace["xs"],

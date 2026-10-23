@@ -6,6 +6,7 @@ import {
   contentLanguageLabel,
   feedLanguagesToDbValue,
   parseFeedLanguages,
+  trendingLanguagesFor,
 } from "./content-language.ts";
 
 describe("the catalog", () => {
@@ -92,6 +93,22 @@ describe("feedLanguagesToDbValue", () => {
   it("round-trips through the parser", () => {
     const stored = feedLanguagesToDbValue(["ja", "en", "pt"]);
     expect(parseFeedLanguages(stored)).toEqual(["en", "pt", "ja"]);
+  });
+});
+
+describe("trendingLanguagesFor", () => {
+  it("defaults to English for an English interface", () => {
+    expect(trendingLanguagesFor([], "en")).toEqual(["en"]);
+    expect(trendingLanguagesFor([], "en-XA")).toEqual(["en"]);
+  });
+
+  it("adds the interface language when it isn't English", () => {
+    expect(trendingLanguagesFor([], "ja")).toEqual(["en", "ja"]);
+    expect(trendingLanguagesFor([], "pt")).toEqual(["en", "pt"]);
+  });
+
+  it("uses the reader's own choice when they made one", () => {
+    expect(trendingLanguagesFor(["ja"], "en")).toEqual(["ja"]);
   });
 });
 

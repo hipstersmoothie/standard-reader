@@ -1752,6 +1752,13 @@ the language is **ours to derive**, and it is derived once, on the write path.
   a subscription. **Untagged documents always pass.** The filter narrows on positive evidence
   only, so its failure mode is showing a post you did not ask for rather than silently hiding one
   you did.
+- **Trending defaults to English.** With no languages picked — every guest, most accounts —
+  Trending (the home tab and Latest → Trending) narrows to English plus the reader's interface
+  language when that isn't English (`trendingLanguagesFor`, resolved per request into
+  `ReaderSessionPreferences.trendingLanguages`). Trending is the one surface that ranks the whole
+  network by engagement, so a small community liking each other's posts in another language could
+  otherwise fill it; Latest, Discover and search keep showing every language. The weekly Bluesky
+  thread asks the ranking for English directly.
 - **Publications are not filtered.** A publication has no single language — a group blog can carry
   three — so Discover's rails and the directory ignore the preference. Only documents are tagged
   and only documents are filtered.

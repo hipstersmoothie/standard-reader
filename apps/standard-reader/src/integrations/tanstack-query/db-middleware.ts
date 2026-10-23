@@ -14,6 +14,7 @@ export const dbMiddleware = createMiddleware({ type: "function" }).server(
       countOldPostsAsUnreadEnabled,
       excludeBridged,
       feedLanguages,
+      trendingLanguages,
     } = await resolveReaderSessionPreferences(db, schema);
 
     return next({
@@ -24,6 +25,7 @@ export const dbMiddleware = createMiddleware({ type: "function" }).server(
         countOldPostsAsUnreadEnabled,
         excludeBridged,
         feedLanguages,
+        trendingLanguages,
       },
     });
   },

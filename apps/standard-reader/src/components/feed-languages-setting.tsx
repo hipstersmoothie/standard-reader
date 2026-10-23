@@ -163,7 +163,8 @@ export function FeedLanguagesSetting() {
       <p {...stylex.props(styles.note)}>
         {languages.length === 0 ? (
           <Trans>
-            Every language is shown. Pick one or more to narrow your feed.
+            Every language is shown, except on Trending, which sticks to English
+            and your interface language. Pick one or more to narrow your feed.
           </Trans>
         ) : (
           <Trans>

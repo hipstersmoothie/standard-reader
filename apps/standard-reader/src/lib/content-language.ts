@@ -465,6 +465,33 @@ export function contentLanguageLabel(code: string): string {
 export const DEFAULT_FEED_LANGUAGES: ReadonlyArray<ContentLanguageCode> = [];
 
 /**
+ * The languages Trending is narrowed to.
+ *
+ * A reader who picked languages gets exactly those, as on every other
+ * network-wide surface. A reader who didn't — every guest, and most accounts —
+ * would otherwise get the whole network's trending, where a small community
+ * liking each other's posts in a language they can't read can fill the page.
+ * So Trending, alone, defaults to English plus the reader's interface language
+ * when that isn't English (a Japanese interface sees Japanese and English
+ * trending). Latest, Discover, and search keep the "every language" default:
+ * Trending is the one surface that ranks the whole network by engagement, which
+ * is what makes it skew.
+ *
+ * Untagged documents still pass, as with any language filter.
+ */
+export function trendingLanguagesFor(
+  chosen: ReadonlyArray<ContentLanguageCode>,
+  uiLocale: string,
+): ReadonlyArray<ContentLanguageCode> {
+  if (chosen.length > 0) return chosen;
+  // Primary subtag: `en-XA` (the pseudo-locale) is English, `zh` is `zh`.
+  const primary = uiLocale.split("-")[0]?.toLowerCase() ?? "en";
+  return primary !== "en" && isContentLanguage(primary)
+    ? ["en", primary]
+    : ["en"];
+}
+
+/**
  * Decode `user.feed_languages`.
  *
  * Stored as a comma-separated list of codes; `null` and `""` both mean "no

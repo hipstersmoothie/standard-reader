@@ -273,12 +273,15 @@ async function resolveHomeFeedContext(
     countOldPostsAsUnreadEnabled,
     excludeBridged = false,
     feedLanguages,
+    trendingLanguages,
   }: {
     trackReading?: boolean;
     trackReadingEnabled?: boolean;
     countOldPostsAsUnreadEnabled?: boolean;
     excludeBridged?: BridgeExclusion;
     feedLanguages?: ReadonlyArray<string>;
+    /** See `ReaderSessionPreferences.trendingLanguages`. */
+    trendingLanguages?: ReadonlyArray<string>;
   } = {},
 ) {
   const trackReading =
@@ -358,6 +361,8 @@ async function resolveHomeFeedContext(
     personalized,
     excludeBridged,
     languages,
+    // Guests included: Trending's English default is not account-level.
+    trendingLanguages: trendingLanguages ?? languages,
     rowQuery,
   };
 }
@@ -384,7 +389,7 @@ async function buildHomeFeedCritical(
       trendingArticles(db, schema, HOME_TRENDING_ROW_LIMIT + 1, {
         readForDid: trackReading && ctx.did ? ctx.did : undefined,
         excludeBridged: ctx.excludeBridged,
-        languages: ctx.languages,
+        languages: ctx.trendingLanguages,
         viewerDid: ctx.blockDid,
         muterDid: ctx.muteDid,
       }),
@@ -602,6 +607,8 @@ async function loadHomeFeedCritical(
     countOldPostsAsUnreadEnabled?: boolean;
     excludeBridged?: BridgeExclusion;
     feedLanguages?: ReadonlyArray<string>;
+    /** See `ReaderSessionPreferences.trendingLanguages`. */
+    trendingLanguages?: ReadonlyArray<string>;
   } = {},
 ): Promise<HomeFeed> {
   const ctx = await resolveHomeFeedContext(
@@ -627,6 +634,8 @@ async function loadHomeFeedExtras(
     countOldPostsAsUnreadEnabled?: boolean;
     excludeBridged?: BridgeExclusion;
     feedLanguages?: ReadonlyArray<string>;
+    /** See `ReaderSessionPreferences.trendingLanguages`. */
+    trendingLanguages?: ReadonlyArray<string>;
   } = {},
 ): Promise<HomeFeedExtras> {
   const ctx = await resolveHomeFeedContext(
@@ -652,6 +661,7 @@ const getHomeFeed = createServerFn({ method: "GET" })
         countOldPostsAsUnreadEnabled,
         excludeBridged,
         feedLanguages,
+        trendingLanguages,
       } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       return loadHomeFeedCritical(db, schema, did, data.scope, span, {
@@ -659,6 +669,7 @@ const getHomeFeed = createServerFn({ method: "GET" })
         countOldPostsAsUnreadEnabled,
         excludeBridged,
         feedLanguages,
+        trendingLanguages,
       });
     }),
   );
@@ -680,6 +691,7 @@ const getHomePage = createServerFn({ method: "GET" })
         countOldPostsAsUnreadEnabled,
         excludeBridged,
         feedLanguages,
+        trendingLanguages,
       } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       const reader = did
@@ -709,6 +721,7 @@ const getHomePage = createServerFn({ method: "GET" })
         countOldPostsAsUnreadEnabled,
         excludeBridged,
         feedLanguages,
+        trendingLanguages,
         ...(trackReading === undefined ? {} : { trackReading }),
       });
       return {
@@ -732,6 +745,7 @@ const getHomeExtras = createServerFn({ method: "GET" })
         countOldPostsAsUnreadEnabled,
         excludeBridged,
         feedLanguages,
+        trendingLanguages,
       } = context;
       const did = await attachReaderSpanContext(span, getRequest());
 
@@ -740,6 +754,7 @@ const getHomeExtras = createServerFn({ method: "GET" })
         countOldPostsAsUnreadEnabled,
         excludeBridged,
         feedLanguages,
+        trendingLanguages,
       });
     }),
   );
@@ -754,6 +769,7 @@ async function loadLatestFeedCritical(
   countOldPostsAsUnreadEnabled = true,
   excludeBridged: BridgeExclusion = false,
   feedLanguages: ReadonlyArray<string> = [],
+  trendingLanguages: ReadonlyArray<string> = feedLanguages,
 ): Promise<LatestFeed> {
   span.set("filter", data.filter);
   span.set("offset", data.offset);
@@ -805,7 +821,8 @@ async function loadLatestFeedCritical(
             readForDid: trackReading && did ? did : undefined,
             scope: "page",
             excludeBridged,
-            languages,
+            // Not `languages`: Trending defaults to English even for a guest.
+            languages: trendingLanguages,
             viewerDid: blockDid,
             muterDid: muteDid,
           })
@@ -886,6 +903,7 @@ async function loadLatestFeedCounts(
   countOldPostsAsUnreadEnabled = true,
   excludeBridged: BridgeExclusion = false,
   feedLanguages: ReadonlyArray<string> = [],
+  trendingLanguages: ReadonlyArray<string> = feedLanguages,
 ): Promise<LatestFeedCounts> {
   const [
     { publicationUris: rawFollowUris, userDids: rawFollowedUserDids },
@@ -930,7 +948,7 @@ async function loadLatestFeedCounts(
     did
       ? countTrendingDocuments(db, schema, "page", {
           excludeBridged,
-          languages,
+          languages: trendingLanguages,
         })
       : Promise.resolve(0),
   ]);
@@ -955,6 +973,7 @@ const getLatestFeed = createServerFn({ method: "GET" })
         countOldPostsAsUnreadEnabled,
         excludeBridged,
         feedLanguages,
+        trendingLanguages,
       } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       return loadLatestFeedCritical(
@@ -967,6 +986,7 @@ const getLatestFeed = createServerFn({ method: "GET" })
         countOldPostsAsUnreadEnabled,
         excludeBridged,
         feedLanguages,
+        trendingLanguages,
       );
     }),
   );
@@ -983,6 +1003,7 @@ const getLatestFeedCounts = createServerFn({ method: "GET" })
         countOldPostsAsUnreadEnabled,
         excludeBridged,
         feedLanguages,
+        trendingLanguages,
       } = context;
       const did = await attachReaderSpanContext(span, getRequest());
       return loadLatestFeedCounts(
@@ -994,6 +1015,7 @@ const getLatestFeedCounts = createServerFn({ method: "GET" })
         countOldPostsAsUnreadEnabled,
         excludeBridged,
         feedLanguages,
+        trendingLanguages,
       );
     }),
   );
