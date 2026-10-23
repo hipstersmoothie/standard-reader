@@ -19,7 +19,10 @@ CREATE TABLE "document_languages" (
 	"detected_at" timestamp with time zone
 );
 --> statement-breakpoint
-ALTER TABLE "user" ADD COLUMN "feed_languages" text;--> statement-breakpoint
+-- IF NOT EXISTS: an earlier draft of this migration (columns on `documents`)
+-- already added this column on the PR's preview database before it was
+-- rewritten. Prod never ran that draft.
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "feed_languages" text;--> statement-breakpoint
 ALTER TABLE "document_languages" ADD CONSTRAINT "document_languages_document_uri_documents_uri_fk" FOREIGN KEY ("document_uri") REFERENCES "public"."documents"("uri") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "document_languages_pending_idx" ON "document_languages" USING btree ("document_uri") WHERE source = 'pending';--> statement-breakpoint
 CREATE INDEX "document_languages_tiebreak_idx" ON "document_languages" USING btree ("document_uri") WHERE source = 'glotlid-unsure';
