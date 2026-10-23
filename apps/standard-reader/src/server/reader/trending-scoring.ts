@@ -21,6 +21,17 @@ export const WEEK_HALF_LIFE_HOURS = 84;
 /** Weight on Bluesky backlinks relative to a decayed like in the week score. */
 export const WEEK_BACKLINK_WEIGHT = 1.5;
 
+/**
+ * Body floor for the week-in-review ranking, in UTF-8 bytes of `text_content`:
+ * ~250 English words, or ~500 CJK characters at three bytes apiece. A handful
+ * of mutual likes is enough to chart in a quiet week, and what clears that bar
+ * without a body is a "trying this out" post or a one-line announcement — fine
+ * in a feed, not what "the hottest reads this week" should hold up. Bytes
+ * rather than characters because `octet_length` reads the TOAST header instead
+ * of decompressing every candidate's body.
+ */
+export const WEEK_MIN_BODY_BYTES = 1500;
+
 /** Only articles published within this many days are trending-eligible. */
 export const TRENDING_MAX_AGE_DAYS = 4;
 

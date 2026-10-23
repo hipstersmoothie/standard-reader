@@ -49,6 +49,7 @@ import {
   HOT_WINDOW_DAYS,
   isDryRun,
   isForcedRun,
+  THREAD_LANGUAGES,
   THREAD_ROOT_MARKER,
 } from "./config.ts";
 import {
@@ -173,6 +174,15 @@ function articleSpec(
   };
 }
 
+/** The week's picks: the shared week-in-review ranking, in English. */
+function selectThreadArticles(): Promise<Array<ArticleCard>> {
+  return weekInReviewArticles(db, schema, {
+    languages: THREAD_LANGUAGES,
+    limit: HOT_ARTICLE_LIMIT,
+    sinceDays: HOT_WINDOW_DAYS,
+  });
+}
+
 /** Final call-to-action post with a tappable link to the app. */
 function ctaSpec(baseUrl: string): PostSpec {
   const text = `Want a calmer home for reading on ATProto? Standard Reader lets you follow independent writers and publications and read them all in one clean feed.\n\nTry it → ${CTA_APP_LABEL}`;
@@ -241,10 +251,7 @@ export async function runWeeklyThread(): Promise<WeeklyThreadSummary> {
 
 /** Compose + log the thread without claiming the week or writing records. */
 async function runDryThread(baseUrl: string): Promise<WeeklyThreadSummary> {
-  const cards = await weekInReviewArticles(db, schema, {
-    sinceDays: HOT_WINDOW_DAYS,
-    limit: HOT_ARTICLE_LIMIT,
-  });
+  const cards = await selectThreadArticles();
 
   if (cards.length === 0) {
     console.info("[thread] no eligible articles this week — nothing to post");
@@ -306,10 +313,7 @@ async function postWeeklyThread(
   baseUrl: string,
   periodKey: string,
 ): Promise<WeeklyThreadSummary> {
-  const cards = await weekInReviewArticles(db, schema, {
-    sinceDays: HOT_WINDOW_DAYS,
-    limit: HOT_ARTICLE_LIMIT,
-  });
+  const cards = await selectThreadArticles();
 
   if (cards.length === 0) {
     console.info("[thread] no eligible articles this week — nothing to post");

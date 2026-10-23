@@ -402,6 +402,16 @@ describe("runWeeklyThread thread shape", () => {
     );
   });
 
+  it("asks the ranking for English picks only", async () => {
+    await runWeeklyThread();
+
+    expect(weekInReviewArticles).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ languages: ["en"], limit: 5 }),
+    );
+  });
+
   it("records no picks on a dry run", async () => {
     process.env.THREAD_DRY_RUN = "1";
     vi.spyOn(console, "info").mockImplementation(() => {});

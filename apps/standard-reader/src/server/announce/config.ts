@@ -10,6 +10,15 @@ export const HOT_WINDOW_DAYS = 7;
 /** Number of article posts in the thread (the CTA post is extra). */
 export const HOT_ARTICLE_LIMIT = 5;
 
+/**
+ * Languages the thread's picks must be written in — the bot posts in English
+ * to a mostly English audience, and a week led by posts its followers cannot
+ * read fails at its one job. The ranking itself stays language-blind (the
+ * digest shares it); this narrows it for the thread only. Same rule as a
+ * reader's Languages filter: untagged documents still pass.
+ */
+export const THREAD_LANGUAGES: ReadonlyArray<string> = ["en"];
+
 /** Bluesky's per-post limit is 300 graphemes. */
 export const BSKY_POST_MAX_GRAPHEMES = 300;
 

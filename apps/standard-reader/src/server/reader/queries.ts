@@ -87,6 +87,7 @@ import {
   TRENDING_MAX_AGE_DAYS,
   WEEK_BACKLINK_WEIGHT,
   WEEK_HALF_LIFE_HOURS,
+  WEEK_MIN_BODY_BYTES,
   applyTrendingDiversityCaps,
   halfLifeDecaySql,
   trendingFetchPoolSize,
@@ -2173,7 +2174,9 @@ export async function savedForLater(
  * decay and no published-at freshness term, so a heavily-liked early-week article
  * can out-rank a barely-liked fresh one. The score blends decay-weighted distinct
  * likes with {@link WEEK_BACKLINK_WEIGHT}× Bluesky backlinks, and an article must
- * clear the {@link MIN_ARTICLE_RECOMMENDERS} distinct-liker floor to chart.
+ * clear the {@link MIN_ARTICLE_RECOMMENDERS} distinct-liker floor to chart. It
+ * must also have a real body ({@link WEEK_MIN_BODY_BYTES}) — the liker floor is
+ * low enough that a platform owner's one-line test post once came second.
  *
  * Counts are computed live because `documents.trending_score`,
  * `distinct_recommender_count`, and `backlink_count` are only maintained for the
@@ -2238,6 +2241,7 @@ export async function weekInReviewArticles(
     discoverEligibleArticleWhere(p),
     documentPublishedNotInFuture(d),
     sql`${d.publishedAt} > now() - (${sinceDays}::text || ' days')::interval`,
+    sql`coalesce(octet_length(${d.textContent}), 0) >= ${WEEK_MIN_BODY_BYTES}`,
     sql`${distinctLikers} >= ${MIN_ARTICLE_RECOMMENDERS}`,
   ];
   if (excludeUris.length > 0) {
