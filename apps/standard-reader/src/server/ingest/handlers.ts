@@ -21,6 +21,8 @@ import {
   FETCHED_CONTENT_FORMATS,
   resolveFetchedContent,
 } from "#/server/content/resolve";
+import { detectDocumentLanguage, languageRow } from "#/server/lang/detect";
+import { writeDocumentLanguages } from "#/server/lang/store";
 import { resolveLeafletContent } from "#/server/leaflet/resolve";
 import { fetchMochottArticleContent } from "#/server/mochott/resolve";
 import { invalidateMuteCache } from "#/server/mutes/mutes";
@@ -496,6 +498,24 @@ export async function upsertDocument(
       contentFormat,
     });
 
+  // The language this document is written in. Nothing in the lexicon records
+  // one, so it is detected here from the same text `textContent` was built
+  // from — alongside `hasRenderableBody` and `bodyImageCount`, and for the same
+  // reason: the text is already in hand and re-reading the corpus later to
+  // derive it costs far more than deriving it now. `null` is a real answer
+  // ("not enough prose", "not a language we list") and is never filtered out,
+  // so a miss here costs a reader nothing; the row is written either way,
+  // which is what keeps the sweep from re-reading every undetectable document
+  // forever. Only the ingest worker has the model loaded; when the web server
+  // indexes a document on demand, detection comes back `undefined` and the row
+  // is queued `pending` for the worker's hourly sweep. Its own table, written
+  // after the document (it references it) — see `documentLanguages`.
+  const detected = detectDocumentLanguage({
+    title: record.title,
+    description: cleanOptional(record.description),
+    textContent,
+  });
+
   const values = {
     uri,
     cid: cid ?? null,
@@ -537,6 +557,7 @@ export async function upsertDocument(
     .insert(documents)
     .values(values)
     .onConflictDoUpdate({ target: documents.uri, set: values });
+  await writeDocumentLanguages([languageRow(uri, detected)]);
 
   // Replace contributor rows for this document.
   await db
@@ -1104,12 +1125,31 @@ export async function upsertMochottArticle(
 
   const contentJson = sanitizeJson(content) as Record<string, unknown>;
   const existing = await db
-    .select({ textContent: documents.textContent, uri: documents.uri })
+    .select({
+      description: documents.description,
+      textContent: documents.textContent,
+      title: documents.title,
+      uri: documents.uri,
+    })
     .from(documents)
     .where(and(eq(documents.did, did), eq(documents.rkey, rkey)))
     .limit(1);
   const row = existing[0];
   if (!row) return;
+
+  const nextTextContent = documentSearchText({
+    textContent: row.textContent,
+    contentJson,
+    contentFormat: MOCHOTT_ARTICLE,
+  });
+  // The sidecar is usually the first real body this document has had, so the
+  // language detected from the stub (a title, maybe a description) was drawn
+  // from far less text than is available now. Re-detect rather than keep it.
+  const detected = detectDocumentLanguage({
+    title: row.title,
+    description: row.description,
+    textContent: nextTextContent,
+  });
 
   await db
     .update(documents)
@@ -1121,14 +1161,11 @@ export async function upsertMochottArticle(
         contentJson,
         contentFormat: MOCHOTT_ARTICLE,
       }),
-      textContent: documentSearchText({
-        textContent: row.textContent,
-        contentJson,
-        contentFormat: MOCHOTT_ARTICLE,
-      }),
+      textContent: nextTextContent,
       updatedAt: sql`now()`,
     })
     .where(eq(documents.uri, row.uri));
+  await writeDocumentLanguages([languageRow(row.uri, detected)]);
 }
 
 /** Index an `app.standard-reader.collection` sidecar onto its document row. */

@@ -107,6 +107,7 @@ export async function buildDigestForUser(
     did,
     sections = ALL_DIGEST_SECTIONS,
     excludeBridged = false,
+    feedLanguages = [],
   }: {
     did: string;
     sections?: DigestSections;
@@ -116,6 +117,12 @@ export async function buildDigestForUser(
      * subscriptions and saved sections are made of sources the reader chose.
      */
     excludeBridged?: BridgeExclusion;
+    /**
+     * The reader's language filter (`#/lib/content-language`). Scoped the same
+     * way and for the same reason as `excludeBridged`: the network section
+     * only.
+     */
+    feedLanguages?: ReadonlyArray<string>;
   },
 ): Promise<DigestData> {
   // Needed by the subscriptions section directly, and by the recommendations
@@ -145,6 +152,7 @@ export async function buildDigestForUser(
           excludeUris: articleUris,
           excludeReadForDid: did,
           excludeBridged,
+          languages: feedLanguages,
         })
       : Promise.resolve([]),
     sections.saved
