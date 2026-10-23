@@ -40,6 +40,7 @@ import {
   countNetworkDocumentsLive,
   selectFollowUris,
   selectFollowedUserDids,
+  trendingPageQuery,
 } from "#/server/reader/queries";
 
 const RUN = process.env.FEED_PERF_TEST === "1";
@@ -213,6 +214,38 @@ describe.skipIf(!RUN)("network document count — EXPLAIN", () => {
     expect(cached).toBeGreaterThan(0);
     expect(Math.abs(cached - live) / live).toBeLessThan(0.02);
   }, 60_000);
+});
+
+/**
+ * The Trending page (home Trending tab, Latest → Trending), with the English
+ * default every reader without a language preference now gets.
+ *
+ * Only a few dozen documents carry a `trending_score` at once, so the right
+ * plan walks `documents_trending_published_idx` and stops after a page. Before
+ * that index (and with a bare `desc()` meaning NULLS FIRST, which no index
+ * served) it was a bitmap scan of the whole 4-day window — ~60k documents,
+ * ~400 MB — sorted on disk to return 30: 0.5s warm, 7s cold. That plan has no
+ * `Seq Scan`, so the guard is the index name and the absence of a sort.
+ */
+describe.skipIf(!RUN)("trending page — EXPLAIN", () => {
+  test("walks the trending index instead of sorting the window", async () => {
+    const plan = await explainSql(
+      trendingPageQuery(db, schema, 30, {
+        excludeBridged: "all",
+        languages: ["en"],
+      }).getSQL(),
+    );
+
+    if (!plan.includes("documents_trending_published_idx")) {
+      expect.fail(
+        `Trending page does not use documents_trending_published_idx — ` +
+          `check the ORDER BY still matches it (\`trendingOrder\`). Full ` +
+          `plan:\n\n${plan}`,
+      );
+    }
+    expect(plan).not.toMatch(/Sort Method: external/);
+    assertExecTimeUnder(plan, 100);
+  }, 30_000);
 });
 
 /**

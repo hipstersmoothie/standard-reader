@@ -150,6 +150,17 @@ export const documents = pgTable(
     index("documents_site_idx").on(table.siteUri),
     index("documents_search_idx").using("gin", table.searchVector),
     index("documents_trending_idx").on(table.trendingScore.desc()),
+    // Trending's top-k: `ORDER BY trending_score DESC NULLS LAST, published_at
+    // DESC NULLS LAST LIMIT k` (`trendingOrder` in `#/server/reader/queries`).
+    // Only a few dozen documents carry a score at any time, so the walk is the
+    // scored head and then the newest unscored rows — without the second key
+    // the page query read and disk-sorted the whole 4-day window instead.
+    index("documents_trending_published_idx")
+      .on(
+        sql`${table.trendingScore} desc nulls last`,
+        sql`${table.publishedAt} desc nulls last`,
+      )
+      .where(sql`deleted = false`),
     // Extension page-URL resolution: lookup live documents by canonical URL.
     index("documents_canonical_url_idx")
       .on(table.canonicalUrl)

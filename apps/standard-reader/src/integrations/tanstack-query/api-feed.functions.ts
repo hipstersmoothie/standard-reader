@@ -949,6 +949,7 @@ async function loadLatestFeedCounts(
       ? countTrendingDocuments(db, schema, "page", {
           excludeBridged,
           languages: trendingLanguages,
+          cap: TRENDING_PAGE_LIMIT,
         })
       : Promise.resolve(0),
   ]);

@@ -1923,29 +1923,15 @@ export async function trendingArticles(
   const pa = alias(schema.profiles, "pa");
 
   if (scope === "page") {
-    const rows = await db
-      .select(trendingArticleSelection(schema, readForDid))
-      .from(d)
-      .leftJoin(p, eq(p.uri, d.publicationUri))
-      .leftJoin(pr, eq(pr.did, p.did))
-      .leftJoin(pa, eq(pa.did, d.did))
-      .where(
-        and(
-          ...trendingArticleWhere(
-            schema,
-            scope,
-            excludeUris,
-            excludeBridged,
-            languages,
-            viewerDid,
-            muterDid,
-          ),
-        ),
-      )
-      .orderBy(desc(d.trendingScore), desc(d.publishedAt))
-      .limit(limit)
-      .offset(offset);
-
+    const rows = await trendingPageQuery(db, schema, limit, {
+      excludeBridged,
+      excludeUris,
+      languages,
+      muterDid,
+      offset,
+      readForDid,
+      viewerDid,
+    });
     return rows.map((row) => toArticleCard(row));
   }
 
@@ -1971,12 +1957,74 @@ export async function trendingArticles(
         ),
       ),
     )
-    .orderBy(desc(d.trendingScore), desc(d.publishedAt))
+    .orderBy(...trendingOrder(d))
     .limit(poolSize);
 
   const cards = rows.map((row) => toArticleCard(row));
   const capped = applyTrendingDiversityCaps(cards, totalNeeded);
   return capped.slice(offset, offset + limit);
+}
+
+/**
+ * The Trending page's query, unexecuted — {@link trendingArticles} awaits it,
+ * and the gated EXPLAIN spec (`queries.explain.test.ts`) plans it via
+ * `.getSQL()` so the index it depends on is checked against prod-scale data.
+ */
+export function trendingPageQuery(
+  db: Db,
+  schema: Schema,
+  limit: number,
+  {
+    excludeUris = [],
+    excludeBridged = false,
+    languages,
+    offset = 0,
+    readForDid,
+    viewerDid,
+    muterDid,
+  }: Omit<TrendingArticlesQuery, "scope"> = {},
+) {
+  const d = schema.documents;
+  const p = schema.publications;
+  const pr = schema.profiles;
+  const pa = alias(schema.profiles, "pa");
+  return db
+    .select(trendingArticleSelection(schema, readForDid))
+    .from(d)
+    .leftJoin(p, eq(p.uri, d.publicationUri))
+    .leftJoin(pr, eq(pr.did, p.did))
+    .leftJoin(pa, eq(pa.did, d.did))
+    .where(
+      and(
+        ...trendingArticleWhere(
+          schema,
+          "page",
+          excludeUris,
+          excludeBridged,
+          languages,
+          viewerDid,
+          muterDid,
+        ),
+      ),
+    )
+    .orderBy(...trendingOrder(d))
+    .limit(limit)
+    .offset(offset);
+}
+
+/**
+ * Trending's sort, spelled to match `documents_trending_published_idx`
+ * (`trending_score desc nulls last, published_at desc nulls last`). A bare
+ * drizzle `desc()` means NULLS FIRST, which that index cannot serve, and the
+ * page query fell back to reading every document in the window and sorting
+ * them on disk (~400 MB, 0.5–7 s) to return 30. Both columns are NOT NULL, so
+ * the order is the same rows either way.
+ */
+function trendingOrder(d: Schema["documents"]): Array<SQL> {
+  return [
+    sql`${d.trendingScore} desc nulls last`,
+    sql`${d.publishedAt} desc nulls last`,
+  ];
 }
 
 /**
@@ -2032,7 +2080,7 @@ export async function bestOfFollows(
     .leftJoin(pr, eq(pr.did, p.did))
     .leftJoin(pa, eq(pa.did, d.did))
     .where(and(...conds))
-    .orderBy(desc(d.trendingScore), desc(d.publishedAt))
+    .orderBy(...trendingOrder(d))
     .limit(trendingFetchPoolSize(limit));
 
   const cards = rows.map((row) => toArticleCard(row));
@@ -2101,7 +2149,7 @@ export async function topNetworkArticles(
     .leftJoin(pr, eq(pr.did, p.did))
     .leftJoin(pa, eq(pa.did, d.did))
     .where(and(...conds))
-    .orderBy(desc(d.trendingScore), desc(d.publishedAt))
+    .orderBy(...trendingOrder(d))
     .limit(trendingFetchPoolSize(limit));
 
   const cards = rows.map((row) => toArticleCard(row));
@@ -2284,16 +2332,24 @@ export async function countTrendingDocuments(
   {
     excludeBridged = false,
     languages,
+    cap,
   }: {
     excludeBridged?: BridgeExclusion;
     languages?: ReadonlyArray<string>;
+    /**
+     * Stop counting here. The Trending page never lists more than
+     * `TRENDING_PAGE_LIMIT` rows and its badge is clamped to that, so counting
+     * the whole window (~60k documents, ~0.7 s) only to clamp the answer is
+     * wasted work; a capped count stops at the first `cap` matches.
+     */
+    cap?: number;
   } = {},
 ): Promise<number> {
   const d = schema.documents;
   const p = schema.publications;
 
-  const [row] = await db
-    .select({ count: sql<number>`count(*)`.mapWith(Number) })
+  const matching = db
+    .select({ one: sql`1` })
     .from(d)
     .leftJoin(p, eq(p.uri, d.publicationUri))
     .where(
@@ -2301,6 +2357,9 @@ export async function countTrendingDocuments(
         ...trendingArticleWhere(schema, scope, [], excludeBridged, languages),
       ),
     );
+  const [row] = await db
+    .select({ count: sql<number>`count(*)`.mapWith(Number) })
+    .from((cap === undefined ? matching : matching.limit(cap)).as("matching"));
   return row?.count ?? 0;
 }
 
