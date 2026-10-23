@@ -1,7 +1,7 @@
 -- Language tagging — prod index creation + verification.
 --
 -- Run this against prod Neon BEFORE merging migration
--- 0047_document_languages.sql. Building CONCURRENTLY avoids a long write-lock
+-- 0048_document_languages.sql. Building CONCURRENTLY avoids a long write-lock
 -- on `documents` (~3.4M rows, ~14 GB with indexes); because the migration uses
 -- `CREATE INDEX IF NOT EXISTS`, it then no-ops on prod while still building the
 -- indexes on fresh/local/CI databases.

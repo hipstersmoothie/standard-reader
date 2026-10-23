@@ -50,7 +50,7 @@ export function documentInLanguagesWhere(
   const d = schema.documents;
   // `lang IS NULL OR lang IN (…)`. btree indexes NULLs, so both arms are served
   // by the partial `documents_lang_published_idx` and the planner BitmapOrs
-  // them — see drizzle/0045_document_languages.sql.
+  // them — see drizzle/0048_document_languages.sql.
   return or(isNull(d.lang), inArray(d.lang, [...languages]));
 }
 

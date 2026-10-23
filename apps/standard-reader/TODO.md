@@ -1441,7 +1441,7 @@ Backend/API exists; UI or copy is missing.
       "all" reuses the web-only `network_stats` scalar, like signed-out does — `*.ap.brid.gy`
       is a rounding error next to the mirrors.
 - [x] **Post language tagging + the "Languages" feed filter** — `documents.lang` /
-      `lang_confidence` / `lang_source` / `lang_detected_at` (`drizzle/0047_*`), derived by
+      `lang_confidence` / `lang_source` / `lang_detected_at` (`drizzle/0048_*`), derived by
       [`src/server/lang/`](src/server/lang/detect.ts) from the indexed text, since
       `site.standard.document` has no language field. GlotLID (quantized, Git LFS in `models/`)
       over a cleaned prose sample, mapped onto the closed ~65-language vocabulary in
