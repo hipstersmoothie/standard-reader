@@ -6,7 +6,10 @@ import { Flex } from "@standard-reader/design-system/flex";
 import { Select, SelectItem } from "@standard-reader/design-system/select";
 import { Tag, TagGroup } from "@standard-reader/design-system/tag-group";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
-import { verticalSpace } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import {
+  horizontalSpace,
+  verticalSpace,
+} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import {
   fontSize,
   lineHeight,
@@ -25,9 +28,13 @@ import { useFeedLanguages } from "#/lib/use-feed-languages";
 import { settingRowStyles } from "./settings-row-styles";
 
 const styles = stylex.create({
+  // Same box as a `SettingRow` (`settingRowStyles.row`), so the block lines up
+  // with the rows above and below it rather than sitting flush with the card.
   block: {
-    paddingBottom: verticalSpace["md"],
-    paddingTop: verticalSpace["md"],
+    paddingBottom: verticalSpace["3xl"],
+    paddingInlineEnd: horizontalSpace["3xl"],
+    paddingInlineStart: horizontalSpace["3xl"],
+    paddingTop: verticalSpace["3xl"],
   },
   controls: {
     marginTop: verticalSpace["sm"],
@@ -36,6 +43,8 @@ const styles = stylex.create({
     color: uiColor["text1"],
     fontSize: fontSize["xs"],
     lineHeight: lineHeight["sm"],
+    // Wraps at the description's measure, not the card's full width.
+    maxWidth: "42ch",
     marginTop: verticalSpace["xs"],
   },
   selectWidth: {
