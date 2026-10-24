@@ -6,10 +6,8 @@ import { Flex } from "@standard-reader/design-system/flex";
 import { Select, SelectItem } from "@standard-reader/design-system/select";
 import { Tag, TagGroup } from "@standard-reader/design-system/tag-group";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
-import {
-  horizontalSpace,
-  verticalSpace,
-} from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { verticalSpace } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
+import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
 import {
   fontSize,
   lineHeight,
@@ -27,39 +25,47 @@ import { useFeedLanguages } from "#/lib/use-feed-languages";
 
 import { settingRowStyles } from "./settings-row-styles";
 
+const MOBILE = "@media (max-width: 47.5rem)";
+
 const styles = stylex.create({
-  // Same box as a `SettingRow` (`settingRowStyles.row`), so the block lines up
-  // with the rows above and below it rather than sitting flush with the card.
-  block: {
-    paddingBottom: verticalSpace["3xl"],
-    paddingInlineEnd: horizontalSpace["3xl"],
-    paddingInlineStart: horizontalSpace["3xl"],
-    paddingTop: verticalSpace["3xl"],
-  },
+  // The row's control column, holding more than one control: the picker, the
+  // chips for what is chosen, and the reset. End-aligned like every other
+  // row's control; full width once the row stacks on mobile.
   controls: {
-    marginTop: verticalSpace["sm"],
+    alignItems: {
+      [MOBILE]: "stretch",
+      default: "flex-end",
+    },
   },
   note: {
     color: uiColor["text1"],
     fontSize: fontSize["xs"],
     lineHeight: lineHeight["sm"],
-    // Wraps at the description's measure, not the card's full width.
+    marginBottom: verticalSpace["none"],
+    marginTop: verticalSpace["sm"],
     maxWidth: "42ch",
-    marginTop: verticalSpace["xs"],
   },
-  selectWidth: {
-    maxWidth: "22rem",
-    width: "100%",
+  picker: {
+    width: {
+      [MOBILE]: "100%",
+      default: spacing["72"],
+    },
+  },
+  chips: {
+    justifyContent: {
+      [MOBILE]: "flex-start",
+      default: "flex-end",
+    },
   },
 });
 
 /**
  * Settings → Feed → Languages.
  *
- * Deliberately not a `SettingRow`: that layout puts its control in a narrow
- * right-hand column, and this one is a multi-select over ~66 options plus a
- * reset. It borrows the row's label/description type styles so it still reads as
- * one of the rows around it.
+ * Laid out as a `SettingRow` (the row box and label/description styles), but
+ * written out rather than using the component: its start column carries a
+ * second note under the description, and its control column stacks the
+ * picker, the chips for what is chosen, and a reset.
  *
  * Chips for what is chosen, a searchable picker to add one more. Not a
  * multi-select listbox: the chips are the answer to "what is my feed filtered
@@ -89,46 +95,47 @@ export function FeedLanguagesSetting() {
   );
 
   return (
-    <div {...stylex.props(styles.block)}>
-      <p {...stylex.props(settingRowStyles.label)}>
-        <Trans>Languages</Trans>
-      </p>
-      <p {...stylex.props(settingRowStyles.description)}>
-        <Trans>
-          Show only posts written in the languages you pick, on Latest,
-          Discover, search, topics, and tag pages. Publications you subscribe to
-          are never filtered, and neither is a post you open directly.
-        </Trans>
-      </p>
-
-      {chips.length > 0 ? (
-        <TagGroup
-          aria-label={t`Languages your feed is filtered to`}
-          items={chips}
-          onRemove={(keys) => {
-            setLanguages(languages.filter((code) => !keys.has(code)));
-          }}
-          style={styles.controls}
-        >
-          {(chip: { id: string; label: string }) => <Tag>{chip.label}</Tag>}
-        </TagGroup>
-      ) : null}
+    <div {...stylex.props(settingRowStyles.row)}>
+      <div>
+        <p {...stylex.props(settingRowStyles.label)}>
+          <Trans>Languages</Trans>
+        </p>
+        <p {...stylex.props(settingRowStyles.description)}>
+          <Trans>
+            Show only posts written in the languages you pick, on Latest,
+            Discover, search, topics, and tag pages. Publications you subscribe
+            to are never filtered, and neither is a post you open directly.
+          </Trans>
+        </p>
+        <p {...stylex.props(styles.note)}>
+          {languages.length === 0 ? (
+            <Trans>
+              Every language is shown, except on Trending, which sticks to
+              English and your interface language. Pick one or more to narrow
+              your feed.
+            </Trans>
+          ) : (
+            <Trans>
+              Posts whose language we could not detect are always shown — a
+              filter never hides a post on a guess.
+            </Trans>
+          )}
+        </p>
+      </div>
 
       <Flex
-        direction="row"
+        direction="column"
         gap="sm"
-        wrap
-        align="center"
-        style={styles.controls}
+        style={[settingRowStyles.control, styles.controls]}
       >
-        <div {...stylex.props(styles.selectWidth)}>
+        <div {...stylex.props(styles.picker)}>
           <Select
             isSearchable
             isVirtualized
             size="md"
             aria-label={t`Add a language`}
             placeholder={t`Add a language…`}
-            placement="bottom start"
+            placement="bottom end"
             shouldFlip
             shouldUpdatePosition
             shouldCloseOnInteractOutside={() => true}
@@ -156,10 +163,24 @@ export function FeedLanguagesSetting() {
             ))}
           </Select>
         </div>
+
+        {chips.length > 0 ? (
+          <TagGroup
+            aria-label={t`Languages your feed is filtered to`}
+            items={chips}
+            onRemove={(keys) => {
+              setLanguages(languages.filter((code) => !keys.has(code)));
+            }}
+            style={styles.chips}
+          >
+            {(chip: { id: string; label: string }) => <Tag>{chip.label}</Tag>}
+          </TagGroup>
+        ) : null}
+
         {languages.length > 0 ? (
           <Button
             variant="tertiary"
-            size="md"
+            size="sm"
             onPress={() => {
               setLanguages([]);
             }}
@@ -168,20 +189,6 @@ export function FeedLanguagesSetting() {
           </Button>
         ) : null}
       </Flex>
-
-      <p {...stylex.props(styles.note)}>
-        {languages.length === 0 ? (
-          <Trans>
-            Every language is shown, except on Trending, which sticks to English
-            and your interface language. Pick one or more to narrow your feed.
-          </Trans>
-        ) : (
-          <Trans>
-            Posts whose language we could not detect are always shown — a filter
-            never hides a post on a guess.
-          </Trans>
-        )}
-      </p>
     </div>
   );
 }
