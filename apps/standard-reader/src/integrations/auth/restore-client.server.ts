@@ -7,6 +7,7 @@ import {
   restoreAppPasswordClient,
 } from "#/integrations/auth/app-password-session.server";
 import { restoreAtprotoSession } from "#/integrations/auth/atproto";
+import { setCapped } from "#/lib/capped-map";
 import { logEvent } from "#/server/observability/log";
 
 /**
@@ -18,6 +19,8 @@ import { logEvent } from "#/server/observability/log";
  * still refreshing often enough to pick up token rotations.
  */
 const CLIENT_CACHE_TTL_MS = 30_000;
+/** Expired entries are only replaced on the next lookup — cap the map. */
+const CLIENT_CACHE_MAX_ENTRIES = 5000;
 
 interface CacheEntry {
   client: Client | null;
@@ -78,7 +81,7 @@ export async function restoreAuthenticatedClient(
 
   // Store the in-flight promise so concurrent callers within the same tick
   // share a single resolution rather than each kicking off a PDS call.
-  clientCache.set(did, promise);
+  setCapped(clientCache, did, promise, CLIENT_CACHE_MAX_ENTRIES);
 
   try {
     const entry = await promise;

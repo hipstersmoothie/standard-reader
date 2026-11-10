@@ -1,5 +1,6 @@
 import type { Font } from "satori";
 
+import { setCapped } from "#/lib/capped-map";
 import { loadGoogleFontSubset } from "#/server/og/google-font";
 
 /**
@@ -38,9 +39,11 @@ const LANGUAGE_FONT_MAP: Record<string, Array<string>> = {
 /**
  * Resolved fallback faces (and null misses) keyed by `family:segment`. The
  * same handle/bio segments recur across cards and scraper retries; without
- * this every render would re-hit Google Fonts.
+ * this every render would re-hit Google Fonts. Capped: the key is user text,
+ * so an uncapped map grows with every distinct title/bio ever rendered.
  */
 const fallbackCache = new Map<string, Promise<Font | null>>();
+const FALLBACK_CACHE_MAX_ENTRIES = 500;
 
 function loadFallbackFace(
   code: string,
@@ -72,7 +75,7 @@ function loadFallbackFace(
           }
         : null,
   );
-  fallbackCache.set(cacheKey, pending);
+  setCapped(fallbackCache, cacheKey, pending, FALLBACK_CACHE_MAX_ENTRIES);
   return pending;
 }
 

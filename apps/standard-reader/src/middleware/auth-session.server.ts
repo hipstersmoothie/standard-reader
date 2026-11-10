@@ -8,6 +8,7 @@ import type { db as DrizzleDb } from "#/db/index.server";
 import type * as DbSchema from "#/db/schema";
 import { AUTH_SESSION_TOKEN_COOKIE } from "#/integrations/auth/constants";
 import { consumeRecentSessionDeletion } from "#/integrations/auth/session-deletions";
+import { setCapped } from "#/lib/capped-map";
 import { logEvent } from "#/server/observability/log";
 
 type Db = typeof DrizzleDb;
@@ -59,6 +60,8 @@ function readSessionTokenCookie(
  * is safe: the session row has its own expiry, and a logout creates a new token.
  */
 const SESSION_CACHE_TTL_MS = 30_000;
+/** Expired entries are only replaced, never swept — cap the token caches. */
+const SESSION_CACHE_MAX_ENTRIES = 5000;
 
 interface SessionCacheEntry {
   result: AtprotoSessionContext | undefined;
@@ -249,16 +252,20 @@ export async function getReaderContextForRequest(
     marginSaveEnabled: sessionRow.user.marginSaveEnabled,
     sembleSaveEnabled: sessionRow.user.sembleSaveEnabled,
   };
-  readerContextCache.set(sessionToken, {
-    ctx,
-    expiresAt: Date.now() + SESSION_CACHE_TTL_MS,
-  });
+  setCapped(
+    readerContextCache,
+    sessionToken,
+    { ctx, expiresAt: Date.now() + SESSION_CACHE_TTL_MS },
+    SESSION_CACHE_MAX_ENTRIES,
+  );
   // Keep the DID-only cache in sync so sibling read fns that already ran
   // don't re-query.
-  didTokenCache.set(sessionToken, {
-    did,
-    expiresAt: Date.now() + SESSION_CACHE_TTL_MS,
-  });
+  setCapped(
+    didTokenCache,
+    sessionToken,
+    { did, expiresAt: Date.now() + SESSION_CACHE_TTL_MS },
+    SESSION_CACHE_MAX_ENTRIES,
+  );
   return ctx;
 }
 
@@ -307,10 +314,12 @@ async function resolveReaderDid(request: Request): Promise<string | undefined> {
     return;
   }
 
-  didTokenCache.set(sessionToken, {
-    did,
-    expiresAt: Date.now() + SESSION_CACHE_TTL_MS,
-  });
+  setCapped(
+    didTokenCache,
+    sessionToken,
+    { did, expiresAt: Date.now() + SESSION_CACHE_TTL_MS },
+    SESSION_CACHE_MAX_ENTRIES,
+  );
   return did;
 }
 
@@ -442,16 +451,20 @@ async function resolveAtprotoSession(
   };
   // Cache the resolved session by token so sibling server fns in the same
   // page load reuse it instead of each re-querying the DB for the session row.
-  sessionTokenCache.set(sessionToken, {
-    result,
-    expiresAt: Date.now() + SESSION_CACHE_TTL_MS,
-  });
+  setCapped(
+    sessionTokenCache,
+    sessionToken,
+    { result, expiresAt: Date.now() + SESSION_CACHE_TTL_MS },
+    SESSION_CACHE_MAX_ENTRIES,
+  );
   // Keep the DID-only cache in sync so read fns that already ran don't
   // re-query when a later write fn restores the full client.
-  didTokenCache.set(sessionToken, {
-    did,
-    expiresAt: Date.now() + SESSION_CACHE_TTL_MS,
-  });
+  setCapped(
+    didTokenCache,
+    sessionToken,
+    { did, expiresAt: Date.now() + SESSION_CACHE_TTL_MS },
+    SESSION_CACHE_MAX_ENTRIES,
+  );
   return result;
 }
 

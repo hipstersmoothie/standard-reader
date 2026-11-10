@@ -9,6 +9,7 @@
 
 import type { JsonValue } from "#/integrations/tanstack-query/api-shapes";
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
+import { setCapped } from "#/lib/capped-map";
 import { normalizeMiniPost, pcktNoteUrl } from "#/lib/pckt/mini";
 import type { MiniPost } from "#/lib/pckt/mini";
 import type { ConstellationBacklinkRecord } from "#/server/atproto/constellation";
@@ -25,6 +26,7 @@ import type {
 } from "#/server/reader/document-comments";
 
 const NOTE_CACHE_TTL_MS = 5 * 60 * 1000;
+const NOTE_CACHE_MAX_ENTRIES = 5000;
 
 const noteCommentsCache = new Map<
   string,
@@ -123,10 +125,12 @@ export async function fetchNotesForDocument(
       // would hide real notes behind "No discussion yet" for the full TTL, and
       // a transient blip would look identical to a document with no discussion.
       if (records.length === 0) {
-        noteCommentsCache.set(documentUri, {
-          comments: [],
-          expiresAt: Date.now() + NOTE_CACHE_TTL_MS,
-        });
+        setCapped(
+          noteCommentsCache,
+          documentUri,
+          { comments: [], expiresAt: Date.now() + NOTE_CACHE_TTL_MS },
+          NOTE_CACHE_MAX_ENTRIES,
+        );
       }
       return [];
     }
@@ -143,10 +147,12 @@ export async function fetchNotesForDocument(
       comments.push(toComment(note, author, documentUri, replyCounts[index]));
     }
 
-    noteCommentsCache.set(documentUri, {
-      comments,
-      expiresAt: Date.now() + NOTE_CACHE_TTL_MS,
-    });
+    setCapped(
+      noteCommentsCache,
+      documentUri,
+      { comments, expiresAt: Date.now() + NOTE_CACHE_TTL_MS },
+      NOTE_CACHE_MAX_ENTRIES,
+    );
     return comments;
   } catch {
     return cached?.comments ?? [];
@@ -202,10 +208,12 @@ export async function fetchLatestPublicationNote(
         }
       : null;
 
-    latestPublicationNoteCache.set(publicationUri, {
-      note,
-      expiresAt: Date.now() + NOTE_CACHE_TTL_MS,
-    });
+    setCapped(
+      latestPublicationNoteCache,
+      publicationUri,
+      { note, expiresAt: Date.now() + NOTE_CACHE_TTL_MS },
+      NOTE_CACHE_MAX_ENTRIES,
+    );
     return note;
   } catch {
     return cached?.note ?? null;

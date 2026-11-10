@@ -1,11 +1,19 @@
 import type { Font, FontWeight } from "satori";
 
+import { setCapped } from "#/lib/capped-map";
+
 const FETCH_TIMEOUT_MS = 8000;
 
 const TTF_UA =
   "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)";
 
+/**
+ * Downloaded faces keyed by family/weight/style/URL. Google serves each
+ * `text=` subset from its own URL, so the key space is per-text — keep it
+ * capped.
+ */
 const faceCache = new Map<string, Font>();
+const FACE_CACHE_MAX_ENTRIES = 256;
 
 interface FontFaceSpec {
   weight: FontWeight;
@@ -66,7 +74,7 @@ async function loadFace(
       weight: spec.weight,
       style: spec.style,
     };
-    faceCache.set(cacheKey, font);
+    setCapped(faceCache, cacheKey, font, FACE_CACHE_MAX_ENTRIES);
     return font;
   } catch {
     return null;

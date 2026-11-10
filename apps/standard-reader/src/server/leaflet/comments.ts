@@ -11,6 +11,7 @@
  */
 
 import { fetchBlueskyPublicProfileFields } from "#/lib/bluesky-public-profile";
+import { setCapped } from "#/lib/capped-map";
 import {
   extractLeafletQuoteText,
   leafletCommentDrawerUrl,
@@ -27,6 +28,7 @@ import type {
 } from "#/server/reader/document-comments";
 
 const COMMENT_CACHE_TTL_MS = 5 * 60 * 1000;
+const COMMENT_CACHE_MAX_ENTRIES = 5000;
 
 const leafletCommentsCache = new Map<
   string,
@@ -169,10 +171,12 @@ export async function fetchLeafletCommentsForDocument(
       // it found some but every hydration failed (Slingshot hiccup), caching []
       // would hide real comments for the full TTL — same reasoning as pckt.
       if (records.length === 0) {
-        leafletCommentsCache.set(documentUri, {
-          comments: [],
-          expiresAt: Date.now() + COMMENT_CACHE_TTL_MS,
-        });
+        setCapped(
+          leafletCommentsCache,
+          documentUri,
+          { comments: [], expiresAt: Date.now() + COMMENT_CACHE_TTL_MS },
+          COMMENT_CACHE_MAX_ENTRIES,
+        );
       }
       return [];
     }
@@ -190,10 +194,12 @@ export async function fetchLeafletCommentsForDocument(
       );
     }
 
-    leafletCommentsCache.set(documentUri, {
-      comments,
-      expiresAt: Date.now() + COMMENT_CACHE_TTL_MS,
-    });
+    setCapped(
+      leafletCommentsCache,
+      documentUri,
+      { comments, expiresAt: Date.now() + COMMENT_CACHE_TTL_MS },
+      COMMENT_CACHE_MAX_ENTRIES,
+    );
     return comments;
   } catch {
     return cached?.comments ?? [];

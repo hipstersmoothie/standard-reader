@@ -1180,6 +1180,13 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       publication kicker, collection title, editorial/description, "In this issue" TOC, feature
       count). `/collection/...` route `head` emits the card via `collectionOgImageUrl` +
       collection-specific title/description.
+- [x] **OG render memory leak** — satori caches its font loader per `fonts` array and appends
+      every fallback face to it, so passing the process-lifetime `loadOgFonts()` array grew the
+      loader with every CJK/symbol segment ever rendered (suspected driver of prod RSS creeping
+      3.3 → 5.4 GB between restarts).
+      `ogSatoriOptions` now hands satori a per-render copy; the user-text-keyed fallback/subset/
+      emoji caches and the TTL-only comment/session caches go through `setCapped`
+      (`src/lib/capped-map.ts`); `loadOgImage` skips images over 8 MiB.
 - [x] **standard.site discovery hints** — `/p/...` emits
       `<link rel="site.standard.publication" href="at://…">` and `/a/...` emits
       `rel="site.standard.document"` (+ the publication hint when the document belongs to one),

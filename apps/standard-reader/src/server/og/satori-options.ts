@@ -25,7 +25,15 @@ export function ogSatoriOptions(
   return {
     width: size.width,
     height: size.height,
-    fonts,
+    /**
+     * Fresh array per render. Satori keeps its font loader in a WeakMap keyed
+     * by this array and appends every `loadAdditionalAsset` fallback face to
+     * it, never removing them — handing it the process-lifetime array from
+     * `loadOgFonts()` grew that loader with every CJK/symbol segment ever
+     * rendered. A copy scopes the loader (and its fallbacks) to one render;
+     * the font buffers are shared, so satori's parse cache still hits.
+     */
+    fonts: [...fonts],
     loadAdditionalAsset: loadOgAsset as NonNullable<
       SatoriOptions["loadAdditionalAsset"]
     >,

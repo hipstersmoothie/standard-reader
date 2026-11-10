@@ -6,6 +6,7 @@ import type {
   ArticleCard,
   JsonValue,
 } from "#/integrations/tanstack-query/api-shapes";
+import { setCapped } from "#/lib/capped-map";
 import { bskyPostUrl } from "#/lib/leaflet/bsky";
 import { shiftFacets } from "#/lib/leaflet/facets";
 import { utf8ByteLength } from "#/lib/leaflet/utf8";
@@ -273,21 +274,6 @@ const inferredBskyPostCache = new Map<string, InferredBskyPostCacheEntry>();
 const inferredBskyPostInflight = new Map<string, Promise<string | null>>();
 const INFERRED_BSKY_POST_CACHE_TTL_MS = 60 * 60 * 1000;
 const INFERRED_BSKY_POST_CACHE_MAX_ENTRIES = 5000;
-
-/** Insert into an insertion-ordered cache, evicting the oldest entries. */
-function setCapped<T>(
-  cache: Map<string, T>,
-  key: string,
-  value: T,
-  max: number,
-): void {
-  cache.delete(key);
-  cache.set(key, value);
-  for (const oldest of cache.keys()) {
-    if (cache.size <= max) break;
-    cache.delete(oldest);
-  }
-}
 
 function peekCommentCount(documentUri: string): number {
   return commentCountCache.get(documentUri) ?? 0;

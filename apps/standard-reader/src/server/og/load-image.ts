@@ -1,5 +1,12 @@
 const FETCH_TIMEOUT_MS = 5000;
 
+/**
+ * Per-image ceiling. Satori inlines every image as a base64 `data:` URL and
+ * resvg decodes it at full size, so one huge cover/avatar balloons a render's
+ * memory. Anything bigger is treated like a failed fetch.
+ */
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+
 /** Formats satori can measure — webp/avif make it throw mid-render. */
 const SATORI_IMAGE_TYPES = new Set([
   "image/png",
@@ -44,7 +51,16 @@ async function fetchSatoriImage(url: string): Promise<string | null> {
       response.headers.get("content-type")?.split(";")[0]?.trim() ?? "";
     if (!SATORI_IMAGE_TYPES.has(contentType)) return null;
 
+    // Skip the download when the header says it's too big; the real check is
+    // on the bytes, since the header can lie or be absent.
+    const declaredLength = Number(response.headers.get("content-length"));
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_IMAGE_BYTES) {
+      await response.body?.cancel();
+      return null;
+    }
+
     const buffer = await response.arrayBuffer();
+    if (buffer.byteLength > MAX_IMAGE_BYTES) return null;
     return toDataUrl(buffer, contentType);
   } catch {
     return null;
@@ -61,7 +77,8 @@ export async function loadOgImage(
   const original = await fetchSatoriImage(url);
   if (original) return original;
 
-  // Unsupported format (usually webp) — let the Bluesky CDN transcode it.
+  // Unsupported format (usually webp) or oversized — let the Bluesky CDN
+  // transcode/resize it.
   const cdnUrl = bskyCdnPngUrl(url);
   return cdnUrl ? fetchSatoriImage(cdnUrl) : null;
 }

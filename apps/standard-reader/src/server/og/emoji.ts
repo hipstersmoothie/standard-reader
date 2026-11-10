@@ -12,6 +12,8 @@
  * Shared across all `/api/og/*` routes so they render emoji identically.
  */
 
+import { setCapped } from "#/lib/capped-map";
+
 /**
  * Pinned major version of the `emoji-datasource-apple` npm package. Pinning protects us from
  * a future major reshuffling the asset path; bumping is a one-line change.
@@ -37,9 +39,12 @@ function emojiToAppleCodepoints(emoji: string): string {
 /**
  * Cache resolved emoji `data:` URLs (and `null` for emojis we couldn't find) for the lifetime
  * of the worker. A single OG response can render the same emoji several times — without this
- * we'd refetch on every occurrence and on every subsequent OG request.
+ * we'd refetch on every occurrence and on every subsequent OG request. Capped
+ * (roomy enough for the whole Apple set) because the key is whatever grapheme
+ * satori classified as emoji, so junk sequences would otherwise pile up.
  */
 const appleEmojiCache = new Map<string, string | null>();
+const APPLE_EMOJI_CACHE_MAX_ENTRIES = 4000;
 
 async function fetchAppleEmojiPng(
   codepoints: string,
@@ -108,10 +113,15 @@ export async function loadAppleEmojiAsset(
       }
     }
 
-    appleEmojiCache.set(codepoints, dataUrl ?? null);
+    setCapped(
+      appleEmojiCache,
+      codepoints,
+      dataUrl ?? null,
+      APPLE_EMOJI_CACHE_MAX_ENTRIES,
+    );
     return dataUrl;
   } catch {
-    appleEmojiCache.set(codepoints, null);
+    setCapped(appleEmojiCache, codepoints, null, APPLE_EMOJI_CACHE_MAX_ENTRIES);
     return undefined;
   }
 }
