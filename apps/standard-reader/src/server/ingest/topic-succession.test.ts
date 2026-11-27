@@ -13,6 +13,7 @@ import type {
   ResolvedTopic,
   RetentionThresholds,
   StoredTopic,
+  SuccessorEvidence,
   TopicShape,
 } from "./topic-succession";
 
@@ -408,17 +409,20 @@ describe("clearsEntryBar", () => {
   });
 });
 
-describe("refineSuccessors", () => {
-  const evidence = (
-    overrides: Partial<Parameters<typeof refineSuccessors>[1]> = {},
-  ): Parameters<typeof refineSuccessors>[1] => ({
+/** Sweep evidence where only `survivor` and `other` are published. */
+function evidence(
+  overrides: Partial<SuccessorEvidence> = {},
+): SuccessorEvidence {
+  return {
     absorbedInto: new Map(),
     previous: new Map(),
     published: new Set(["survivor", "other"]),
     sharedDocuments: [],
     ...overrides,
-  });
+  };
+}
 
+describe("refineSuccessors", () => {
   it("sends a merged topic to what absorbed it, over the nearest signature", () => {
     const successors = new Map<string, string | null>([["dup", "other"]]);
     refineSuccessors(
