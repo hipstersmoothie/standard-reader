@@ -351,27 +351,32 @@ export function hasCollectionsScope(
 /**
  * Parse repo scope tokens into the set of collection NSIDs they grant.
  *
- * ATProto scope strings appear in two shapes in the wild:
- * - `repo?collection=A&collection=B&action=create`
- * - `repo:A?action=create`
+ * ATProto scope strings appear in several shapes in the wild:
+ * - `repo?collection=A&collection=B&action=create` (query form, no colon)
+ * - `repo:A?action=create` (positional form)
+ * - `repo:?collection=A&collection=B` — an empty positional slot followed by
+ *   the query form. rsky (blacksky.app) wrote expanded `include:` permission
+ *   sets this way until 2026-11-06, and `account.scope` keeps whatever string
+ *   the PDS returned at the last callback, so these grants are still stored.
  *
- * Accept both here so granted-scope checks keep working regardless of which
- * serialization the auth server returns in `tokenInfo.scope`.
+ * Accept all of them — the positional slot *and* every `collection=` query
+ * param count — so granted-scope checks keep working regardless of which
+ * serialization the auth server returns in `tokenInfo.scope`. Reading only the
+ * positional slot of a `repo:` token is what made a valid collections grant
+ * read as missing, and sent blacksky readers round the upgrade prompt forever.
  */
 function parseRepoScopeCollections(token: string): Set<string> {
-  const q = token.indexOf("?");
   const nsids = new Set<string>();
+  if (!token.startsWith("repo:") && !token.startsWith("repo?")) return nsids;
 
+  const q = token.indexOf("?");
   if (token.startsWith("repo:")) {
     const collection = token.slice("repo:".length, q === -1 ? undefined : q);
     if (collection) {
       nsids.add(decodeURIComponent(collection));
     }
-    return nsids;
   }
-
   if (q === -1) return nsids;
-  if (!token.startsWith("repo?")) return nsids;
 
   const params = token.slice(q + 1).split("&");
   for (const p of params) {

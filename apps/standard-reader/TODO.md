@@ -316,6 +316,24 @@ Check items off as they land.
       re-authorizing now asks for `authSocial` too. Covered by
       `src/integrations/auth/scope.test.ts`.
 
+- [x] **Blacksky readers looped on the collections upgrade prompt** (2026-11-26, userinput
+      bug report of 2026-11-05). rsky (blacksky.app) expanded `include:` permission sets into
+      `repo:?collection=A&collection=B`: an empty positional slot followed by the query form,
+      which rsky stopped writing on 2026-11-06. `parseRepoScopeCollections` read only the
+      positional slot of a `repo:` token, so a valid grant snapshotted to `account.scope`
+      looked like it had no collections. `hasCollectionsScope` returned false, and the gate
+      re-opened after every successful re-auth. rsky skips consent for scopes it already
+      granted, so the round trip was nearly invisible and read as "the pop up just reloads".
+      The parser now reads the positional slot **and** every `collection=` param for both
+      `repo:` and `repo?` tokens. That also fixes the userinput, Margin, Semble, mute and
+      block checks, which share the parser. Grants already stored in the old form start
+      passing once this deploys, with no re-auth needed. Covered by
+      `src/integrations/auth/scope.test.ts`.
+- [ ] **Say so when an upgrade comes back without the scope.** If a PDS returns a grant
+      we can't read, or the reader unticks a permission, the upgrade gate just opens again,
+      with no error. Flag the return leg of an upgrade (e.g. a `scopeUpgrade` param) and show
+      "your PDS didn't grant …" instead of the same prompt.
+
 - [x] **Personal state no longer waits on the ingest queue** (2026-08-01). With the ingest worker
       backlogged, a reader's own read/unread state — the one thing they watch change in the moment —
       queued behind everyone else's backfill, so articles stayed unread for hours after being read.
