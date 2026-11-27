@@ -55,6 +55,10 @@ export const user = pgTable("user", {
   /** `true` opens collection posts in the magazine edition; `null`/`false` uses
    * the reader view (default). */
   openCollectionsInMagazine: boolean("open_collections_in_magazine"),
+  /** Which Bluesky-CDN-compatible host to load blob images from — an id from
+   * `IMAGE_CDN_IDS` in `src/lib/image-cdn.ts`; `null` = cdn.bsky.app (default).
+   * Unknown ids read as the default. */
+  imageCdn: text("image_cdn"),
   /** Compact `fontSize:measure:bodyFont[:customFont]` encoding; `null` = defaults. */
   readingTypography: text("reading_typography"),
   /** `false` disables read tracking and unread UI; `null` = on (default). */

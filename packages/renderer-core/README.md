@@ -51,7 +51,9 @@ const tree = buildRenderTree(
 - maps every block onto the shared [`BlockNode`](./src/nodes.ts) vocabulary
   (`paragraph`, `heading`, `image`, `code`, `bulletList`, `table`, `callout`,
   the platform blocks `leaflet.poll` / `pckt.gallery` / `offprint.component`, …),
-- resolves blob images to URLs (override via `options.resolveImageUrl`),
+- resolves blob images to URLs on the Bluesky CDN (point at any
+  Bluesky-CDN-compatible host with `options.imageCdn`, or take over entirely
+  with `options.resolveImageUrl`),
 - trims a leading hero image / duplicate heading and marks the drop-cap
   paragraph,
 - collects and numbers Leaflet footnotes.
@@ -116,8 +118,8 @@ The raw per-format parsers and vocabulary types are available too:
 `MARKDOWN_FORMATS`, `markpubBlocks` / `prepareMarkpubMarkdown` /
 `MARKPUB_FORMATS`, `mochottBlocks` / `mochottDocument` / `MOCHOTT_FORMATS`,
 `gutenbergBlocks` / `GUTENBERG_CONTENT`,
-`collectLeafletFootnotes`, `segmentFacetedText`, `defaultImageUrlResolver`,
-`blobCid` / `cdnImageUrl`, and the `LeafletRenderableBlock` /
+`collectLeafletFootnotes`, `segmentFacetedText`, `defaultImageUrlResolver` /
+`createImageUrlResolver`, `blobCid` / `cdnImageUrl` / `DEFAULT_IMAGE_CDN`, and the `LeafletRenderableBlock` /
 `StructuredRenderableBlock` / `PcktRenderableBlock` types.
 
 ### Format notes

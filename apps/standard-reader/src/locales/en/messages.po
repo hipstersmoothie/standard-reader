@@ -270,6 +270,10 @@ msgid "Lexicons"
 msgstr "Lexicons"
 
 #: src/components/user-settings-view.tsx
+msgid "Image server"
+msgstr "Image server"
+
+#: src/components/user-settings-view.tsx
 msgid "Can read only"
 msgstr "Can read only"
 
@@ -1485,6 +1489,10 @@ msgstr "{SITE_NAME} is a web reader for standard.site publications on the AT Pro
 msgid "Followed pages warmed"
 msgstr "Followed pages warmed"
 
+#: src/components/user-settings-view.tsx
+msgid "Where covers, avatars, and article images load from. This server sends every image at its original size, so pages can take more data to load."
+msgstr "Where covers, avatars, and article images load from. This server sends every image at its original size, so pages can take more data to load."
+
 #: src/routes/_layout.history.tsx
 #~ msgid "Everything you've read"
 #~ msgstr "Everything you've read"
@@ -2095,6 +2103,10 @@ msgstr "The Subscriptions screen: a sortable table where each row is a publicati
 #: src/components/comic/comic-reader.tsx
 msgid "Page {0} of {totalPages}"
 msgstr "Page {0} of {totalPages}"
+
+#: src/components/user-settings-view.tsx
+msgid "Where covers, avatars, and article images load from. Bluesky’s image server is the default; the others are community-run copies of it, so your images don’t all come from one company."
+msgstr "Where covers, avatars, and article images load from. Bluesky’s image server is the default; the others are community-run copies of it, so your images don’t all come from one company."
 
 #: src/components/reader/save-to-collection-dialog.tsx
 msgid "e.g. To Read"

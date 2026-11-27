@@ -44,10 +44,15 @@ export function aspectRatioFromDimensions(
 
 /**
  * Build a Bluesky CDN image URL from a blob ref + the repo's DID. Returns null
- * when the blob carries no CID. PNG is requested to preserve alpha.
+ * when the blob carries no CID. PNG is requested to preserve alpha. `cdn` is
+ * the image host's origin (defaults to the Bluesky CDN).
  */
-export function blobImageUrl(blob: unknown, did: string): string | null {
+export function blobImageUrl(
+  blob: unknown,
+  did: string,
+  cdn?: string,
+): string | null {
   const cid = blobCid(blob as Parameters<typeof blobCid>[0]);
   if (!cid) return null;
-  return cdnImageUrl(did, cid, "png");
+  return cdnImageUrl(did, cid, "png", cdn);
 }

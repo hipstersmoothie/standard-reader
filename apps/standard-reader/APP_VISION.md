@@ -338,6 +338,24 @@ Topics are **derived, never curated** — see
   site in a new tab (marking it read) instead of the in-app reader, and
   `/a/$did/$rkey` itself redirects to the publication site. Articles without
   a canonical URL fall back to the in-app reader.
+- **Image server (preference):** Settings → Behavior → "Image server" picks which
+  Bluesky-CDN-compatible host the browser loads blob images from — covers, icons,
+  avatars, article images — for a less centralized network: `cdn.bsky.app`
+  (default) or a vetted community mirror (`porxie-bsky.dollware.net`,
+  `luna.danielmorrisey.com`, `cdn.blueat.network`). Only that list is offered,
+  never a free-form host. The server keeps building every URL on `cdn.bsky.app`,
+  so server caches, query caches and HTTP responses stay shared across readers;
+  the swap happens at render time — the design system's `ImageSrcProvider`
+  (installed in `__root.tsx`, fed from the shell bootstrap so SSR and hydration
+  agree) rewrites the `cdn.bsky.app/img/` prefix for every DS image component,
+  and app `<img>`s / CSS backgrounds go through `useResolveImageSrc`. OG cards,
+  EPUB/OPDS output and feeds stay on Bluesky — they are fetched by servers and
+  devices, not the reader's browser. Cookie `standard-reader-image-cdn` for
+  everyone; `user.image_cdn` when signed in (`#/lib/image-cdn`). The luna and
+  blueat mirrors serve the original upload regardless of preset/format (no
+  resizing), which Settings says when one is chosen. The published
+  `@standard-reader/renderer-core` takes the host as `imageCdn` (or
+  `createImageUrlResolver({ cdn })`).
 - **Reading typography (preference):** settings page + user-menu control for body
   text size, column measure, and body font (serif, sans, or a custom Google Font
   from a searchable catalog). Applied on the article wrapper; cookie for

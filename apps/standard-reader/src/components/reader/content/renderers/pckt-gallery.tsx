@@ -5,6 +5,7 @@ import {
   AspectRatio,
   AspectRatioImage,
 } from "@standard-reader/design-system/aspect-ratio";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { Lightbox } from "@standard-reader/design-system/lightbox";
 import {
   LIGHTBOX_IMAGE_TRANSITION_NAME,
@@ -79,6 +80,7 @@ export function PcktGalleryBlockView({
   block: PcktGalleryBlock;
   blobContext?: ContentBlobContext;
 }) {
+  const resolveImageSrc = useResolveImageSrc();
   const { t } = useLingui();
   const magazine = use(MagazineColorContext);
   // `lightboxIndex` is which image the lightbox opened on; `transitionIndex` is
@@ -148,7 +150,7 @@ export function PcktGalleryBlockView({
                   rendering rather than wrapping the image in a button. */}
                 {magazine ? (
                   <ImageFigureView
-                    src={image.src}
+                    src={resolveImageSrc(image.src)}
                     alt={image.alt}
                     aspectRatio={image.aspectRatio}
                   />

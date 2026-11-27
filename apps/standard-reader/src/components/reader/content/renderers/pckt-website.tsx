@@ -1,5 +1,6 @@
 "use client";
 
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import * as stylex from "@stylexjs/stylex";
 
 import { parseBskyClientUrl } from "#/lib/atproto/bsky-clients";
@@ -11,6 +12,7 @@ import { BskyClientEmbedView } from "./shared/bsky-client-embed";
 import { WebsiteCardBody } from "./structured-views";
 
 export function PcktWebsiteBlockView({ block }: { block: PcktWebsiteBlock }) {
+  const resolveImageSrc = useResolveImageSrc();
   const src = block.src;
   if (!src) return null;
 
@@ -27,7 +29,7 @@ export function PcktWebsiteBlockView({ block }: { block: PcktWebsiteBlock }) {
     >
       {previewImage ? (
         <img
-          src={previewImage}
+          src={resolveImageSrc(previewImage)}
           alt={normalizeImageAlt(title)}
           loading="lazy"
           referrerPolicy="no-referrer"

@@ -18,6 +18,7 @@ import {
 
 import { DirectionalIcon } from "../directional-icon";
 import { IconButton } from "../icon-button";
+import { useResolveImageSrc } from "../image-source/context";
 import {
   animationDuration,
   animationTimingFunction,
@@ -242,6 +243,7 @@ export function Lightbox({
   const settleTimeoutRef = useRef<ReturnType<
     typeof globalThis.setTimeout
   > | null>(null);
+  const transformSrc = useResolveImageSrc();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [settledIndex, setSettledIndex] = useState(initialIndex);
   const [hasSyncedOpenIndex, setHasSyncedOpenIndex] = useState(false);
@@ -499,7 +501,7 @@ export function Lightbox({
                           <img
                             alt={imageAlt || fallbackAlt}
                             referrerPolicy="no-referrer"
-                            src={image.src}
+                            src={transformSrc(image.src)}
                             {...stylex.props(styles.slideImage)}
                           />
                         </div>

@@ -13,6 +13,7 @@ import {
 } from "@standard-reader/design-system/file-drop-zone";
 import { Flex } from "@standard-reader/design-system/flex";
 import { IconButton } from "@standard-reader/design-system/icon-button";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { Label } from "@standard-reader/design-system/label";
 import { ListBox, ListBoxItem } from "@standard-reader/design-system/listbox";
 import { ProgressCircle } from "@standard-reader/design-system/progress-circle";
@@ -555,6 +556,7 @@ export function CollectionBuilder({
   onCancel: () => void;
 }) {
   const { t } = useLingui();
+  const resolveImageSrc = useResolveImageSrc();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [editorialBody, setEditorialBody] = useState(
@@ -843,7 +845,7 @@ export function CollectionBuilder({
               </Label>
               {coverUrl ? (
                 <img
-                  src={coverUrl}
+                  src={resolveImageSrc(coverUrl)}
                   alt={t`Collection cover`}
                   {...stylex.props(styles.coverPreview)}
                 />

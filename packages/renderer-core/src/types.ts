@@ -37,4 +37,10 @@ export interface RendererOptions {
   skipLeadingImage?: boolean;
   /** Override how blob refs become image URLs (defaults to the Bluesky CDN). */
   resolveImageUrl?: ImageUrlResolver;
+  /**
+   * Origin of a Bluesky-CDN-compatible image host to build blob image URLs on,
+   * e.g. `https://porxie-bsky.dollware.net` (default `https://cdn.bsky.app`).
+   * Ignored when {@link resolveImageUrl} is given.
+   */
+  imageCdn?: string;
 }

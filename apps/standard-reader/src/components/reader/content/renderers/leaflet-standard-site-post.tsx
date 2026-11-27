@@ -1,5 +1,6 @@
 "use client";
 
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -21,6 +22,7 @@ export function LeafletStandardSitePostBlockView({
 }: {
   block: LeafletStandardSitePostBlock;
 }) {
+  const resolveImageSrc = useResolveImageSrc();
   const uri = block.uri?.trim();
   const linkParams = uri ? documentLinkParams(uri) : null;
   const { openExternally } = useOpenLinks();
@@ -44,7 +46,7 @@ export function LeafletStandardSitePostBlockView({
       <>
         {previewImage ? (
           <img
-            src={previewImage}
+            src={resolveImageSrc(previewImage)}
             alt={normalizeImageAlt(title)}
             loading="lazy"
             referrerPolicy="no-referrer"

@@ -5,6 +5,7 @@ import {
   AspectRatio,
   AspectRatioImage,
 } from "@standard-reader/design-system/aspect-ratio";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { Lightbox } from "@standard-reader/design-system/lightbox";
 import {
   LIGHTBOX_IMAGE_TRANSITION_NAME,
@@ -82,6 +83,7 @@ export function ImageFigureView({
    *  the canvas reflows. */
   canvas?: boolean;
 }) {
+  const resolveImageSrc = useResolveImageSrc();
   const { t } = useLingui();
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [transitionActive, setTransitionActive] = useState(false);
@@ -97,7 +99,7 @@ export function ImageFigureView({
       <img
         alt={altText}
         referrerPolicy="no-referrer"
-        src={src}
+        src={resolveImageSrc(src)}
         {...stylex.props(
           styles.naturalImage(aspectRatio),
           !fullBleed && styles.naturalImageRounded,
@@ -125,7 +127,7 @@ export function ImageFigureView({
           data-mag-block-photo=""
           loading="lazy"
           referrerPolicy="no-referrer"
-          src={src}
+          src={resolveImageSrc(src)}
         />
       ) : canOpenLightbox ? (
         <button

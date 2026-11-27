@@ -7,6 +7,7 @@ import { Button } from "@standard-reader/design-system/button";
 import { DirectionalIcon } from "@standard-reader/design-system/directional-icon";
 import { Flex } from "@standard-reader/design-system/flex";
 import { IconButton } from "@standard-reader/design-system/icon-button";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { Lightbox } from "@standard-reader/design-system/lightbox";
 import {
   LIGHTBOX_IMAGE_TRANSITION_NAME,
@@ -1080,6 +1081,7 @@ function ArticleViewBody({
   article: ArticleDetail;
   sharedQuote?: string | null;
 }) {
+  const resolveImageSrc = useResolveImageSrc();
   const { t, i18n } = useLingui();
   const fmt = useFormatters();
   const router = useRouter();
@@ -1555,7 +1557,7 @@ function ArticleViewBody({
               {...stylex.props(styles.hero)}
             >
               <img
-                src={hero.url}
+                src={resolveImageSrc(hero.url)}
                 alt=""
                 referrerPolicy="no-referrer"
                 {...stylex.props(styles.heroImg)}

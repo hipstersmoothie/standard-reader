@@ -1,6 +1,7 @@
 "use client";
 
 import { Plural, Trans } from "@lingui/react/macro";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { ExternalLink } from "lucide-react";
 import { forwardRef } from "react";
 
@@ -81,13 +82,18 @@ export function CoverFlow({
   issue: MagIssue;
   onJump: (featureIndex: number) => void;
 }) {
+  const resolveImageSrc = useResolveImageSrc();
   return (
     <>
       <section
         className={`flow-col cover-left ${issue.coverImageUrl ? "has-cover" : ""}`}
       >
         {issue.coverImageUrl ? (
-          <img className="cover-hero" src={issue.coverImageUrl} alt="" />
+          <img
+            className="cover-hero"
+            src={resolveImageSrc(issue.coverImageUrl)}
+            alt=""
+          />
         ) : (
           <div aria-hidden />
         )}
@@ -141,6 +147,7 @@ export const FeatureFlow = forwardRef<
 >(function FeatureFlowComponent({ feature, coverImageUrl, fullBleed }, ref) {
   const { meta, detail } = feature;
   const hasImage = Boolean(coverImageUrl);
+  const resolveImageSrc = useResolveImageSrc();
 
   return (
     <>
@@ -150,7 +157,11 @@ export const FeatureFlow = forwardRef<
           ref={ref}
         >
           <div className="img-page-bleed">
-            <img className="img-bg" src={coverImageUrl ?? ""} alt="" />
+            <img
+              className="img-bg"
+              src={resolveImageSrc(coverImageUrl) ?? ""}
+              alt=""
+            />
             <div className="img-caption">
               <span className="dot" />
               <span>{meta.topic}</span>

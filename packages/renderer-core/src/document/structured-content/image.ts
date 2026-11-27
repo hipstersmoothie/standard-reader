@@ -32,10 +32,11 @@ export function structuredImageUrl(
     externalSrc?: string;
   },
   did: string,
+  cdn?: string,
 ): string | null {
   const external = externalHttpUrl(block.externalSrc);
   if (external) return external;
-  return blobImageUrl(block.blob, did);
+  return blobImageUrl(block.blob, did, cdn);
 }
 
 export function structuredImageAspectRatio(block: {

@@ -84,6 +84,7 @@ import {
 } from "#/lib/exclude-web-bridge";
 import { isFeedPagination } from "#/lib/feed-preferences";
 import { DEFAULT_CUSTOM_GOOGLE_FONT } from "#/lib/google-fonts";
+import { IMAGE_CDN_HOSTS, IMAGE_CDN_IDS, isImageCdnId } from "#/lib/image-cdn";
 import type { Locale } from "#/lib/locale";
 import { LOCALE_LABELS, LOCALES, PSEUDO_LOCALE, isLocale } from "#/lib/locale";
 import { AMERICAN_ENGLISH_VOICES } from "#/lib/page-reader/voice-catalog";
@@ -108,6 +109,7 @@ import {
   useHideFeedMetrics,
 } from "#/lib/use-feed-preferences";
 import { useFormatters } from "#/lib/use-formatters";
+import { useImageCdn } from "#/lib/use-image-cdn";
 import { useLocale } from "#/lib/use-locale";
 import { useOfflineSyncDebugVisible } from "#/lib/use-offline-sync-debug-visible";
 import { useOpenCollectionsInMagazine } from "#/lib/use-open-collections-in-magazine";
@@ -479,6 +481,7 @@ export function UserSettingsView() {
     [setTypography],
   );
   const { openExternally, setOpenExternally } = useOpenLinks();
+  const { cdn: imageCdn, setCdn: setImageCdn } = useImageCdn();
   const { openInMagazine, setOpenInMagazine } = useOpenCollectionsInMagazine();
   const { enabled: trackReading, setEnabled: setTrackReading } =
     useTrackReadingHistory();
@@ -798,6 +801,37 @@ export function UserSettingsView() {
               onChange={setCountOldAsUnread}
               aria-label={t`Mark old posts as unread`}
             />
+          </SettingRow>
+          <Separator />
+          <SettingRow
+            label={t`Image server`}
+            description={
+              IMAGE_CDN_HOSTS[imageCdn].resizes
+                ? t`Where covers, avatars, and article images load from. Bluesky’s image server is the default; the others are community-run copies of it, so your images don’t all come from one company.`
+                : t`Where covers, avatars, and article images load from. This server sends every image at its original size, so pages can take more data to load.`
+            }
+          >
+            <Select
+              size="md"
+              aria-label={t`Image server`}
+              selectedKey={imageCdn}
+              style={styles.voiceSelect}
+              onSelectionChange={(key) => {
+                if (key == null) return;
+                const next = String(key);
+                if (isImageCdnId(next)) setImageCdn(next);
+              }}
+            >
+              {IMAGE_CDN_IDS.map((id) => (
+                <SelectItem
+                  key={id}
+                  id={id}
+                  textValue={IMAGE_CDN_HOSTS[id].label}
+                >
+                  {IMAGE_CDN_HOSTS[id].label}
+                </SelectItem>
+              ))}
+            </Select>
           </SettingRow>
         </div>
       </section>

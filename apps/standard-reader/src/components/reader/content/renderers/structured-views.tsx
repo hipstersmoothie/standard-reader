@@ -1,5 +1,6 @@
 "use client";
 
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import * as stylex from "@stylexjs/stylex";
 import { ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
@@ -247,6 +248,7 @@ export function StructuredWebsiteView({
   description?: string;
   previewImage?: string;
 }) {
+  const resolveImageSrc = useResolveImageSrc();
   const tracker = useQuoteHighlightTracker();
   const cardTitle = title?.trim();
   const cardDescription = description?.trim();
@@ -267,7 +269,7 @@ export function StructuredWebsiteView({
     >
       {image ? (
         <img
-          src={image}
+          src={resolveImageSrc(image)}
           alt={normalizeImageAlt(cardTitle)}
           loading="lazy"
           referrerPolicy="no-referrer"

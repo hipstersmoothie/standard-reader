@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar } from "@standard-reader/design-system/avatar";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { radius } from "@standard-reader/design-system/theme/radius.stylex";
@@ -162,6 +163,7 @@ const DOCUMENT_COLLECTIONS = new Set([
  * that links to the article in-app. Layered above the card's stretched link so
  * it stays independently clickable. Non-document quotes are omitted. */
 function PcktNoteQuoteEmbed({ uri }: { uri: string }) {
+  const resolveImageSrc = useResolveImageSrc();
   const parts = uri.split("/");
   const collection = parts[3];
   const did = parts[2];
@@ -188,7 +190,7 @@ function PcktNoteQuoteEmbed({ uri }: { uri: string }) {
     >
       {article.coverImageUrl ? (
         <img
-          src={article.coverImageUrl}
+          src={resolveImageSrc(article.coverImageUrl)}
           alt=""
           loading="lazy"
           decoding="async"

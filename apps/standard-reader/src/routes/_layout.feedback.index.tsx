@@ -7,6 +7,7 @@ import { Avatar } from "@standard-reader/design-system/avatar";
 import { Button } from "@standard-reader/design-system/button";
 import { Flex } from "@standard-reader/design-system/flex";
 import { IconButton } from "@standard-reader/design-system/icon-button";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { Lightbox } from "@standard-reader/design-system/lightbox";
 import { Link } from "@standard-reader/design-system/link";
 import {
@@ -710,6 +711,7 @@ function DiscussionAttachments({
 }) {
   const { t } = useLingui();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const resolveImageSrc = useResolveImageSrc();
 
   return (
     <>
@@ -725,7 +727,7 @@ function DiscussionAttachments({
               onClick={() => setOpenIndex(index)}
             >
               <img
-                src={image.url}
+                src={resolveImageSrc(image.url)}
                 alt={alt}
                 loading="lazy"
                 {...stylex.props(styles.attachmentImage)}
