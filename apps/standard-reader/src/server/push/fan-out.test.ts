@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { buildPayload, notificationTag, truncate } from "./fan-out";
+import {
+  blockedRecipientsFromPairs,
+  buildPayload,
+  notificationTag,
+  truncate,
+} from "./fan-out";
 
 const BASE = {
   did: "did:plc:author",
@@ -151,5 +156,52 @@ describe("buildPayload", () => {
       url,
     );
     expect(JSON.stringify(payload).length).toBeLessThan(1000);
+  });
+});
+
+function pair(recipient: string, subject: string) {
+  return { recipient, subject };
+}
+
+describe("blockedRecipientsFromPairs", () => {
+  it("blocks a recipient with any surviving pair", () => {
+    expect(
+      blockedRecipientsFromPairs([pair("did:plc:r1", "did:plc:author")], []),
+    ).toEqual(new Set(["did:plc:r1"]));
+  });
+
+  it("drops a pair the recipient allowlisted", () => {
+    expect(
+      blockedRecipientsFromPairs(
+        [pair("did:plc:r1", "did:plc:author")],
+        [pair("did:plc:r1", "did:plc:author")],
+      ),
+    ).toEqual(new Set());
+  });
+
+  it("keeps a recipient blocked from the owner when only the author is allowed", () => {
+    // A guest post in a blocked owner's publication: exempting the author
+    // doesn't exempt the byline's other account.
+    expect(
+      blockedRecipientsFromPairs(
+        [
+          pair("did:plc:r1", "did:plc:author"),
+          pair("did:plc:r1", "did:plc:owner"),
+        ],
+        [pair("did:plc:r1", "did:plc:author")],
+      ),
+    ).toEqual(new Set(["did:plc:r1"]));
+  });
+
+  it("scopes an exemption to the recipient who made it", () => {
+    expect(
+      blockedRecipientsFromPairs(
+        [
+          pair("did:plc:r1", "did:plc:author"),
+          pair("did:plc:r2", "did:plc:author"),
+        ],
+        [pair("did:plc:r1", "did:plc:author")],
+      ),
+    ).toEqual(new Set(["did:plc:r2"]));
   });
 });

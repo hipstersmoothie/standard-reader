@@ -601,6 +601,10 @@ msgstr "Publications written by the people you follow on Bluesky, minus the ones
 msgid "Sync username"
 msgstr "Sync username"
 
+#: src/components/reader/blocked-notice.tsx
+msgid "Your list of accounts shown despite blocks is full. Remove one in Settings to add another."
+msgstr "Your list of accounts shown despite blocks is full. Remove one in Settings to add another."
+
 #: src/components/reader/format-i18n.ts
 msgid "{years}y ago"
 msgstr "{years}y ago"
@@ -730,6 +734,10 @@ msgstr "Text on accent"
 #: src/components/user-settings-view.tsx
 msgid "Turn off"
 msgstr "Turn off"
+
+#: src/components/block-allowlist-section.tsx
+msgid "That's your own account."
+msgstr "That's your own account."
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
@@ -881,6 +889,10 @@ msgstr "Moderation lists you subscribe to on Bluesky. Everyone on them is blocke
 msgid "Loading people"
 msgstr "Loading people"
 
+#: src/components/block-allowlist-section.tsx
+msgid "Accounts you still want to read in Standard Reader, whoever made the block — you, a block list, or them. Their writing shows in your feeds, search, and discussion again. The block itself stays on your account and keeps applying on Bluesky. Only you can see this list."
+msgstr "Accounts you still want to read in Standard Reader, whoever made the block — you, a block list, or them. Their writing shows in your feeds, search, and discussion again. The block itself stays on your account and keeps applying on Bluesky. Only you can see this list."
+
 #. placeholder {0}: health.rejected
 #: src/components/labeler-detail-view.tsx
 msgid "{0, plural, one {One of this labeler’s labels couldn’t be verified and was skipped.} other {# of this labeler’s labels couldn’t be verified and were skipped.}}"
@@ -1015,6 +1027,10 @@ msgstr "This list is empty."
 msgid "Play voice sample"
 msgstr "Play voice sample"
 
+#: src/components/block-allowlist-section.tsx
+msgid "No block right now"
+msgstr "No block right now"
+
 #: src/components/guide/pages/comics-guide-page.tsx
 msgid "<0>Is the forwards-reading setting saved?</0> This is the one that is almost always the answer. Check it in your publishing tool, and note that it lives on the publication, not on individual posts."
 msgstr "<0>Is the forwards-reading setting saved?</0> This is the one that is almost always the answer. Check it in your publishing tool, and note that it lives on the publication, not on individual posts."
@@ -1048,6 +1064,10 @@ msgstr "Loading publications"
 #: src/components/reader/send-to-ereader-dialog.tsx
 msgid "OPDS catalog URL"
 msgstr "OPDS catalog URL"
+
+#: src/components/block-allowlist-section.tsx
+msgid "On a block list you use"
+msgstr "On a block list you use"
 
 #. placeholder {0}: meta.minutes
 #: src/magazine/flow.tsx
@@ -1717,6 +1737,10 @@ msgstr "One column, the publication's own type, and a progress line under the to
 msgid "Conventions"
 msgstr "Conventions"
 
+#: src/components/block-allowlist-section.tsx
+msgid "Everyone your blocks cover is hidden here. Add an account above, or choose Show here anyway on a blocked page."
+msgstr "Everyone your blocks cover is hidden here. Add an account above, or choose Show here anyway on a blocked page."
+
 #: src/components/reader/list-edit-modal.tsx
 msgid "Member type to add"
 msgstr "Member type to add"
@@ -1736,6 +1760,10 @@ msgstr "A labeler is any DID that publishes AT Proto labels. Readers add one by 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Rendering Standard Site documents"
 msgstr "Rendering Standard Site documents"
+
+#: src/components/block-allowlist-section.tsx
+msgid "They block a list you're on"
+msgstr "They block a list you're on"
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "how to make a site discoverable on Standard and have its content read inline, without adopting a platform."
@@ -1842,6 +1870,10 @@ msgstr "Comment on {platformName}"
 #: src/components/reader/about-view.tsx
 msgid "Blocks, pages, and footnotes"
 msgstr "Blocks, pages, and footnotes"
+
+#: src/components/reader/block-user-menu-item.tsx
+msgid "Hide {name} again"
+msgstr "Hide {name} again"
 
 #: src/components/user-settings-view.tsx
 msgid "Appearance"
@@ -2394,9 +2426,17 @@ msgstr "Languages your feed is filtered to"
 msgid "Loading page"
 msgstr "Loading page"
 
+#: src/components/block-allowlist-section.tsx
+msgid "They block you"
+msgstr "They block you"
+
 #: src/components/reader/follow-card.tsx
 msgid "That's you"
 msgstr "That's you"
+
+#: src/components/reader/blocked-notice.tsx
+msgid "Show here anyway"
+msgstr "Show here anyway"
 
 #: src/components/muted-settings-view.tsx
 msgid "You haven't muted any publications. Mute one from the menu on its page to hide its articles from your feeds while staying subscribed."
@@ -3096,6 +3136,10 @@ msgstr "Notifications are blocked"
 #: src/components/reader/about-view.tsx
 msgid "A reply"
 msgstr "A reply"
+
+#: src/components/block-allowlist-section.tsx
+msgid "Loading accounts"
+msgstr "Loading accounts"
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
 msgid "your day: one featured article, then what is new from the publications you subscribe to."
@@ -4089,6 +4133,10 @@ msgstr "View all latest"
 msgid "<0>Extension settings.</0> Your overlay and Bluesky embed preferences are stored locally in <1>chrome.storage.sync</1> (or the equivalent in other browsers) and are not sent to our servers except as part of normal extension operation on your device."
 msgstr "<0>Extension settings.</0> Your overlay and Bluesky embed preferences are stored locally in <1>chrome.storage.sync</1> (or the equivalent in other browsers) and are not sent to our servers except as part of normal extension operation on your device."
 
+#: src/components/reader/blocked-notice.tsx
+msgid "Show here anyway keeps the block on Bluesky and only lets you read {who} in Standard Reader."
+msgstr "Show here anyway keeps the block on Bluesky and only lets you read {who} in Standard Reader."
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/save-to-collection-dialog.tsx
@@ -4588,6 +4636,10 @@ msgstr "Search publications and articles"
 msgid "A publication can be in as many lists as you like, or none. Lists are also <0>public</0>: each one has its own page and its own feed, and <1>other people can follow it</1>. Following a list subscribes someone to everything in it at once — so a good list is a way to hand a whole reading habit to somebody, and it keeps working as you add to it."
 msgstr "A publication can be in as many lists as you like, or none. Lists are also <0>public</0>: each one has its own page and its own feed, and <1>other people can follow it</1>. Following a list subscribes someone to everything in it at once — so a good list is a way to hand a whole reading habit to somebody, and it keeps working as you add to it."
 
+#: src/components/reader/blocked-notice.tsx
+msgid "We couldn't find this account to add it. Try again?"
+msgstr "We couldn't find this account to add it. Try again?"
+
 #: src/components/labeler-detail-view.tsx
 msgid "No labeled accounts"
 msgstr "No labeled accounts"
@@ -4862,6 +4914,12 @@ msgstr "<0>Your posts have to read as pages.</0> We look at your 40 newest posts
 #: src/components/reader/page-reader-bar.tsx
 msgid "Generating audio… {percent}%"
 msgstr "Generating audio… {percent}%"
+
+#: src/components/block-allowlist-section.tsx
+#: src/components/reader/block-user-menu-item.tsx
+#: src/components/reader/blocked-notice.tsx
+msgid "We couldn't save that change. Try again?"
+msgstr "We couldn't save that change. Try again?"
 
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
@@ -5157,6 +5215,10 @@ msgstr "Theme and language work without an account — they are remembered in yo
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Could not upload that image."
 msgstr "Could not upload that image."
+
+#: src/components/block-allowlist-section.tsx
+msgid "Add"
+msgstr "Add"
 
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/subscriptions-sheet.tsx
@@ -5702,6 +5764,7 @@ msgstr "{totalPeople, plural, one {# person you follow writes here} other {# peo
 msgid "Not in the directory yet?"
 msgstr "Not in the directory yet?"
 
+#: src/components/block-allowlist-section.tsx
 #: src/components/blocks-settings-view.tsx
 #: src/components/muted-settings-view.tsx
 #: src/components/reader/block-user-menu-item.tsx
@@ -5980,6 +6043,14 @@ msgstr "We do not scrape or upload arbitrary page text — only URLs needed for 
 #: src/components/reading-settings-preview.tsx
 msgid "Couldn’t play the voice sample."
 msgstr "Couldn’t play the voice sample."
+
+#: src/components/block-allowlist-section.tsx
+msgid "Handle or DID"
+msgstr "Handle or DID"
+
+#: src/components/block-allowlist-section.tsx
+msgid "Your list is full. Remove someone to add another."
+msgstr "Your list is full. Remove someone to add another."
 
 #. placeholder {0}: person.publicationCount
 #. placeholder {1}: formatReaders(person.publicationCount)
@@ -6554,6 +6625,10 @@ msgstr "on Semble"
 #: src/components/user-settings-view.tsx
 msgid "On — delivered to {digestEmail}. The best of the publications you subscribe to, plus a couple worth discovering."
 msgstr "On — delivered to {digestEmail}. The best of the publications you subscribe to, plus a couple worth discovering."
+
+#: src/components/block-allowlist-section.tsx
+msgid "You block them"
+msgstr "You block them"
 
 #: src/components/reader/about-view.tsx
 msgid "“The page gets quiet, and the sentence gets loud.”"
@@ -7147,6 +7222,7 @@ msgstr "Their articles, publications and recommendations are hidden from your fe
 msgid "Top on the network"
 msgstr "Top on the network"
 
+#: src/components/block-allowlist-section.tsx
 #: src/components/blocks-settings-view.tsx
 #: src/components/offline-settings.tsx
 #: src/components/reader/collection-builder.tsx
@@ -8630,6 +8706,10 @@ msgstr "Opening the issue…"
 msgid "Pages with nothing written under them leave the button disabled rather than making it appear and vanish as the reader flips, so there is no penalty for a silent page."
 msgstr "Pages with nothing written under them leave the button disabled rather than making it appear and vanish as the reader flips, so there is no penalty for a silent page."
 
+#: src/components/reader/block-user-menu-item.tsx
+msgid "Hide again"
+msgstr "Hide again"
+
 #: src/components/reader/about-view.tsx
 msgid "However you like to read it"
 msgstr "However you like to read it"
@@ -8882,6 +8962,10 @@ msgstr "Link"
 msgid "Save series"
 msgstr "Save series"
 
+#: src/components/block-allowlist-section.tsx
+msgid "Shown despite blocks"
+msgstr "Shown despite blocks"
+
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 msgid "<0>Subscribe</0> is the whole mechanism. New writing from anything you subscribe to appears on Home and in Latest, and the publication is listed in your sidebar. There is no email sign-up and no separate account with the publisher."
 msgstr "<0>Subscribe</0> is the whole mechanism. New writing from anything you subscribe to appears on Home and in Latest, and the publication is listed in your sidebar. There is no email sign-up and no separate account with the publisher."
@@ -9016,6 +9100,10 @@ msgstr "Published AT Proto record schemas for reader state in each user's PDS."
 #: src/components/reader/serial-start.tsx
 #~ msgid "Start from issue one"
 #~ msgstr "Start from issue one"
+
+#: src/components/reader/blocked-notice.tsx
+msgid "Couldn't show this account"
+msgstr "Couldn't show this account"
 
 #: src/routes/_layout.discover.tsx
 msgid "Loading publication directory"
@@ -9176,6 +9264,10 @@ msgstr "Week"
 #: src/components/reader/topic-cards.tsx
 msgid "{0, plural, one {# writer} other {# writers}}"
 msgstr "{0, plural, one {# writer} other {# writers}}"
+
+#: src/components/block-allowlist-section.tsx
+msgid "We couldn't find that account. Check the handle and try again."
+msgstr "We couldn't find that account. Check the handle and try again."
 
 #: src/components/reader/terms-view.tsx
 msgid "Acceptable use"

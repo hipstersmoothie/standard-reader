@@ -12,13 +12,14 @@ import {
 import { MenuItem } from "@standard-reader/design-system/menu";
 import { toasts } from "@standard-reader/design-system/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Ban } from "lucide-react";
+import { Ban, EyeOff } from "lucide-react";
 
 import { auth } from "#/integrations/tanstack-query/api-auth.functions";
 import {
   NEEDS_BLOCK_SCOPE,
   blocksApi,
 } from "#/integrations/tanstack-query/api-blocks.functions";
+import { useDisallowBlockedAccount } from "#/lib/use-block-allowlist";
 
 /**
  * "Block" in the author overflow menu, and the confirmation it opens.
@@ -172,5 +173,44 @@ export function BlockUserDialog({
         </AlertDialogActionButton>
       </AlertDialogFooter>
     </AlertDialog>
+  );
+}
+
+/**
+ * "Hide again" — the overflow-menu item on a profile the reader's allowlist is
+ * showing despite a block. Takes the account off the allowlist, so the existing
+ * block applies here again and the profile turns back into its notice.
+ *
+ * Takes Block's place rather than sitting beside it: the account is already
+ * blocked (by the reader, a list, or them), so Block would write a duplicate
+ * record and change nothing. Immediate, not confirmed — it writes nothing to the
+ * reader's repo, and "Show here anyway" on the notice undoes it in one press.
+ */
+export function HideAgainMenuItem({
+  did,
+  name,
+  iconSize = 14,
+}: {
+  did: string;
+  name?: string | null;
+  iconSize?: number;
+}) {
+  const { t } = useLingui();
+  const hide = useDisallowBlockedAccount({
+    onError: () => {
+      toasts.add({
+        description: t`We couldn't save that change. Try again?`,
+        title: t`Something went wrong`,
+      });
+    },
+  });
+  return (
+    <MenuItem
+      onPress={() => hide.mutate(did)}
+      suffix={<EyeOff size={iconSize} />}
+      textValue={name ? t`Hide ${name} again` : t`Hide again`}
+    >
+      <Trans>Hide again</Trans>
+    </MenuItem>
   );
 }

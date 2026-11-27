@@ -601,6 +601,10 @@ msgstr ""
 msgid "Sync username"
 msgstr ""
 
+#: src/components/reader/blocked-notice.tsx
+msgid "Your list of accounts shown despite blocks is full. Remove one in Settings to add another."
+msgstr ""
+
 #: src/components/reader/format-i18n.ts
 msgid "{years}y ago"
 msgstr ""
@@ -729,6 +733,10 @@ msgstr "النص على لون التمييز"
 
 #: src/components/user-settings-view.tsx
 msgid "Turn off"
+msgstr ""
+
+#: src/components/block-allowlist-section.tsx
+msgid "That's your own account."
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
@@ -881,6 +889,10 @@ msgstr ""
 msgid "Loading people"
 msgstr ""
 
+#: src/components/block-allowlist-section.tsx
+msgid "Accounts you still want to read in Standard Reader, whoever made the block — you, a block list, or them. Their writing shows in your feeds, search, and discussion again. The block itself stays on your account and keeps applying on Bluesky. Only you can see this list."
+msgstr ""
+
 #. placeholder {0}: health.rejected
 #: src/components/labeler-detail-view.tsx
 msgid "{0, plural, one {One of this labeler’s labels couldn’t be verified and was skipped.} other {# of this labeler’s labels couldn’t be verified and were skipped.}}"
@@ -1015,6 +1027,10 @@ msgstr "هذه القائمة فارغة."
 msgid "Play voice sample"
 msgstr "تشغيل عيّنة صوتية"
 
+#: src/components/block-allowlist-section.tsx
+msgid "No block right now"
+msgstr ""
+
 #: src/components/guide/pages/comics-guide-page.tsx
 msgid "<0>Is the forwards-reading setting saved?</0> This is the one that is almost always the answer. Check it in your publishing tool, and note that it lives on the publication, not on individual posts."
 msgstr ""
@@ -1047,6 +1063,10 @@ msgstr "جارٍ تحميل المنشورات"
 
 #: src/components/reader/send-to-ereader-dialog.tsx
 msgid "OPDS catalog URL"
+msgstr ""
+
+#: src/components/block-allowlist-section.tsx
+msgid "On a block list you use"
 msgstr ""
 
 #. placeholder {0}: meta.minutes
@@ -1717,6 +1737,10 @@ msgstr ""
 msgid "Conventions"
 msgstr ""
 
+#: src/components/block-allowlist-section.tsx
+msgid "Everyone your blocks cover is hidden here. Add an account above, or choose Show here anyway on a blocked page."
+msgstr ""
+
 #: src/components/reader/list-edit-modal.tsx
 msgid "Member type to add"
 msgstr "نوع العضو المراد إضافته"
@@ -1735,6 +1759,10 @@ msgstr ""
 
 #: src/components/docs/renderers-docs-page.tsx
 msgid "Rendering Standard Site documents"
+msgstr ""
+
+#: src/components/block-allowlist-section.tsx
+msgid "They block a list you're on"
 msgstr ""
 
 #: src/components/docs/introduction-docs-page.tsx
@@ -1841,6 +1869,10 @@ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "Blocks, pages, and footnotes"
+msgstr ""
+
+#: src/components/reader/block-user-menu-item.tsx
+msgid "Hide {name} again"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
@@ -2394,8 +2426,16 @@ msgstr ""
 msgid "Loading page"
 msgstr "جارٍ تحميل الصفحة"
 
+#: src/components/block-allowlist-section.tsx
+msgid "They block you"
+msgstr ""
+
 #: src/components/reader/follow-card.tsx
 msgid "That's you"
+msgstr ""
+
+#: src/components/reader/blocked-notice.tsx
+msgid "Show here anyway"
 msgstr ""
 
 #: src/components/muted-settings-view.tsx
@@ -3095,6 +3135,10 @@ msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "A reply"
+msgstr ""
+
+#: src/components/block-allowlist-section.tsx
+msgid "Loading accounts"
 msgstr ""
 
 #: src/components/guide/pages/getting-started-guide-page.tsx
@@ -4089,6 +4133,10 @@ msgstr "عرض كل الجديد"
 msgid "<0>Extension settings.</0> Your overlay and Bluesky embed preferences are stored locally in <1>chrome.storage.sync</1> (or the equivalent in other browsers) and are not sent to our servers except as part of normal extension operation on your device."
 msgstr "<0>إعدادات الامتداد.</0> تُحفظ تفضيلات التراكب وتضمين Bluesky محليًا في <1>chrome.storage.sync</1> (أو ما يعادلها في المتصفحات الأخرى) ولا تُرسل إلى خوادمنا إلا ضمن التشغيل الطبيعي للامتداد على جهازك."
 
+#: src/components/reader/blocked-notice.tsx
+msgid "Show here anyway keeps the block on Bluesky and only lets you read {who} in Standard Reader."
+msgstr ""
+
 #: src/components/guide/pages/getting-started-guide-page.tsx
 #: src/components/reader/app-shell.tsx
 #: src/components/reader/save-to-collection-dialog.tsx
@@ -4588,6 +4636,10 @@ msgstr "البحث في المنشورات والمقالات"
 msgid "A publication can be in as many lists as you like, or none. Lists are also <0>public</0>: each one has its own page and its own feed, and <1>other people can follow it</1>. Following a list subscribes someone to everything in it at once — so a good list is a way to hand a whole reading habit to somebody, and it keeps working as you add to it."
 msgstr ""
 
+#: src/components/reader/blocked-notice.tsx
+msgid "We couldn't find this account to add it. Try again?"
+msgstr ""
+
 #: src/components/labeler-detail-view.tsx
 msgid "No labeled accounts"
 msgstr ""
@@ -4862,6 +4914,12 @@ msgstr ""
 #: src/components/reader/page-reader-bar.tsx
 msgid "Generating audio… {percent}%"
 msgstr "جارٍ إنشاء الصوت… {percent}٪"
+
+#: src/components/block-allowlist-section.tsx
+#: src/components/reader/block-user-menu-item.tsx
+#: src/components/reader/blocked-notice.tsx
+msgid "We couldn't save that change. Try again?"
+msgstr ""
 
 #: src/components/docs/docs-nav-areas.ts
 #: src/components/docs/introduction-docs-page.tsx
@@ -5156,6 +5214,10 @@ msgstr ""
 
 #: src/components/feedback/feedback-image-picker.tsx
 msgid "Could not upload that image."
+msgstr ""
+
+#: src/components/block-allowlist-section.tsx
+msgid "Add"
 msgstr ""
 
 #: src/components/reader/app-shell.tsx
@@ -5702,6 +5764,7 @@ msgstr ""
 msgid "Not in the directory yet?"
 msgstr ""
 
+#: src/components/block-allowlist-section.tsx
 #: src/components/blocks-settings-view.tsx
 #: src/components/muted-settings-view.tsx
 #: src/components/reader/block-user-menu-item.tsx
@@ -5980,6 +6043,14 @@ msgstr "نحن لا نجمع أو نرفع نصوص الصفحات عشوائي�
 #: src/components/reading-settings-preview.tsx
 msgid "Couldn’t play the voice sample."
 msgstr "تعذّر تشغيل عيّنة الصوت."
+
+#: src/components/block-allowlist-section.tsx
+msgid "Handle or DID"
+msgstr ""
+
+#: src/components/block-allowlist-section.tsx
+msgid "Your list is full. Remove someone to add another."
+msgstr ""
 
 #. placeholder {0}: person.publicationCount
 #. placeholder {1}: formatReaders(person.publicationCount)
@@ -6554,6 +6625,10 @@ msgstr "على Semble"
 #: src/components/user-settings-view.tsx
 msgid "On — delivered to {digestEmail}. The best of the publications you subscribe to, plus a couple worth discovering."
 msgstr "مُفعّل — يُرسَل إلى {digestEmail}. أفضل ما في المنشورات التي تشترك فيها، مع بعض ما يستحق الاستكشاف."
+
+#: src/components/block-allowlist-section.tsx
+msgid "You block them"
+msgstr ""
 
 #: src/components/reader/about-view.tsx
 msgid "“The page gets quiet, and the sentence gets loud.”"
@@ -7147,6 +7222,7 @@ msgstr ""
 msgid "Top on the network"
 msgstr ""
 
+#: src/components/block-allowlist-section.tsx
 #: src/components/blocks-settings-view.tsx
 #: src/components/offline-settings.tsx
 #: src/components/reader/collection-builder.tsx
@@ -8630,6 +8706,10 @@ msgstr "جارٍ فتح العدد…"
 msgid "Pages with nothing written under them leave the button disabled rather than making it appear and vanish as the reader flips, so there is no penalty for a silent page."
 msgstr ""
 
+#: src/components/reader/block-user-menu-item.tsx
+msgid "Hide again"
+msgstr ""
+
 #: src/components/reader/about-view.tsx
 msgid "However you like to read it"
 msgstr ""
@@ -8882,6 +8962,10 @@ msgstr "رابط"
 msgid "Save series"
 msgstr "حفظ السلسلة"
 
+#: src/components/block-allowlist-section.tsx
+msgid "Shown despite blocks"
+msgstr ""
+
 #: src/components/guide/pages/keeping-track-guide-page.tsx
 msgid "<0>Subscribe</0> is the whole mechanism. New writing from anything you subscribe to appears on Home and in Latest, and the publication is listed in your sidebar. There is no email sign-up and no separate account with the publisher."
 msgstr ""
@@ -9016,6 +9100,10 @@ msgstr "مخططات سجلات AT Proto المنشورة لحالة القار�
 #: src/components/reader/serial-start.tsx
 #~ msgid "Start from issue one"
 #~ msgstr ""
+
+#: src/components/reader/blocked-notice.tsx
+msgid "Couldn't show this account"
+msgstr ""
 
 #: src/routes/_layout.discover.tsx
 msgid "Loading publication directory"
@@ -9175,6 +9263,10 @@ msgstr ""
 #. placeholder {0}: topic.authorCount
 #: src/components/reader/topic-cards.tsx
 msgid "{0, plural, one {# writer} other {# writers}}"
+msgstr ""
+
+#: src/components/block-allowlist-section.tsx
+msgid "We couldn't find that account. Check the handle and try again."
 msgstr ""
 
 #: src/components/reader/terms-view.tsx
