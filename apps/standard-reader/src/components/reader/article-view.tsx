@@ -96,7 +96,7 @@ import { prefetchCollectionMagazine } from "#/magazine/load-magazine-data";
 
 import { AccountLabelsForDid } from "./account-labels";
 import { ArticleBelowFold } from "./article-below-fold";
-import { ArticleTableOfContents } from "./article-table-of-contents";
+import { ArticleTableOfContentsButton } from "./article-table-of-contents";
 import { FollowButton } from "./cards";
 import { ArticleContent } from "./content/article-content";
 import { articleMeasureStyle } from "./content/body-styles";
@@ -1091,8 +1091,8 @@ function ArticleViewBody({
   // reader is moving forward, leaving only the progress track on screen.
   const stickyChromeRef = useRef<HTMLDivElement>(null);
   const setTopBarNode = useTopBarHeight(stickyChromeRef);
-  // One outline feeds both the table of contents and the headings' anchor ids,
-  // so a TOC link and the heading it targets can never disagree.
+  // One outline feeds both the top bar's table of contents and the headings'
+  // anchor ids, so a TOC link and the heading it targets can never disagree.
   const headingOutline = useMemo(
     () =>
       articleHeadingOutline({
@@ -1353,6 +1353,9 @@ function ArticleViewBody({
           </div>
 
           <div {...stylex.props(styles.topActs)}>
+            {/* Kept out of the overflow menu on mobile: it's how a reader moves
+                around a long piece, so it stays one tap away at every width. */}
+            <ArticleTableOfContentsButton outline={headingOutline} />
             <TopListenButton article={article} />
 
             {/* Secondary actions: individual buttons on desktop… */}
@@ -1683,8 +1686,6 @@ function ArticleViewBody({
               ) : null}
             </div>
           </div>
-
-          <ArticleTableOfContents outline={headingOutline} />
 
           <HeadingAnchorProvider outline={headingOutline}>
             {linkParams ? (
