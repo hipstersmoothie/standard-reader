@@ -1983,7 +1983,13 @@ Standard Reader is a **port of an earlier no-build prototype** into this TanStac
   (shared `#/*` → `src/design-system/`). Auth via HttpOnly session cookie; background worker calls
   `/api/extension/*` on the web app. Surfaces: popup, page overlay, context menu, Bluesky link
   badges (bsky.app and its `social-app` forks — currently also Witchsky and Mu), options page,
-  toolbar badge. See [`apps/extension/store/README.md`](../extension/store/README.md) for Chrome Web Store
+  toolbar badge. The overlay and popup never send a reader to `/a/…` for an article Standard
+  Reader can't render (that route bounces to the original site) — they open the publication's
+  Standard Reader page instead, and both offer the publication's subscribe toggle. An explicit
+  `?view=reader` on an article overrides the reader's "open links on the original site" setting
+  (an unrenderable body still bounces); resolve adds it for readers with that setting on, since
+  the extension's Open is a deliberate "show me this here" from the original site. See
+  [`apps/extension/store/README.md`](../extension/store/README.md) for Chrome Web Store
   publish notes.
 
 ### Format conversion (`@standard-reader/converter` + the `standard-reader` CLI)

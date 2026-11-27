@@ -2,8 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import {
   badRequestResponse,
+  getExtensionOpenLinksExternally,
   getExtensionSession,
 } from "#/server/extension/auth.server";
+import { withExplicitReaderView } from "#/server/extension/reader-view";
 import {
   resolvePageUrl,
   resolvePageUrls,
@@ -26,6 +28,11 @@ export const Route = createFileRoute("/api/extension/resolve")({
           import("#/db/schema"),
         ]);
         const session = await getExtensionSession(request);
+        // Article URLs carry `?view=reader` for readers who open links on the
+        // original site (see `withExplicitReaderView`). A primary-key read,
+        // run alongside the resolve rather than after it.
+        const loadOpenLinksExternally = () =>
+          getExtensionOpenLinksExternally(db, schema, session, request);
 
         if (batch) {
           const urls = batch
@@ -35,8 +42,18 @@ export const Route = createFileRoute("/api/extension/resolve")({
           if (urls.length === 0) {
             return badRequestResponse("urls must not be empty");
           }
-          const results = await resolvePageUrls(db, schema, urls, session);
-          return Response.json({ results });
+          const [results, openLinksExternally] = await Promise.all([
+            resolvePageUrls(db, schema, urls, session),
+            loadOpenLinksExternally(),
+          ]);
+          return Response.json({
+            results: Object.fromEntries(
+              Object.entries(results).map(([key, result]) => [
+                key,
+                withExplicitReaderView(result, openLinksExternally),
+              ]),
+            ),
+          });
         }
 
         if (!single) {
@@ -48,14 +65,13 @@ export const Route = createFileRoute("/api/extension/resolve")({
           publicationUri: url.searchParams.get("publicationUri"),
         };
 
-        const result = await resolvePageUrl(
-          db,
-          schema,
-          single,
-          session,
-          pageHints,
+        const [result, openLinksExternally] = await Promise.all([
+          resolvePageUrl(db, schema, single, session, pageHints),
+          loadOpenLinksExternally(),
+        ]);
+        return Response.json(
+          withExplicitReaderView(result, openLinksExternally),
         );
-        return Response.json(result);
       },
     },
   },

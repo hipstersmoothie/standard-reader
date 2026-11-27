@@ -19,10 +19,20 @@ import {
   tracking,
 } from "@standard-reader/design-system/theme/typography.stylex";
 import * as stylex from "@stylexjs/stylex";
-import { ArrowRight, Bookmark, Check, Heart, Plus, X } from "lucide-react";
+import {
+  ArrowRight,
+  Bookmark,
+  Check,
+  Heart,
+  Plus,
+  UserCheck,
+  UserPlus,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ArticleEngagement } from "#/components/reader/primitives";
+import { articleOpenTarget } from "#/lib/extension-open-target";
 import { formatDisplayHandle } from "#/utils/saved-handles";
 
 import { sendMessage } from "../lib/messaging";
@@ -414,29 +424,63 @@ export function PageChip({
     <Plus size={12} strokeWidth={2.4} aria-hidden />
   );
 
-  const toggleSave = async () => {
+  const following = result.isFollowing ?? false;
+  // Article chips also carry their publication's subscribe toggle: plenty of
+  // publications only render on their own site, and not every site has a
+  // subscribe button of its own.
+  const showArticleSubscribe = isArticle && Boolean(result.publicationUri);
+  const followAriaLabel = following
+    ? `Subscribed to ${kicker}`
+    : `Subscribe to ${kicker}`;
+
+  const openTarget = isArticle
+    ? articleOpenTarget(result)
+    : { url: result.readerUrl, destination: "publication" as const };
+  const openAriaLabel =
+    isArticle && openTarget?.destination === "publication"
+      ? `Open ${kicker} in Standard Reader`
+      : "Open in Standard Reader";
+
+  const toggleFollow = async () => {
     if (result.kind !== "article" && result.kind !== "publication") return;
+    const { publicationUri } = result;
+    if (!publicationUri) return;
 
     const previous = result;
+    const nextFollowing = !(result.isFollowing ?? false);
+    setResult({ ...result, isFollowing: nextFollowing });
     setBusy(true);
     try {
-      if (result.kind === "article") {
-        const nextSaved = !result.isBookmarked;
-        setResult({ ...result, isBookmarked: nextSaved });
-        await sendMessage({
-          type: "bookmark",
-          documentUri: result.documentUri,
-          save: nextSaved,
-        });
-      } else {
-        const nextFollowing = !result.isFollowing;
-        setResult({ ...result, isFollowing: nextFollowing });
-        await sendMessage({
-          type: "follow",
-          publicationUri: result.publicationUri,
-          follow: nextFollowing,
-        });
-      }
+      await sendMessage({
+        type: "follow",
+        publicationUri,
+        follow: nextFollowing,
+      });
+      onRefresh();
+    } catch {
+      setResult(previous);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleSave = async () => {
+    if (result.kind === "publication") {
+      await toggleFollow();
+      return;
+    }
+    if (result.kind !== "article") return;
+
+    const previous = result;
+    const nextSaved = !result.isBookmarked;
+    setResult({ ...result, isBookmarked: nextSaved });
+    setBusy(true);
+    try {
+      await sendMessage({
+        type: "bookmark",
+        documentUri: result.documentUri,
+        save: nextSaved,
+      });
       onRefresh();
     } catch {
       setResult(previous);
@@ -476,7 +520,8 @@ export function PageChip({
   };
 
   const openReader = async () => {
-    await sendMessage({ type: "openReader", url: result.readerUrl });
+    if (!openTarget) return;
+    await sendMessage({ type: "openReader", url: openTarget.url });
   };
 
   const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
@@ -510,6 +555,96 @@ export function PageChip({
           />
         </div>
       ) : null}
+    </>
+  );
+
+  // Rendered twice: in the live chip and in the hidden copy that measures its
+  // expanded width (inert there — `visibility: hidden` and `aria-hidden`).
+  const actions = (
+    <>
+      {isArticle ? (
+        <button
+          type="button"
+          {...stylex.props(
+            styles.action,
+            styles.actionIconOnly,
+            liked ? styles.actionLikeActive : styles.actionOpen,
+          )}
+          aria-label={liked ? "Recommended" : "Recommend article"}
+          disabled={busy}
+          onClick={() => {
+            void toggleLike();
+          }}
+        >
+          <Heart
+            size={12}
+            strokeWidth={2.4}
+            fill={liked ? "currentColor" : "none"}
+            aria-hidden
+          />
+        </button>
+      ) : null}
+      <button
+        type="button"
+        {...stylex.props(
+          styles.action,
+          styles.actionIconOnly,
+          saved ? styles.actionSubscribed : styles.actionOpen,
+        )}
+        aria-label={saveAriaLabel}
+        disabled={busy}
+        onClick={() => {
+          void toggleSave();
+        }}
+      >
+        {saveIcon}
+      </button>
+      {showArticleSubscribe ? (
+        <button
+          type="button"
+          {...stylex.props(
+            styles.action,
+            styles.actionIconOnly,
+            following ? styles.actionSubscribed : styles.actionOpen,
+          )}
+          title={followAriaLabel}
+          aria-label={followAriaLabel}
+          disabled={busy}
+          onClick={() => {
+            void toggleFollow();
+          }}
+        >
+          {following ? (
+            <UserCheck size={12} strokeWidth={2.4} aria-hidden />
+          ) : (
+            <UserPlus size={12} strokeWidth={2.4} aria-hidden />
+          )}
+        </button>
+      ) : null}
+      {openTarget ? (
+        <button
+          type="button"
+          {...stylex.props(styles.action, styles.actionOpenPrimary)}
+          title={openAriaLabel}
+          aria-label={openAriaLabel}
+          disabled={busy}
+          onClick={() => {
+            void openReader();
+          }}
+        >
+          Open
+          <ArrowRight size={11} strokeWidth={2.2} aria-hidden />
+        </button>
+      ) : null}
+      <button
+        type="button"
+        {...stylex.props(styles.dismiss)}
+        title="Hide on this site"
+        aria-label="Hide on this site"
+        onClick={onDismiss}
+      >
+        <X size={12} strokeWidth={2} aria-hidden />
+      </button>
     </>
   );
 
@@ -555,63 +690,7 @@ export function PageChip({
             )}
           >
             <div {...stylex.props(styles.text)}>{chipText}</div>
-            {isArticle ? (
-              <button
-                type="button"
-                {...stylex.props(
-                  styles.action,
-                  styles.actionIconOnly,
-                  liked ? styles.actionLikeActive : styles.actionOpen,
-                )}
-                aria-label={liked ? "Recommended" : "Recommend article"}
-                disabled={busy}
-                onClick={() => {
-                  void toggleLike();
-                }}
-              >
-                <Heart
-                  size={12}
-                  strokeWidth={2.4}
-                  fill={liked ? "currentColor" : "none"}
-                  aria-hidden
-                />
-              </button>
-            ) : null}
-            <button
-              type="button"
-              {...stylex.props(
-                styles.action,
-                styles.actionIconOnly,
-                saved ? styles.actionSubscribed : styles.actionOpen,
-              )}
-              aria-label={saveAriaLabel}
-              disabled={busy}
-              onClick={() => {
-                void toggleSave();
-              }}
-            >
-              {saveIcon}
-            </button>
-            <button
-              type="button"
-              {...stylex.props(styles.action, styles.actionOpenPrimary)}
-              disabled={busy}
-              onClick={() => {
-                void openReader();
-              }}
-            >
-              Open
-              <ArrowRight size={11} strokeWidth={2.2} />
-            </button>
-            <button
-              type="button"
-              {...stylex.props(styles.dismiss)}
-              title="Hide on this site"
-              aria-label="Hide on this site"
-              onClick={onDismiss}
-            >
-              <X size={12} strokeWidth={2} />
-            </button>
+            {actions}
           </div>
         </div>
 
@@ -624,45 +703,7 @@ export function PageChip({
           <div {...stylex.props(styles.mark)}>S</div>
           <div {...stylex.props(styles.body, styles.bodyExpanded)}>
             <div {...stylex.props(styles.text)}>{chipText}</div>
-            {isArticle ? (
-              <button
-                type="button"
-                {...stylex.props(
-                  styles.action,
-                  styles.actionIconOnly,
-                  liked ? styles.actionLikeActive : styles.actionOpen,
-                )}
-                aria-label={liked ? "Recommended" : "Recommend article"}
-              >
-                <Heart
-                  size={12}
-                  strokeWidth={2.4}
-                  fill={liked ? "currentColor" : "none"}
-                  aria-hidden
-                />
-              </button>
-            ) : null}
-            <button
-              type="button"
-              {...stylex.props(
-                styles.action,
-                styles.actionIconOnly,
-                saved ? styles.actionSubscribed : styles.actionOpen,
-              )}
-              aria-label={saveAriaLabel}
-            >
-              {saveIcon}
-            </button>
-            <button
-              type="button"
-              {...stylex.props(styles.action, styles.actionOpenPrimary)}
-            >
-              Open
-              <ArrowRight size={11} strokeWidth={2.2} />
-            </button>
-            <button type="button" {...stylex.props(styles.dismiss)}>
-              <X size={12} strokeWidth={2} />
-            </button>
+            {actions}
           </div>
         </div>
       </div>

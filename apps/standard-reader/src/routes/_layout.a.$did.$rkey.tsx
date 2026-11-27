@@ -128,11 +128,13 @@ export const Route = createFileRoute("/_layout/a/$did/$rkey")({
 
     const sharedQuote = deps.q ? await resolveSharedQuote(uri, deps.q) : null;
     // Bounce to the publication site when the body isn't renderable in-app, or
-    // when the reader prefers links to open on the original site.
-    if (
-      article &&
-      (openLinks.openExternally || !hasRenderableArticleBody(article))
-    ) {
+    // when the reader prefers links to open on the original site — unless they
+    // explicitly asked for the reading view (`view=reader`, e.g. the browser
+    // extension's "Open" from the original site itself). An unrenderable body
+    // bounces regardless: there is nothing to show here.
+    const openOnOriginalSite =
+      openLinks.openExternally && deps.view !== "reader";
+    if (article && (openOnOriginalSite || !hasRenderableArticleBody(article))) {
       const externalUrl = articlePublicationUrl(article);
       if (externalUrl) {
         throw redirect({ href: externalUrl });
