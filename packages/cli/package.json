@@ -1,6 +1,6 @@
 {
   "name": "@standard-reader/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Convert the document records in your AT Protocol repo between the Leaflet, Offprint, pckt and Markpub content formats.",
   "license": "MIT",
   "type": "module",

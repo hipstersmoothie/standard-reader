@@ -1,6 +1,6 @@
 {
   "name": "@standard-reader/lexicons",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Typed AT Protocol lexicon schemas for the Standard Reader XRPC API, generated with @atproto/lex.",
   "license": "MIT",
   "type": "module",
