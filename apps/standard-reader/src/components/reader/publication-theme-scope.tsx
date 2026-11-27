@@ -1,5 +1,6 @@
 "use client";
 
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import { verticalSpace } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
@@ -107,6 +108,7 @@ export function PublicationThemeScope({
 }) {
   const { enabled } = usePublicationThemePreference();
   const colors = usePublicationThemeColors();
+  const resolveImageSrc = useResolveImageSrc();
   const overlayHostRef = useRef<HTMLDivElement | null>(null);
   const getContainer = useCallback(() => overlayHostRef.current, []);
 
@@ -138,7 +140,7 @@ export function PublicationThemeScope({
   const imageVars = useMemo(() => {
     if (!image) return {};
     const vars: Record<string, string> = {
-      "--pub-canvas-image": `url("${image.url}")`,
+      "--pub-canvas-image": `url("${resolveImageSrc(image.url)}")`,
       "--pub-canvas-repeat": image.repeat ? "repeat" : "no-repeat",
       "--pub-canvas-size": image.repeat
         ? image.width
@@ -148,7 +150,7 @@ export function PublicationThemeScope({
     };
     if (colors?.canvas) vars["--pub-canvas-color"] = colors.canvas;
     return vars;
-  }, [image, colors?.canvas]);
+  }, [image, colors?.canvas, resolveImageSrc]);
 
   const themed = enabled && scaleVars !== null;
 

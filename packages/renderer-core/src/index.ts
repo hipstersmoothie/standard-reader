@@ -28,8 +28,13 @@ export type {
 } from "./types.js";
 
 // Image resolution
-export { defaultImageUrlResolver, resolveGridImages } from "./image.js";
-export { blobCid, cdnImageUrl } from "./atproto/blob.js";
+export {
+  createImageUrlResolver,
+  defaultImageUrlResolver,
+  resolveGridImages,
+} from "./image.js";
+export type { ImageUrlResolverOptions } from "./image.js";
+export { DEFAULT_IMAGE_CDN, blobCid, cdnImageUrl } from "./atproto/blob.js";
 export type { BlobRef } from "./atproto/blob.js";
 
 // Pure block-vocabulary parsers + types

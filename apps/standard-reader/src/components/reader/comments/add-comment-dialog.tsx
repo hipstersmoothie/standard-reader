@@ -9,6 +9,7 @@ import {
   DialogHeader,
 } from "@standard-reader/design-system/dialog";
 import { Flex } from "@standard-reader/design-system/flex";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { Separator } from "@standard-reader/design-system/separator";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { radius } from "@standard-reader/design-system/theme/radius.stylex";
@@ -100,6 +101,7 @@ export function AddCommentDialog({
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const resolveImageSrc = useResolveImageSrc();
   const { t } = useLingui();
   const { authorHandle, bsky, mode, platform } =
     articleCommentDestinations(article);
@@ -166,7 +168,7 @@ export function AddCommentDialog({
                   >
                     {destination.iconUrl ? (
                       <img
-                        src={destination.iconUrl}
+                        src={resolveImageSrc(destination.iconUrl)}
                         alt=""
                         width={16}
                         height={16}

@@ -98,6 +98,27 @@ describe("buildRenderTree — leaflet", () => {
     expect(image.alt).toBe("Alt");
   });
 
+  it("builds blob image URLs on a custom image CDN", () => {
+    const tree = build(leafletDoc([lf.image("bafycid", "Alt")]), {
+      imageCdn: "https://porxie-bsky.dollware.net/",
+    });
+    const image = tree.children[0] as Extract<BlockNode, { type: "image" }>;
+    expect(image.src).toBe(
+      `https://porxie-bsky.dollware.net/img/feed_fullsize/plain/${encodeURIComponent(
+        AUTHOR,
+      )}/bafycid@png`,
+    );
+  });
+
+  it("lets resolveImageUrl win over imageCdn", () => {
+    const tree = build(leafletDoc([lf.image("bafycid", "Alt")]), {
+      imageCdn: "https://porxie-bsky.dollware.net",
+      resolveImageUrl: () => "https://example.com/custom.png",
+    });
+    const image = tree.children[0] as Extract<BlockNode, { type: "image" }>;
+    expect(image.src).toBe("https://example.com/custom.png");
+  });
+
   it("collects and numbers footnotes", () => {
     const tree = build(
       leafletDoc([

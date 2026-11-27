@@ -2,6 +2,7 @@
 
 import { useLingui } from "@lingui/react/macro";
 import { Button } from "@standard-reader/design-system/button";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { gap } from "@standard-reader/design-system/theme/semantic-spacing.stylex";
 import { spacing } from "@standard-reader/design-system/theme/spacing.stylex";
@@ -331,6 +332,7 @@ function LeafletCanvasView({
   blobContext?: ContentBlobContext;
 }) {
   const { t } = useLingui();
+  const resolveImageSrc = useResolveImageSrc();
   const [showOriginal, setShowOriginal] = useState(false);
   const frameRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
@@ -376,7 +378,9 @@ function LeafletCanvasView({
     : null;
   const backgroundUrl =
     backgroundCid && blobContext
-      ? cdnImageUrl(blobContext.authorDid, backgroundCid, "png")
+      ? resolveImageSrc(
+          cdnImageUrl(blobContext.authorDid, backgroundCid, "png"),
+        )
       : null;
 
   return (

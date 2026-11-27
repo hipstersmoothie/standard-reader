@@ -45,21 +45,32 @@ export function blobCid(blob: BlobRef | undefined | null): string | null {
   return null;
 }
 
-/** The Bluesky CDN base. It serves *any* PDS blob by `(did, cid)`. */
-const BSKY_CDN_BASE = "https://cdn.bsky.app/img";
+/**
+ * The Bluesky image CDN origin — the default for {@link cdnImageUrl}. It serves
+ * *any* PDS blob by `(did, cid)`, not just Bluesky app blobs.
+ *
+ * Any host that answers the same `/img/<preset>/plain/<did>/<cid>@<format>`
+ * paths can stand in for it (community mirrors such as
+ * `https://porxie-bsky.dollware.net`); pass its origin as `cdn`.
+ */
+export const DEFAULT_IMAGE_CDN = "https://cdn.bsky.app";
 
 /**
- * Build a Bluesky CDN image URL for a PDS blob. The CDN transcodes to the
+ * Build a Bluesky-CDN-shaped image URL for a PDS blob. The CDN transcodes to the
  * requested format (`@jpeg` for photos, `@png` when alpha must be preserved)
  * and serves it with long cache headers + inline disposition — suitable for a
  * browser `<img src>`.
+ *
+ * `cdn` is the origin of the image host (default {@link DEFAULT_IMAGE_CDN});
+ * a trailing slash is ignored.
  */
 export function cdnImageUrl(
   did: string,
   cid: string,
   format: "jpeg" | "png" = "jpeg",
+  cdn: string = DEFAULT_IMAGE_CDN,
 ): string {
-  return `${BSKY_CDN_BASE}/feed_fullsize/plain/${encodeURIComponent(
+  return `${cdn.replace(/\/+$/, "")}/img/feed_fullsize/plain/${encodeURIComponent(
     did,
   )}/${encodeURIComponent(cid)}@${format}`;
 }

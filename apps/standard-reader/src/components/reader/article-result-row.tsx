@@ -2,6 +2,7 @@
 
 import { Avatar } from "@standard-reader/design-system/avatar";
 import { Flex } from "@standard-reader/design-system/flex";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { radius } from "@standard-reader/design-system/theme/radius.stylex";
 import {
@@ -214,6 +215,7 @@ export function ArticleResultRow({
   article: ArticleCard;
   variant?: "compact" | "feed";
 }) {
+  const resolveImageSrc = useResolveImageSrc();
   const fmt = useFormatters();
   const readingTime = formatReadingTime(article.textContent);
   const when = fmt.relativeTime(article.publishedAt);
@@ -236,7 +238,11 @@ export function ArticleResultRow({
           <MetaLine article={article} parts={metaParts} />
         </Flex>
         {coverUrl ? (
-          <img src={coverUrl} alt="" {...stylex.props(styles.feedCover)} />
+          <img
+            src={resolveImageSrc(coverUrl)}
+            alt=""
+            {...stylex.props(styles.feedCover)}
+          />
         ) : null}
       </Flex>
     );
@@ -249,7 +255,11 @@ export function ArticleResultRow({
   return (
     <Flex align="center" gap="lg">
       {coverUrl ? (
-        <img src={coverUrl} alt="" {...stylex.props(styles.cover)} />
+        <img
+          src={resolveImageSrc(coverUrl)}
+          alt=""
+          {...stylex.props(styles.cover)}
+        />
       ) : (
         <span aria-hidden {...stylex.props(styles.cover)} />
       )}

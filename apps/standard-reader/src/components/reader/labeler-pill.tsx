@@ -4,6 +4,7 @@ import { Trans } from "@lingui/react/macro";
 import { Avatar } from "@standard-reader/design-system/avatar";
 import { Badge } from "@standard-reader/design-system/badge";
 import { HoverCard } from "@standard-reader/design-system/hover-card";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { radius } from "@standard-reader/design-system/theme/radius.stylex";
@@ -53,6 +54,7 @@ import { Kicker } from "./primitives";
  * labeler view is available, so it's never empty.
  */
 export function LabelerPill({ src, val }: { src: string; val: string }) {
+  const resolveImageSrc = useResolveImageSrc();
   const { data } = useQuery(labelerApi.getLabelerQueryOptions(src));
   const card = data?.labeler;
   const defs = card?.labelValueDefinitions;
@@ -69,7 +71,7 @@ export function LabelerPill({ src, val }: { src: string; val: string }) {
               `sm` badge, so this is a plain circular image sized to the text. */}
           {card?.avatar ? (
             <img
-              src={card.avatar}
+              src={resolveImageSrc(card.avatar)}
               alt=""
               aria-hidden
               {...stylex.props(styles.pillAvatar)}

@@ -4,6 +4,7 @@ import type { I18n } from "@lingui/core";
 import { msg, plural } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { Avatar } from "@standard-reader/design-system/avatar";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
 import {
   primaryColor,
@@ -456,6 +457,7 @@ export function DocumentHoverCardBody({
   rkey: string;
   fallbackTitle: string;
 }) {
+  const resolveImageSrc = useResolveImageSrc();
   const fmt = useFormatters();
   const metricsVisible = useEngagementCountsVisible();
   const { data: art, isLoading } = useQuery(
@@ -492,7 +494,7 @@ export function DocumentHoverCardBody({
       {art?.coverImageUrl ? (
         <div {...stylex.props(styles.coverWrap)}>
           <img
-            src={art.coverImageUrl}
+            src={resolveImageSrc(art.coverImageUrl)}
             alt=""
             decoding="async"
             referrerPolicy="no-referrer"

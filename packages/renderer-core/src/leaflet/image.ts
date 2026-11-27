@@ -8,12 +8,14 @@ export function leafletImageCid(image: unknown): string | null {
 }
 
 /** Build a Bluesky CDN image URL for a leaflet `image` blob. Returns null when
- *  the blob ref is missing. PNG is used to preserve alpha. */
+ *  the blob ref is missing. PNG is used to preserve alpha. `cdn` is the image
+ *  host's origin (defaults to the Bluesky CDN). */
 export function leafletImageUrl(
   block: LeafletImageBlock,
   did: string,
+  cdn?: string,
 ): string | null {
-  return blobImageUrl(block.image, did);
+  return blobImageUrl(block.image, did, cdn);
 }
 
 /** Width ÷ height for layout; falls back to 16∶9 when missing or invalid. */

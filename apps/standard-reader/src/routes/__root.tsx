@@ -1,4 +1,5 @@
 import { I18nProvider as LinguiProvider } from "@lingui/react";
+import { ImageSrcProvider } from "@standard-reader/design-system/image-source";
 import { uiColor } from "@standard-reader/design-system/theme/color.stylex";
 import { ui } from "@standard-reader/design-system/theme/semantic-color.stylex";
 import * as stylex from "@stylexjs/stylex";
@@ -52,6 +53,7 @@ import {
   writePwaThemeCookie,
 } from "../lib/theme";
 import { useFeedMetricsVisible } from "../lib/use-feed-preferences";
+import { useImageCdnTransform } from "../lib/use-image-cdn";
 import { useLocale } from "../lib/use-locale";
 import { ReloadPrompt } from "../pwa/reload-prompt";
 import { saveHandle } from "../utils/saved-handles";
@@ -200,6 +202,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       user.getOpenLinksPreferenceQueryOptions.queryKey,
       bootstrap.openLinks,
     );
+    // Seeded so SSR already writes image URLs on the reader's chosen host —
+    // a later client query would swap every `src` after hydration.
+    context.queryClient.setQueryData(
+      user.getImageCdnPreferenceQueryOptions.queryKey,
+      bootstrap.imageCdn,
+    );
     context.queryClient.setQueryData(
       user.getOpenCollectionsInMagazinePreferenceQueryOptions.queryKey,
       bootstrap.openCollectionsInMagazine,
@@ -346,6 +354,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   // counts live in `reader/primitives`, which the browser extension also
   // imports, so they must not reach for a server fn themselves.
   const engagementCountsVisible = useFeedMetricsVisible();
+  // Same reason: image components shared with the extension read the reader's
+  // image host from the design system's context, never from a server fn.
+  const imageSrcTransform = useImageCdnTransform();
   // Seeded by the same shell bootstrap as the theme mode, so the palette, its
   // scheme, and the dial multipliers are all known during SSR — the custom
   // theme paints on the first frame with no flash of the editorial one.
@@ -500,7 +511,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <AriaI18nProvider locale={intlLocale(locale)}>
           <LinguiProvider i18n={i18nForLocale(locale)}>
             <EngagementCountsVisibleProvider value={engagementCountsVisible}>
-              {children}
+              <ImageSrcProvider transform={imageSrcTransform}>
+                {children}
+              </ImageSrcProvider>
             </EngagementCountsVisibleProvider>
           </LinguiProvider>
         </AriaI18nProvider>

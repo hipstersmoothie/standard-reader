@@ -3,6 +3,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { Flex } from "@standard-reader/design-system/flex";
 import { IconButton } from "@standard-reader/design-system/icon-button";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import {
   animationDuration,
   animationTimingFunction,
@@ -466,6 +467,7 @@ export function ComicReader({
   onPageChange,
   signedIn,
 }: ComicReaderProps) {
+  const resolveImageSrc = useResolveImageSrc();
   const { t } = useLingui();
 
   // Before the spine resolves there is no absolute numbering, so an open with no
@@ -837,7 +839,7 @@ export function ComicReader({
             {current ? (
               <img
                 key={current.url}
-                src={current.url}
+                src={resolveImageSrc(current.url)}
                 alt={current.alt || t`Page ${index + 1}`}
                 // The page in hand is the reason the route exists; the chunk
                 // loader keeps its neighbours warm, so nothing else is eager.

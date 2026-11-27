@@ -4,6 +4,7 @@ import * as stylex from "@stylexjs/stylex";
 import { use } from "react";
 
 import { SizeContext } from "../context";
+import { useResolveImageSrc } from "../image-source/context";
 import { ui } from "../theme/semantic-color.stylex";
 import {
   gap,
@@ -182,8 +183,15 @@ export const EmptyStateImage = ({
   children,
   ...props
 }: EmptyStateImageProps) => {
+  const transformSrc = useResolveImageSrc();
   if (src) {
-    return <img src={src} alt={alt} {...stylex.props(styles.image, style)} />;
+    return (
+      <img
+        src={transformSrc(src)}
+        alt={alt}
+        {...stylex.props(styles.image, style)}
+      />
+    );
   }
 
   return (

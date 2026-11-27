@@ -4,6 +4,7 @@ import type { ButtonProps as AriaButtonProps } from "react-aria-components";
 import { Button as AriaButton } from "react-aria-components";
 
 import { SizeContext } from "../context";
+import { useImageSrc } from "../image-source/context";
 import {
   animationDuration,
   animationTimingFunction,
@@ -263,12 +264,13 @@ function AvatarContent({
 export function Avatar({
   style,
   alt = "",
-  src,
+  src: srcProp,
   fallback,
   size: sizeProp,
   ...props
 }: AvatarProps) {
   const size = sizeProp || use(SizeContext);
+  const src = useImageSrc(srcProp);
 
   return (
     <div

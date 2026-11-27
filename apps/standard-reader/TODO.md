@@ -1037,6 +1037,16 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       publication site. Cookie `standard-reader-open-links` for everyone + `user.open_links_externally`
       when signed in (`drizzle/0011_*`); articles without a canonical URL fall back to the reader
       (`#/lib/open-links`, `useOpenLinks`, `OpenLinksMenuItem`).
+- [x] **Image server preference** — Settings → Behavior → "Image server" (userinput feature
+      request): load blob images from `cdn.bsky.app` or a vetted Bluesky-CDN-compatible mirror
+      (porxie / luna / blueat, each probed for `/img/<preset>/plain/<did>/<cid>@<fmt>` on bsky and
+      self-hosted PDS blobs). Server URLs stay canonical; the rewrite is render-time via the design
+      system's `ImageSrcProvider` + `useResolveImageSrc`. Cookie `standard-reader-image-cdn` +
+      `user.image_cdn` (`drizzle/0053_image_cdn.sql`); `renderer-core` 0.5.0 gains `imageCdn` /
+      `createImageUrlResolver` / `DEFAULT_IMAGE_CDN`.
+- [ ] **Image server: fall back on failure** — a mirror that goes down breaks every image until the
+      reader switches back; consider an `onError` retry on `cdn.bsky.app`, and re-probing the list
+      periodically (mirrors are community-run). Author-supplied HTML blocks are not rewritten.
 - [x] **Reader profile** — browse the signed-in user's likes (`site.standard.graph.recommend` records via `readerApi.getLikes`); `/likes` infinite scroll (20 per page, IntersectionObserver sentinel).
 - [x] **Subscriptions manage page** — the sidebar's "Subscriptions" heading links to
       `/subscriptions` (`_layout.subscriptions.tsx` + `subscriptions-table.tsx`): one sortable,

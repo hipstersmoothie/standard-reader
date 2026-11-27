@@ -18,6 +18,7 @@ function cidFromSrc(src: string): string | null {
 export function pcktImageUrl(
   block: PcktImageBlock,
   did: string,
+  cdn?: string,
 ): string | null {
   const attrs = block.attrs;
   if (!attrs) return null;
@@ -30,7 +31,7 @@ export function pcktImageUrl(
     blobCid(attrs.blob as Parameters<typeof blobCid>[0]) ??
     (typeof src === "string" ? cidFromSrc(src) : null);
   if (!cid) return null;
-  return cdnImageUrl(did, cid, "png");
+  return cdnImageUrl(did, cid, "png", cdn);
 }
 
 /** Width ÷ height for layout; falls back to 16∶9 when missing or invalid. */

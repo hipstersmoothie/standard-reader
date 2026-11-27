@@ -17,6 +17,7 @@
  */
 
 import { useLingui } from "@lingui/react/macro";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { Lightbox } from "@standard-reader/design-system/lightbox";
 import {
   LIGHTBOX_IMAGE_TRANSITION_NAME,
@@ -104,6 +105,7 @@ function MarkdownImage({
   width?: string | number;
   height?: string | number;
 }) {
+  const resolveImageSrc = useResolveImageSrc();
   const { t } = useLingui();
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [transitionActive, setTransitionActive] = useState(false);
@@ -111,7 +113,7 @@ function MarkdownImage({
   if (className === "playlist-song-artwork" && src) {
     return (
       <img
-        src={src}
+        src={resolveImageSrc(src)}
         alt={alt ?? ""}
         title={title}
         loading="lazy"
@@ -144,7 +146,7 @@ function MarkdownImage({
         {...stylex.props(markdownStyles.imageButton)}
       >
         <img
-          src={src}
+          src={resolveImageSrc(src)}
           alt={altText}
           title={title}
           loading="lazy"

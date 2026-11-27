@@ -270,6 +270,10 @@ msgid "Lexicons"
 msgstr "Lexicons"
 
 #: src/components/user-settings-view.tsx
+msgid "Image server"
+msgstr ""
+
+#: src/components/user-settings-view.tsx
 msgid "Can read only"
 msgstr ""
 
@@ -1485,6 +1489,10 @@ msgstr ""
 msgid "Followed pages warmed"
 msgstr ""
 
+#: src/components/user-settings-view.tsx
+msgid "Where covers, avatars, and article images load from. This server sends every image at its original size, so pages can take more data to load."
+msgstr ""
+
 #: src/routes/_layout.history.tsx
 #~ msgid "Everything you've read"
 #~ msgstr ""
@@ -2090,6 +2098,10 @@ msgstr ""
 #. placeholder {0}: index + 1
 #: src/components/comic/comic-reader.tsx
 msgid "Page {0} of {totalPages}"
+msgstr ""
+
+#: src/components/user-settings-view.tsx
+msgid "Where covers, avatars, and article images load from. Bluesky’s image server is the default; the others are community-run copies of it, so your images don’t all come from one company."
 msgstr ""
 
 #: src/components/reader/save-to-collection-dialog.tsx

@@ -11,7 +11,11 @@ import type {
   StructuredListItem,
   StructuredRenderableBlock,
 } from "./document/structured-content/types.js";
-import { defaultImageUrlResolver, resolveGridImages } from "./image.js";
+import {
+  createImageUrlResolver,
+  defaultImageUrlResolver,
+  resolveGridImages,
+} from "./image.js";
 import { externalHttpUrl, isRecord } from "./internal.js";
 import {
   asTextBlock as leafletAsTextBlock,
@@ -117,7 +121,11 @@ export function buildRenderTree(
 
   const ctx: BuildContext = {
     authorDid: doc.authorDid,
-    resolveImageUrl: options?.resolveImageUrl ?? defaultImageUrlResolver,
+    resolveImageUrl:
+      options?.resolveImageUrl ??
+      (options?.imageCdn
+        ? createImageUrlResolver({ cdn: options.imageCdn })
+        : defaultImageUrlResolver),
   };
   const content = ensureType(doc.content, format);
 

@@ -1,5 +1,6 @@
 import * as stylex from "@stylexjs/stylex";
 
+import { useImageSrc } from "../image-source/context";
 import { radius } from "../theme/radius.stylex";
 import type { StyleXComponentProps } from "../theme/types";
 
@@ -65,12 +66,18 @@ export interface AspectRatioImageProps extends StyleXComponentProps<
 export function AspectRatioImage({
   style,
   children,
+  src,
   ...props
 }: AspectRatioImageProps) {
+  const resolvedSrc = useImageSrc(src);
   return (
     <div {...stylex.props(styles.imageContainer, style)}>
       {/* eslint-disable-next-line jsx-a11y/alt-text */}
-      <img {...props} {...stylex.props(styles.image, style)} />
+      <img
+        {...props}
+        src={resolvedSrc}
+        {...stylex.props(styles.image, style)}
+      />
       {children}
     </div>
   );

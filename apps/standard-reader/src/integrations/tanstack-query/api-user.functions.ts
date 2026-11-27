@@ -66,6 +66,16 @@ import {
   homeScopeToDbValue,
   parseHomeScope,
 } from "#/lib/home-scope";
+import type { ImageCdnId } from "#/lib/image-cdn";
+import {
+  IMAGE_CDN_COOKIE,
+  IMAGE_CDN_COOKIE_MAX_AGE_SECONDS,
+  IMAGE_CDN_IDS,
+  dbValueToImageCdn,
+  imageCdnToCookieValue,
+  imageCdnToDbValue,
+  parseImageCdn,
+} from "#/lib/image-cdn";
 import type { Locale } from "#/lib/locale";
 import {
   LOCALE_COOKIE,
@@ -326,6 +336,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
       openLinks: {
         openExternally: parseOpenLinksExternally(cookies[OPEN_LINKS_COOKIE]),
       },
+      imageCdn: { cdn: parseImageCdn(cookies[IMAGE_CDN_COOKIE]) },
       openCollectionsInMagazine: {
         openInMagazine: parseOpenCollectionsInMagazineCookie(
           cookies[OPEN_COLLECTIONS_IN_MAGAZINE_COOKIE],
@@ -379,6 +390,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
             homeScope: true,
             readerVoice: true,
             openLinksExternally: true,
+            imageCdn: true,
             openCollectionsInMagazine: true,
             readingTypography: true,
             appearance: true,
@@ -513,6 +525,7 @@ const getShellBootstrap = createServerFn({ method: "GET" }).handler(
           userRow.openLinksExternally,
         ),
       },
+      imageCdn: { cdn: dbValueToImageCdn(userRow.imageCdn) },
       openCollectionsInMagazine: {
         openInMagazine: dbValueToOpenCollectionsInMagazine(
           userRow.openCollectionsInMagazine,
@@ -860,6 +873,51 @@ const setOpenLinksPreference = createServerFn({ method: "POST" })
     }
 
     return { openExternally: data.openExternally };
+  });
+
+// "Image server" — cookie for everyone (so SSR paints on the chosen host), plus
+// `user.image_cdn` for signed-in readers so it follows them across devices.
+const getImageCdnPreference = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  .handler(async ({ context }): Promise<{ cdn: ImageCdnId }> => {
+    const session = context?.session;
+    if (session?.user) {
+      const row = await context.db.query.user.findFirst({
+        where: eq(context.schema.user.id, session.user.id),
+        columns: { imageCdn: true },
+      });
+      return { cdn: dbValueToImageCdn(row?.imageCdn ?? null) };
+    }
+
+    return { cdn: parseImageCdn(getCookie(IMAGE_CDN_COOKIE)) };
+  });
+
+const getImageCdnPreferenceQueryOptions = queryOptions({
+  queryKey: ["imageCdnPreference"] as const,
+  queryFn: () => getImageCdnPreference(),
+  staleTime: Number.POSITIVE_INFINITY,
+});
+
+const setImageCdnPreference = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware, maybeAuthMiddleware])
+  // Only the vetted ids — never a free-form host, since every image the reader
+  // sees would load from it.
+  .validator(z.object({ cdn: z.enum(IMAGE_CDN_IDS) }))
+  .handler(async ({ data, context }): Promise<{ cdn: ImageCdnId }> => {
+    setCookie(IMAGE_CDN_COOKIE, imageCdnToCookieValue(data.cdn), {
+      path: "/",
+      sameSite: "lax",
+      maxAge: IMAGE_CDN_COOKIE_MAX_AGE_SECONDS,
+    });
+
+    if (context?.session?.user) {
+      await context.db
+        .update(context.schema.user)
+        .set({ imageCdn: imageCdnToDbValue(data.cdn) })
+        .where(eq(context.schema.user.id, context.session.user.id));
+    }
+
+    return { cdn: data.cdn };
   });
 
 const setProfileTabSettings = createServerFn({ method: "POST" })
@@ -1722,6 +1780,9 @@ export const user = {
   getOpenLinksPreference,
   getOpenLinksPreferenceQueryOptions,
   setOpenLinksPreference,
+  getImageCdnPreference,
+  getImageCdnPreferenceQueryOptions,
+  setImageCdnPreference,
   setProfileTabSettings,
   getOpenCollectionsInMagazinePreference,
   getOpenCollectionsInMagazinePreferenceQueryOptions,

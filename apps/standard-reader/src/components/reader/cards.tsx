@@ -10,6 +10,7 @@ import { Button } from "@standard-reader/design-system/button";
 import { DirectionalIcon } from "@standard-reader/design-system/directional-icon";
 import { Flex } from "@standard-reader/design-system/flex";
 import { IconButton } from "@standard-reader/design-system/icon-button";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import { Skeleton } from "@standard-reader/design-system/skeleton";
 import { animationDuration } from "@standard-reader/design-system/theme/animations.stylex";
 import {
@@ -1748,6 +1749,7 @@ export function FeatureArticle({
   showByline?: boolean;
   unread?: boolean;
 }) {
+  const resolveImageSrc = useResolveImageSrc();
   const cover = coverImage(article);
   const featureGridStyles: Array<stylex.StyleXStyles | false | undefined> = [
     styles.featureGrid,
@@ -1758,7 +1760,7 @@ export function FeatureArticle({
       {cover ? (
         <span {...stylex.props(styles.featureMedia)}>
           <img
-            src={cover}
+            src={resolveImageSrc(cover)}
             alt=""
             referrerPolicy="no-referrer"
             {...stylex.props(styles.featureMedia)}

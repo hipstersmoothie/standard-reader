@@ -1,6 +1,7 @@
 "use client";
 
 import { useLingui } from "@lingui/react/macro";
+import { useResolveImageSrc } from "@standard-reader/design-system/image-source";
 import * as stylex from "@stylexjs/stylex";
 import { useState } from "react";
 
@@ -154,6 +155,7 @@ export function StructuredImageDiffBlockView({
   block: Extract<StructuredRenderableBlock, { kind: "imageDiff" }>;
   blobContext?: ContentBlobContext;
 }) {
+  const resolveImageSrc = useResolveImageSrc();
   const { t } = useLingui();
   const [position, setPosition] = useState(50);
 
@@ -185,7 +187,7 @@ export function StructuredImageDiffBlockView({
         <img
           alt={afterImage.alt ?? afterLabel}
           referrerPolicy="no-referrer"
-          src={afterSrc}
+          src={resolveImageSrc(afterSrc)}
           {...stylex.props(articleBodyStyles.imageDiffImage)}
         />
         <div
@@ -195,7 +197,7 @@ export function StructuredImageDiffBlockView({
           <img
             alt={beforeImage.alt ?? beforeLabel}
             referrerPolicy="no-referrer"
-            src={beforeSrc}
+            src={resolveImageSrc(beforeSrc)}
             {...stylex.props(articleBodyStyles.imageDiffImage)}
           />
         </div>
