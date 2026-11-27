@@ -86,6 +86,11 @@ export interface ParagraphProps {
 export interface HeadingProps {
   /** 1–6. */
   level: number;
+  /**
+   * The heading's text with no markup — for deriving an anchor id or an
+   * outline entry without walking `children`.
+   */
+  plaintext: string;
   children: ReactNode;
 }
 

@@ -1605,6 +1605,15 @@ Backend/API exists; UI or copy is missing.
 - [ ] **Canvas `postHeader` in place** — the header block is still dropped, leaving the gap it
       occupied (the reader's own header sits above the canvas). Drawing a compact header card in
       its slot would match Leaflet but repeats the title right under ours.
+- [x] **Article table of contents** (userinput.app feature request) — a collapsed-by-default
+      **Contents** disclosure above the body once an article has 3+ headings, derived from every
+      content format's parsed blocks ([`heading-outline.ts`](src/lib/document/heading-outline.ts))
+      and linked to slug ids on the rendered headings
+      ([`heading-anchors.tsx`](src/components/reader/content/heading-anchors.tsx)). `renderer-react`'s
+      `HeadingProps` gained `plaintext` for it. Covered per renderer by
+      [`heading-anchors.renderers.test.tsx`](src/components/reader/content/heading-anchors.renderers.test.tsx).
+  - [ ] Highlight the section currently in view (scroll-spy) once the TOC can be opened from the
+        sticky chrome — it scrolls out of view with the header today.
 - [ ] **Leaflet publication theme fonts/colours on canvas posts** — positions were authored in
       the publication's font (e.g. JetBrains Mono at 18px); the reader's serif at 16px wraps a
       little differently, which can nudge text into a neighbour on dense canvases.
