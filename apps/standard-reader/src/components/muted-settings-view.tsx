@@ -26,6 +26,7 @@ import type {
 } from "#/integrations/tanstack-query/api-mutes.functions";
 import { mutesApi } from "#/integrations/tanstack-query/api-mutes.functions";
 
+import { MutedWordsSection } from "./muted-words-section";
 import { publicationLinkParams } from "./reader/format";
 import { Masthead, ReaderContent } from "./reader/primitives";
 
@@ -145,9 +146,10 @@ function MutedPublicationItemRow({
 }
 
 /**
- * Muted people and publications.
+ * Muted people, publications, and words.
  *
- * Reads the reader's `app.standard-reader.graph.mute` records. Unlike blocks
+ * People and publications are the reader's `app.standard-reader.graph.mute`
+ * records; words are app-private (see `MutedWordsSection`). Unlike blocks
  * these are one-directional and scoped: muted subjects disappear from feeds
  * and discovery only, subscriptions stay intact, and their pages stay
  * reachable — which is why every row here still links to the page it hides.
@@ -175,13 +177,14 @@ export function MutedSettingsView() {
   const users = data?.users ?? [];
   const publications = data?.publications ?? [];
   const canWrite = data?.canWrite ?? false;
+  const words = data?.words ?? [];
 
   return (
     <ReaderContent>
       <Masthead
         kicker={t`Moderation`}
         title={t`Muted`}
-        dek={t`Muted people and publications disappear from your feeds, search, and discovery — but only in Standard Reader. Mutes are public records in your repo, but unlike a block, Bluesky and other apps don't enforce them. Your subscriptions stay intact and direct links still work.`}
+        dek={t`Muted people, publications, and words disappear from your feeds, search, and discovery — but only in Standard Reader. Muted people and publications are public records in your repo, but unlike a block, Bluesky and other apps don't enforce them. Your subscriptions stay intact and direct links still work.`}
         metaLabel={t`Muted`}
         metaValue={
           settings.isLoading ? (
@@ -192,11 +195,14 @@ export function MutedSettingsView() {
         }
       />
 
+      <MutedWordsSection words={words} isLoading={settings.isLoading} />
+
       {data && !canWrite ? (
         <p {...stylex.props(styles.note)}>
           <Trans>
-            Your mutes are enforced here already. To add or remove one, you'll
-            be asked to re-authorize the first time you try.
+            Your muted people and publications are enforced here already. To add
+            or remove one, you'll be asked to re-authorize the first time you
+            try.
           </Trans>
         </p>
       ) : null}

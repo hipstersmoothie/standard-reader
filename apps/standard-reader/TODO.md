@@ -2422,8 +2422,9 @@ unfollowing, blocking, or telling anyone. See [`APP_VISION.md` §"Muting"](./APP
       branches) behind the `muteFilterDid` has-any gate on home, latest, trending, tag, search,
       topics, discover directory + XRPC feeds; JS `filterMutedCards` on rails; muted DIDs/URIs
       dropped from follow-feed source sets (kills recommend-sourced entries + keeps counts honest).
-      Deliberately **not** applied to direct navigation (publication/author/article pages), lists,
-      or subscriptions. Gated EXPLAIN coverage in `queries.explain.test.ts`.
+      Deliberately **not** applied to direct navigation (publication/author/article pages) or
+      subscriptions. Gated EXPLAIN coverage in `queries.explain.test.ts`. List feeds now apply
+      mutes too (see Muted words below).
 - [x] **UI** — Mute/Unmute in author + publication overflow menus (sibling-dialog pattern; mute
       confirms, unmute is immediate), Settings → Muted management page (`/settings/muted`), Muted
       row in settings index.
@@ -2437,6 +2438,43 @@ unfollowing, blocking, or telling anyone. See [`APP_VISION.md` §"Muting"](./APP
       render in English outside `en` until then.
 - [ ] **Digest / push / RSS parity** — blocks filter the weekly digest, push notifications and
       per-reader RSS; mutes should too (same "arrives uninvited" argument).
+
+#### Muted words (keyword filters)
+
+From the userinput.app request "keyword or semantic filters". See
+[`APP_VISION.md` §"Muted words"](./APP_VISION.md#muted-words).
+
+- [x] **Matching rules** — `lib/muted-words.ts`: NFKC + lowercase normalization, whole-word,
+      phrases across whitespace, trailing `*` prefix match, substring fallback for unspaced
+      scripts; one token source compiled to both a Postgres ARE and a JS `RegExp` (parity checked
+      against Postgres on prod).
+- [x] **Private storage** — `muted_words` table (migration `0052`), app-private (not a repo
+      record), 50-word cap. ⚠️ Migration must run before the code serves: the cached mute-state
+      lookup reads `muted_words` for **every signed-in reader**, so without the table every
+      signed-in feed 500s while guests look healthy (Railway's `preDeployCommand` runs it on
+      merge — don't deploy this branch to an environment that skips migrations).
+- [x] **Enforcement** — word branch in `notMutedByViewer` (documents: title + description;
+      publications: name + description) via a once-per-query InitPlan; `muteFilterDid` /
+      `filterMutedCards` gate on words too; `mutedSubjectsAmong` stays gated on subject mutes only
+      so word-only readers pay no subject round trip. List feeds now pass `muterDid`.
+- [x] **Settings UI** — Muted words section on `/settings/muted` (add, chip-remove), counts in the
+      settings-row badge; no scope upgrade needed.
+- [x] **EXPLAIN guard** — `follow-feed muted-word filter` case in `queries.explain.test.ts` (temp
+      `muted_words` in a rolled-back transaction, 20 words; asserts no documents seq scan, the
+      per-source index scans, and a non-looping pattern lookup).
+- [ ] **Translate the muted-words strings** — extracted, untranslated outside `en`.
+- [ ] **Cheaper matcher if lists grow** — cost is ~0.5µs/row/word; if readers want hundreds of
+      words, precompute a normalized `title_description_words text[]` (GIN) at ingest and match by
+      array overlap instead of regex.
+- [ ] **XRPC / MCP management** — `getMutedWords` / `muteWord` / `unmuteWord` for third-party
+      clients (feeds already honour words for authenticated XRPC callers).
+- [ ] **Digest / push / RSS parity** — same gap as subject mutes.
+- [ ] **Semantic filtering, phase 1: topic mutes** — mute an auto-derived topic; hide documents
+      whose normalized tags are in its `topic_tags` cluster (GIN-served overlap).
+- [ ] **Semantic filtering, phase 2: title + description embeddings** — side table, MiniLM at
+      ingest, ~30-day backfill only.
+- [ ] **Semantic filtering, phase 3: muted-phrase vectors** — per-reader thresholded cosine filter
+      with a "N hidden — show" affordance.
 
 ---
 

@@ -1,4 +1,11 @@
-import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 /**
  * Mutes — mirrored `app.standard-reader.graph.mute` records.
@@ -57,3 +64,38 @@ export const mutes = pgTable(
 
 export type Mute = typeof mutes.$inferSelect;
 export type NewMute = typeof mutes.$inferInsert;
+
+/**
+ * Muted words — words and phrases a reader never wants to see in a feed.
+ *
+ * **Deliberately not an AT Proto record**, unlike {@link mutes}. A muted
+ * account is a statement about someone else; a muted-word list is a statement
+ * about the reader ("I can't read about elections right now"), and publishing
+ * it to the firehose isn't something they opted into by typing a word in
+ * settings. Bluesky keeps its muted words in private preferences for the same
+ * reason. So this lives only here, keyed by DID — it follows the reader across
+ * devices, but not to another client (the `reading_progress` trade-off).
+ *
+ * A word hides articles whose title or description contains it, and
+ * publications whose name or description does; see `lib/muted-words.ts` for
+ * the matching rules. `pattern` is the Postgres ARE derived from `word` at
+ * write time (`mutedWordPostgresPattern`), so feed SQL can fold a reader's
+ * whole list into one alternation with a single index probe.
+ */
+export const mutedWords = pgTable(
+  "muted_words",
+  {
+    /** DID of the reader. No FK to `user`, matching `reading_progress`. */
+    ownerDid: text("owner_did").notNull(),
+    /** The word, normalized (`normalizeMutedWord`) — the uniqueness key. */
+    word: text("word").notNull(),
+    /** Postgres ARE for {@link word}, applied with `~*`. */
+    pattern: text("pattern").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.ownerDid, table.word] })],
+);
+
+export type MutedWord = typeof mutedWords.$inferSelect;

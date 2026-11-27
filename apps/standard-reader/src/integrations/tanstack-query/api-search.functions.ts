@@ -307,6 +307,7 @@ const searchArticles = createServerFn({ method: "GET" })
                 authorDidExpr: sql`${d.did}`,
                 ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
                 pubUriExpr: sql`${d.publicationUri}`,
+                textExprs: [sql`${d.title}`, sql`${d.description}`],
               }),
             ]
           : []),

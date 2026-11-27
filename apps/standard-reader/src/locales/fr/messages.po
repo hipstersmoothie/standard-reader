@@ -836,6 +836,10 @@ msgstr "Suivez les publications que vous aimez et composez des listes de lecture
 msgid "Tap the heart on any article to recommend it. Your recommendations live in your repo as <0>site.standard.graph.recommend</0> records and help surface great writing across the network."
 msgstr "Touchez le cœur sur un article pour le recommander. Vos recommandations vivent dans votre repo sous forme d’enregistrements <0>site.standard.graph.recommend</0> et aident à faire émerger les bons textes sur le réseau."
 
+#: src/components/muted-words-section.tsx
+msgid "Muted words"
+msgstr ""
+
 #: src/components/guide/pages/finding-guide-page.tsx
 #: src/routes/_layout.index.tsx
 #: src/routes/_layout.latest.tsx
@@ -993,6 +997,10 @@ msgstr ""
 msgid "Publications, handles, #tags, headlines…"
 msgstr "Publications, identifiants, #tags, titres…"
 
+#: src/components/muted-words-section.tsx
+msgid "Loading muted words"
+msgstr ""
+
 #: src/routes/_layout.search.tsx
 msgid "No matches"
 msgstr "Aucun résultat"
@@ -1009,6 +1017,10 @@ msgstr ""
 #: src/components/reader/app-shell.tsx
 #: src/components/site-legal-links.tsx
 msgid "Terms"
+msgstr ""
+
+#: src/components/muted-words-section.tsx
+msgid "Mute word"
 msgstr ""
 
 #: src/components/reader/format-i18n.ts
@@ -2032,8 +2044,8 @@ msgid "Its articles are hidden from your feeds, search and discovery in Standard
 msgstr ""
 
 #: src/components/muted-settings-view.tsx
-msgid "Your mutes are enforced here already. To add or remove one, you'll be asked to re-authorize the first time you try."
-msgstr ""
+#~ msgid "Your mutes are enforced here already. To add or remove one, you'll be asked to re-authorize the first time you try."
+#~ msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Scales every size in the app, article text included — from 13px up to 22px of interface text."
@@ -2264,6 +2276,10 @@ msgstr ""
 #: src/magazine/flow.tsx
 msgid "Editor’s note"
 msgstr "Note de la rédaction"
+
+#: src/components/muted-words-section.tsx
+msgid "Hide articles whose title or description, and publications whose name or description, contain a word or phrase. Article text isn't checked, so a passing mention won't hide anything. Whole words only: “president” won't hide “presidential”. End a word with * to match everything that starts with it — “elect*” covers “election” and “electoral”. Muted words are private: they're stored by Standard Reader, not published to your repo."
+msgstr ""
 
 #: src/components/guide/pages/collections-guide-page.tsx
 msgid "You can come back and edit an edition later — change the order, swap the cover, rewrite a note, add a piece you missed."
@@ -3294,6 +3310,10 @@ msgstr "Se déconnecter"
 msgid "{0} of {1}"
 msgstr ""
 
+#: src/components/muted-words-section.tsx
+msgid "Word or phrase"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "The top articles from publications you subscribe to."
 msgstr ""
@@ -4082,8 +4102,8 @@ msgid "Reset filters"
 msgstr ""
 
 #: src/components/user-settings-view.tsx
-msgid "Muted people and publications stay subscribed but disappear from your feeds, search, and discovery. Only you can see your mutes' effect — nobody is notified."
-msgstr ""
+#~ msgid "Muted people and publications stay subscribed but disappear from your feeds, search, and discovery. Only you can see your mutes' effect — nobody is notified."
+#~ msgstr ""
 
 #: src/components/push-diagnostics.tsx
 msgid "Service worker"
@@ -4474,6 +4494,14 @@ msgstr "par @{ownerHandle}"
 #: src/components/user-settings-view.tsx
 #~ msgid "Choose light, dark, or match your system setting."
 #~ msgstr "Choisissez le thème clair, sombre ou celui de votre système."
+
+#: src/components/muted-words-section.tsx
+msgid "e.g. elections"
+msgstr ""
+
+#: src/components/muted-settings-view.tsx
+msgid "Your muted people and publications are enforced here already. To add or remove one, you'll be asked to re-authorize the first time you try."
+msgstr ""
 
 #: src/components/guide/pages/reading-guide-page.tsx
 msgid "A player appears just above the navigation and stays there while you move around the app, so you can keep listening while you browse. It has play and pause, a jump back fifteen seconds, a speed control, a bar you can drag to move through the article, and a close button. The word being spoken is highlighted in the text and kept on screen; if you scroll away yourself, that stops until you select <0>Follow along</0>."
@@ -4937,6 +4965,10 @@ msgstr ""
 #: src/routes/_layout.latest.tsx
 msgid "Unread"
 msgstr "Non lus"
+
+#: src/components/muted-words-section.tsx
+msgid "We couldn't unmute that word. Try again?"
+msgstr ""
 
 #: src/components/guide/pages/collections-guide-page.tsx
 #: src/lib/guide/navigation.ts
@@ -5714,6 +5746,10 @@ msgstr "Ce à quoi l’extension accède"
 #~ msgid "The browser extension, sharing, and installing Standard Reader."
 #~ msgstr ""
 
+#: src/components/muted-words-section.tsx
+msgid "Couldn't mute that word"
+msgstr ""
+
 #: src/components/user-settings-view.tsx
 msgid "Delete lists"
 msgstr "Supprimer les listes"
@@ -5767,6 +5803,7 @@ msgstr ""
 #: src/components/block-allowlist-section.tsx
 #: src/components/blocks-settings-view.tsx
 #: src/components/muted-settings-view.tsx
+#: src/components/muted-words-section.tsx
 #: src/components/reader/block-user-menu-item.tsx
 #: src/components/reader/blocked-notice.tsx
 #: src/components/reader/mute-menu-item.tsx
@@ -5878,6 +5915,10 @@ msgstr ""
 #: src/routes/_layout.l.$did.$rkey.tsx
 msgid "Share on Bluesky"
 msgstr "Partager sur Bluesky"
+
+#: src/components/muted-settings-view.tsx
+msgid "Muted people, publications, and words disappear from your feeds, search, and discovery — but only in Standard Reader. Muted people and publications are public records in your repo, but unlike a block, Bluesky and other apps don't enforce them. Your subscriptions stay intact and direct links still work."
+msgstr ""
 
 #: src/components/appearance-settings.tsx
 msgid "Reset"
@@ -7261,8 +7302,8 @@ msgid "We may change, suspend, or discontinue any part of the service at any tim
 msgstr ""
 
 #: src/components/muted-settings-view.tsx
-msgid "Muted people and publications disappear from your feeds, search, and discovery — but only in Standard Reader. Mutes are public records in your repo, but unlike a block, Bluesky and other apps don't enforce them. Your subscriptions stay intact and direct links still work."
-msgstr ""
+#~ msgid "Muted people and publications disappear from your feeds, search, and discovery — but only in Standard Reader. Mutes are public records in your repo, but unlike a block, Bluesky and other apps don't enforce them. Your subscriptions stay intact and direct links still work."
+#~ msgstr ""
 
 #: src/components/guide/pages/embeds-guide-page.tsx
 msgid "<0>The name or avatar is out of date.</0> The card reads your profile when it loads, so it catches up on its own — but a browser that already has the frame cached may need a reload to notice."
@@ -7608,6 +7649,10 @@ msgstr ""
 #: src/components/reader/extension-privacy-view.tsx
 msgid "Account actions"
 msgstr "Actions du compte"
+
+#: src/components/muted-words-section.tsx
+msgid "Try a word or phrase with at least one letter or number in it."
+msgstr ""
 
 #: src/components/reader/mention-hover-card.tsx
 msgid "Read article"
@@ -8144,6 +8189,10 @@ msgstr "{publicationName} est dans votre flux. Vous verrez les nouveaux écrits 
 msgid "Read state is per post, and your posts are pages, so an issue counts as unread while any page in it is — a comic read halfway through is not read. Its cover wears the same unread dot an unread article does, and clicking it opens on the first page that reader has not seen, not back at the cover. Walking pages in the theater marks them off behind them."
 msgstr ""
 
+#: src/components/muted-words-section.tsx
+msgid "You haven't muted any words."
+msgstr ""
+
 #: src/components/reader/collections-upgrade-gate.tsx
 msgid "Upgrade permissions"
 msgstr "Étendre les autorisations"
@@ -8321,6 +8370,10 @@ msgstr ""
 #: src/routes/_layout.collections.index.tsx
 msgid "Edit series"
 msgstr "Modifier la série"
+
+#: src/components/user-settings-view.tsx
+msgid "Muted people, publications, and words disappear from your feeds, search, and discovery without unsubscribing you. Only you can see your mutes' effect — nobody is notified."
+msgstr ""
 
 #: src/components/docs/api-docs-intro.tsx
 #~ msgid "Public reads need no token. Authenticated reads and writes accept standard AT Proto credentials: call your PDS with <0>atproto-proxy: {appviewDid}#{APPVIEW_SERVICE_ID}</0> (recommended), or call the AppView directly with <1>Authorization: DPoP</1> plus a DPoP proof. Token validity is checked via <2>com.atproto.server.getSession</2> on the issuer PDS."
@@ -8615,6 +8668,10 @@ msgstr "Développer toutes les listes"
 
 #: src/components/user-settings-view.tsx
 msgid "Get notified the moment a publication or author publishes something new. Turn it on here, then choose who from their page."
+msgstr ""
+
+#: src/components/muted-words-section.tsx
+msgid "You can mute up to {MAX_MUTED_WORDS} words. Remove one to add another."
 msgstr ""
 
 #: src/components/reader/document-share-menu.tsx

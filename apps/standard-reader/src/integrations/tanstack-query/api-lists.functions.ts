@@ -25,6 +25,7 @@ import {
   upsertList,
   upsertListSave,
 } from "#/server/ingest/handlers";
+import { muteFilterDid } from "#/server/mutes/mutes";
 import { observe } from "#/server/observability/log";
 import { attachCommentCountsToArticles } from "#/server/reader/document-comments";
 import {
@@ -573,13 +574,21 @@ const getListFeed = createServerFn({ method: "GET" })
         data.hideRead && trackReading ? session?.did : undefined;
       span.set("hideRead", Boolean(unreadForDid));
 
+      // A list feed is a follow feed over someone's curated sources, so the
+      // reader's mutes (users, publications, words) apply exactly as they do
+      // on their own subscriptions.
+      const [viewerDid, muterDid] = await Promise.all([
+        blockFilterDid(db, schema, session?.did),
+        muteFilterDid(db, schema, session?.did),
+      ]);
       const items = await selectArticleCards(db, schema, {
         publicationUris: list.publications,
         followedUserDids: list.users,
         readForDid: trackReading ? session?.did : undefined,
         unreadForDid,
         countOldPostsAsUnread,
-        viewerDid: await blockFilterDid(db, schema, session?.did),
+        viewerDid,
+        muterDid,
         limit: data.limit,
         offset: data.offset,
       });

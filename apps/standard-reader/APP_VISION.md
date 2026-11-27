@@ -1525,6 +1525,56 @@ reversibly.
   it's the reader's own statement about the account — with a hover card explaining the scope and
   carrying the Unmute action and a link to Settings → Muted.
 
+#### Muted words
+
+A reader can also mute **words and phrases** (Settings → Muted → Muted words). A muted word hides
+an article whose **title or description** contains it and a publication whose **name or
+description** does — never matched against the article body, so a passing mention doesn't hide a
+piece that isn't _about_ the word.
+
+- **Matching** (`lib/muted-words.ts`): case-insensitive, NFKC-normalized, **whole-word** —
+  `president` hides "Ranking every president" but not "presidential". A phrase (`white house`)
+  matches across any whitespace; a trailing `*` (`elect*`) makes a prefix match, the one-entry
+  answer to plurals. Scripts written without spaces (CJK, Thai, …) fall back to substring matching
+  at those edges, since a word boundary would never fire there.
+- **Private, unlike graph.mute.** Words live in an app-private `muted_words` table (migration
+  `0052`), keyed by DID — never a repo record. A muted account is a statement about someone else; a
+  muted-word list is a statement about the reader, and Bluesky keeps its muted words private for
+  the same reason. The trade (as with `reading_progress`) is that the list follows the reader
+  across devices but not to another client. No PDS write, so no scope upgrade.
+- **Same plumbing as subject mutes.** The `muteFilterDid` gate now opens for a reader with muted
+  words too (the cached mute state carries the word list in the same single round trip), and
+  `notMutedByViewer` gains a word branch over the row's own text columns. Every surface subject
+  mutes already reach — home, latest, trending, tag, topics, search, discover rails and directory,
+  weekly picks, XRPC feeds — filters words with no per-surface code, and **list feeds** now apply
+  both kinds of mute (a list feed is a follow feed over curated sources).
+- **Cost model.** The reader's patterns are folded into one alternation by an _uncorrelated_ scalar
+  subquery — an InitPlan that runs once per query (verified `loops=1` inside the follow feed's
+  per-source laterals) — leaving a plain `~*` filter on columns each row already carries, over
+  `concat_ws(U+001F, title, description)` so it is one regex evaluation a row. Postgres evaluates
+  it at roughly **0.5µs per row per word**: invisible on the follow and latest feeds (a few
+  thousand rows), noticeable on Trending's ~22k-row window with a long list. Hence the **50-word
+  cap**. Rails post-filter in JS from the cached list at no extra round trip.
+
+**Semantic filtering — not built yet.** The request behind muted words also asked for a filter
+that understands _meaning_ ("president" only when it's about politics). Assessed and deferred: no
+document embeddings exist on `main` (the pgvector/EmbeddingGemma search spike never landed, and its
+~2.7 docs/s body-embedding backfill doesn't scale to the corpus). The plan, cheapest first:
+
+1. **Topic mutes** — mute one of the auto-derived topics (`topics` / `topic_tags`), hiding
+   documents whose normalized tags fall in that cluster via the existing GIN-served
+   `immutable_normalized_tags(tags) && <array>` match. Reuses the tag-embedding clusters, so it's
+   "semantic" at the tag level with no new model; misses untagged documents.
+2. **Title + description embeddings** in a side table (the `document_languages` pattern), computed
+   at ingest with the small symmetric model the topic sweep already ships (`all-MiniLM-L6-v2`,
+   384-dim) and backfilled only over the feed horizon (~30 days), not the whole corpus. Short
+   inputs make this orders of magnitude cheaper than the body embeddings the search spike stalled
+   on.
+3. **Per-reader muted-topic vectors** — embed each muted phrase once; hide rows whose cosine
+   distance clears a calibrated threshold (a per-row `<=>` on the already-fetched candidate, no ANN
+   index needed). Because a semantic false positive silently hides something unrelated, this needs
+   a "N hidden — show them" affordance before it ships.
+
 ---
 
 ## 6. Data & backend architecture

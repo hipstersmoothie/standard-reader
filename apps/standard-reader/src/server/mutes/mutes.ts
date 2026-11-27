@@ -34,6 +34,13 @@ import { inArray, sql } from "drizzle-orm";
 import { cache as reactCache } from "react";
 
 import type { Db, Schema } from "#/integrations/tanstack-query/api-shapes";
+import {
+  cardMatchesMutedWords,
+  compileMutedWordMatcher,
+  MAX_MUTED_WORDS,
+  mutedWordPostgresPattern,
+  normalizeMutedWord,
+} from "#/lib/muted-words";
 import type { MutableCard, MutedSubjects } from "#/lib/mutes";
 import { muteCandidateKeys, rejectMutedCards } from "#/lib/mutes";
 
@@ -44,64 +51,115 @@ function executeRows<T>(result: unknown): Array<T> {
 }
 
 /**
- * How long "does this reader mute anything?" is trusted in-process.
+ * How long a reader's mute state is trusted in-process.
  *
  * Short, because the answer flipping false→true is a reader who just muted
  * something and expects it gone. Every write path calls
  * {@link invalidateMuteCache} anyway, so the TTL only covers mutes made in
- * another client and picked up by the firehose.
+ * another client (picked up by the firehose) or on another web replica.
  */
-const HAS_MUTES_TTL_MS = 60_000;
+const MUTE_STATE_TTL_MS = 60_000;
 
 /**
- * Bound on the cache — same rationale as the blocks gate: a single boolean per
+ * Bound on the cache — same rationale as the blocks gate: a small value per
  * signed-in reader, dropped wholesale rather than evicted, re-earned by one
- * indexed `EXISTS`.
+ * indexed lookup.
  */
-const HAS_MUTES_CACHE_MAX = 10_000;
+const MUTE_STATE_CACHE_MAX = 10_000;
 
-const hasMutesCache = new Map<string, { value: boolean; expires: number }>();
+/**
+ * What a reader mutes, at the granularity the filters branch on: whether any
+ * user/publication mute exists (the subject probes are skipped otherwise), and
+ * their muted words (few, short, and needed in JS to post-filter rails).
+ */
+export interface ReaderMuteState {
+  hasSubjectMutes: boolean;
+  /** Normalized muted words (`normalizeMutedWord`), alphabetical. */
+  words: ReadonlyArray<string>;
+}
 
-/** Drop a reader's cached answer, after they mute or unmute anything. */
+const NO_MUTES: ReaderMuteState = { hasSubjectMutes: false, words: [] };
+
+const muteStateCache = new Map<
+  string,
+  { value: ReaderMuteState; expires: number }
+>();
+
+/** Drop a reader's cached mute state, after they change any mute or word. */
 export function invalidateMuteCache(did: string): void {
-  hasMutesCache.delete(did);
+  muteStateCache.delete(did);
 }
 
 /**
- * Whether this viewer has any mutes at all.
- *
- * The guard in front of every other helper here, and in front of every SQL
- * predicate {@link notMutedByViewer} would otherwise add — and the
- * overwhelmingly common answer is "no". Cached per-request via
- * {@link reactCache} and across requests in-process for
- * {@link HAS_MUTES_TTL_MS}, so a reader who mutes nothing costs nothing on the
+ * The reader's mute state, in one round trip: an indexed `EXISTS` on `mutes`
+ * plus their `muted_words` rows (a primary-key range scan). Cached per-request
+ * via {@link reactCache} and across requests in-process for
+ * {@link MUTE_STATE_TTL_MS}, so a reader who mutes nothing costs nothing on the
  * steady path.
  */
-export const readerHasMutes = reactCache(readerHasMutesImpl);
+export const readerMuteState = reactCache(readerMuteStateImpl);
 
-async function readerHasMutesImpl(
+async function readerMuteStateImpl(
+  db: Db,
+  schema: Schema,
+  viewerDid: string,
+): Promise<ReaderMuteState> {
+  const cached = muteStateCache.get(viewerDid);
+  if (cached && cached.expires > Date.now()) return cached.value;
+
+  const m = schema.mutes;
+  const w = schema.mutedWords;
+  const result = await db.execute(sql`
+    select
+      exists(
+        select 1 from ${m}
+        where ${m.muterDid} = ${viewerDid} and ${m.deleted} = false
+      ) as has,
+      coalesce(
+        (
+          select jsonb_agg(${w.word} order by ${w.word})
+          from ${w}
+          where ${w.ownerDid} = ${viewerDid}
+        ),
+        '[]'::jsonb
+      ) as words
+  `);
+  const row = executeRows<{ has: boolean; words: unknown }>(result)[0];
+  const value: ReaderMuteState = row
+    ? { hasSubjectMutes: row.has === true, words: parseWords(row.words) }
+    : NO_MUTES;
+
+  if (muteStateCache.size >= MUTE_STATE_CACHE_MAX) muteStateCache.clear();
+  muteStateCache.set(viewerDid, {
+    value,
+    expires: Date.now() + MUTE_STATE_TTL_MS,
+  });
+  return value;
+}
+
+/** `jsonb` arrives parsed from `pg`, as text from some drivers. */
+function parseWords(value: unknown): Array<string> {
+  const parsed: unknown =
+    typeof value === "string" ? (JSON.parse(value) as unknown) : value;
+  return Array.isArray(parsed)
+    ? parsed.filter((word): word is string => typeof word === "string")
+    : [];
+}
+
+/**
+ * Whether this viewer mutes anything at all — a user, a publication, or a
+ * word.
+ *
+ * The guard in front of every SQL predicate {@link notMutedByViewer} would
+ * otherwise add, and the overwhelmingly common answer is "no".
+ */
+export async function readerHasMutes(
   db: Db,
   schema: Schema,
   viewerDid: string,
 ): Promise<boolean> {
-  const cached = hasMutesCache.get(viewerDid);
-  if (cached && cached.expires > Date.now()) return cached.value;
-
-  const m = schema.mutes;
-  const result = await db.execute(sql`
-    select exists(
-      select 1 from ${m}
-      where ${m.muterDid} = ${viewerDid} and ${m.deleted} = false
-    ) as has
-  `);
-  const value = executeRows<{ has: boolean }>(result)[0]?.has ?? false;
-
-  if (hasMutesCache.size >= HAS_MUTES_CACHE_MAX) hasMutesCache.clear();
-  hasMutesCache.set(viewerDid, {
-    value,
-    expires: Date.now() + HAS_MUTES_TTL_MS,
-  });
-  return value;
+  const state = await readerMuteState(db, schema, viewerDid);
+  return state.hasSubjectMutes || state.words.length > 0;
 }
 
 /**
@@ -137,9 +195,19 @@ export async function muteFilterDid(
  *    muted user's publication). NULL for a loose document never matches.
  *  - `pubUriExpr` — the row's publication AT-URI for documents, or the row's
  *    own URI for publication-shaped rows (publication mutes).
+ *  - `textExprs` — the row's own matchable text (muted words): a document's
+ *    title + description, or a publication's name + description. Never the
+ *    body — a word hides what is *about* it, not what mentions it.
  *
- * Each branch is one index probe on `mutes_user_edge_idx` /
- * `mutes_pub_edge_idx`.
+ * Each subject branch is one index probe on `mutes_user_edge_idx` /
+ * `mutes_pub_edge_idx`. The word branch is not a per-row probe at all: the
+ * reader's patterns are folded into one alternation by an *uncorrelated*
+ * scalar subquery, which Postgres plans as an InitPlan and runs once per query
+ * (one primary-key range scan of `muted_words`; verified `loops=1` even inside
+ * the follow feed's per-source laterals), leaving a plain `~*` filter on
+ * columns the row already carries — ~10µs a row with 20 words, paid only on
+ * the rows the index scan visits anyway. A reader with no words gets a NULL
+ * pattern, which `coalesce` turns into "not muted".
  *
  * **Never pass a raw session DID here.** Resolve it through
  * {@link muteFilterDid} first.
@@ -151,6 +219,7 @@ export function notMutedByViewer(
     authorDidExpr?: ReturnType<typeof sql>;
     ownerDidExpr?: ReturnType<typeof sql>;
     pubUriExpr?: ReturnType<typeof sql>;
+    textExprs?: ReadonlyArray<ReturnType<typeof sql>>;
   },
 ): ReturnType<typeof sql> {
   const m = schema.mutes;
@@ -173,8 +242,39 @@ export function notMutedByViewer(
         and ${m.subjectUri} = ${exprs.pubUriExpr}
     )`);
   }
+  if (exprs.textExprs && exprs.textExprs.length > 0) {
+    // One regex evaluation per row over the fields joined by U+001F (the
+    // ASCII unit separator): a non-word, non-space character, so `\m`/`\M`
+    // still see a boundary between fields and a phrase's `\s+` can never
+    // bridge title → description. `normalizeMutedWord` strips control
+    // characters, so no muted word can contain it. Measured ~40% cheaper than
+    // one `~*` per field on prod data.
+    branches.push(sql`coalesce(
+      concat_ws(${MUTED_WORD_FIELD_SEPARATOR}, ${sql.join([...exprs.textExprs], sql`, `)})
+        ~* ${mutedWordPatternSql(schema, viewerDid)},
+      false
+    )`);
+  }
   if (branches.length === 0) return sql`true`;
   return sql`not (${sql.join(branches, sql` or `)})`;
+}
+
+/** Joins a row's matchable fields; see the word branch of {@link notMutedByViewer}. */
+const MUTED_WORD_FIELD_SEPARATOR = "\u001F";
+
+/**
+ * The reader's muted words as one Postgres ARE alternation — NULL when they
+ * mute no words. Uncorrelated, so it plans as a once-per-query InitPlan.
+ */
+function mutedWordPatternSql(
+  schema: Schema,
+  viewerDid: string,
+): ReturnType<typeof sql> {
+  const w = schema.mutedWords;
+  return sql`(
+    select string_agg(${w.pattern}, '|') from ${w}
+    where ${w.ownerDid} = ${viewerDid}
+  )`;
 }
 
 /**
@@ -200,7 +300,10 @@ export async function mutedSubjectsAmong(
     uri.startsWith("at://"),
   );
   if (dids.length === 0 && uris.length === 0) return empty;
-  if (!(await readerHasMutes(db, schema, viewerDid))) return empty;
+  // Subject mutes only — a reader who mutes words but no one shouldn't pay a
+  // round trip to learn that none of these candidates is muted.
+  const state = await readerMuteState(db, schema, viewerDid);
+  if (!state.hasSubjectMutes) return empty;
 
   const m = schema.mutes;
   const parts: Array<ReturnType<typeof sql>> = [];
@@ -258,9 +361,13 @@ export async function isMutedForViewer(
 }
 
 /**
- * Drop every card that renders a muted user or publication. The rail filter:
- * pair it with {@link notMutedByViewer} on paginated feeds, and use it alone
- * for rails and third-party content.
+ * Drop every card that renders a muted user or publication, or whose own
+ * title/name/description contains a muted word. The rail filter: pair it with
+ * {@link notMutedByViewer} on paginated feeds, and use it alone for rails and
+ * third-party content.
+ *
+ * Words cost no round trip here — they ride along in the cached
+ * {@link readerMuteState} — so only the subject probe ever hits the database.
  */
 export async function filterMutedCards<T extends MutableCard>(
   db: Db,
@@ -269,13 +376,19 @@ export async function filterMutedCards<T extends MutableCard>(
   cards: Array<T>,
 ): Promise<Array<T>> {
   if (!viewerDid || cards.length === 0) return cards;
+  const state = await readerMuteState(db, schema, viewerDid);
+  const matcher = compileMutedWordMatcher(state.words);
+  const unworded = matcher
+    ? cards.filter((card) => !cardMatchesMutedWords(card, matcher))
+    : cards;
+  if (!state.hasSubjectMutes || unworded.length === 0) return unworded;
   const muted = await mutedSubjectsAmong(
     db,
     schema,
     viewerDid,
-    muteCandidateKeys(cards),
+    muteCandidateKeys(unworded),
   );
-  return rejectMutedCards(cards, muted);
+  return rejectMutedCards(unworded, muted);
 }
 
 // ── Settings surfaces ───────────────────────────────────────────────────────
@@ -433,18 +546,102 @@ export async function readerMutedPublications(
   }));
 }
 
-/** How many subjects the reader mutes (both kinds). */
+/** How many things the reader mutes: users, publications, and words. */
 export async function countReaderMutes(
   db: Db,
   schema: Schema,
   viewerDid: string,
 ): Promise<number> {
   const m = schema.mutes;
+  const w = schema.mutedWords;
   const result = await db.execute(sql`
-    select count(*)::int as count from ${m}
-    where ${m.muterDid} = ${viewerDid} and ${m.deleted} = false
+    select (
+      (select count(*) from ${m}
+        where ${m.muterDid} = ${viewerDid} and ${m.deleted} = false)
+      + (select count(*) from ${w} where ${w.ownerDid} = ${viewerDid})
+    )::int as count
   `);
   return executeRows<{ count: number }>(result)[0]?.count ?? 0;
+}
+
+// ── Muted words ─────────────────────────────────────────────────────────────
+
+/** A muted word as rendered in the settings list. */
+export interface MutedWordRow {
+  word: string;
+  createdAt: string | null;
+}
+
+/** The reader's muted words, alphabetical. */
+export async function readerMutedWords(
+  db: Db,
+  schema: Schema,
+  viewerDid: string,
+): Promise<Array<MutedWordRow>> {
+  const w = schema.mutedWords;
+  const result = await db.execute(sql`
+    select ${w.word} as word, ${w.createdAt} as created_at
+    from ${w}
+    where ${w.ownerDid} = ${viewerDid}
+    order by ${w.word}
+  `);
+  return executeRows<{ word: string; created_at: Date | string | null }>(
+    result,
+  ).map((row) => ({ word: row.word, createdAt: toIso(row.created_at) }));
+}
+
+/** Why {@link addMutedWord} refused a word. */
+export type AddMutedWordResult =
+  | { ok: true; word: string }
+  | { ok: false; reason: "invalid" | "limit" };
+
+/**
+ * Mute a word for the reader. Idempotent — re-adding an existing word (in any
+ * casing or spacing) is a no-op success. Refuses past {@link MAX_MUTED_WORDS}
+ * so the per-query alternation stays small.
+ */
+export async function addMutedWord(
+  db: Db,
+  schema: Schema,
+  viewerDid: string,
+  raw: string,
+): Promise<AddMutedWordResult> {
+  const word = normalizeMutedWord(raw);
+  if (!word) return { ok: false, reason: "invalid" };
+  const w = schema.mutedWords;
+  // One statement: the cap check and the insert race-free enough for a single
+  // reader's settings page, and one round trip instead of count-then-insert.
+  const result = await db.execute(sql`
+    insert into ${w} (owner_did, word, pattern)
+    select ${viewerDid}, ${word}, ${mutedWordPostgresPattern(word)}
+    where (select count(*) from ${w} where ${w.ownerDid} = ${viewerDid})
+      < ${MAX_MUTED_WORDS}
+    on conflict (owner_did, word) do nothing
+    returning 1 as inserted
+  `);
+  invalidateMuteCache(viewerDid);
+  if (executeRows(result).length > 0) return { ok: true, word };
+  // Nothing inserted: either it was already muted (success) or the cap hit.
+  const existing = await db.execute(sql`
+    select 1 from ${w} where ${w.ownerDid} = ${viewerDid} and ${w.word} = ${word}
+  `);
+  return executeRows(existing).length > 0
+    ? { ok: true, word }
+    : { ok: false, reason: "limit" };
+}
+
+/** Unmute a word for the reader. */
+export async function removeMutedWord(
+  db: Db,
+  schema: Schema,
+  viewerDid: string,
+  word: string,
+): Promise<void> {
+  const w = schema.mutedWords;
+  await db.execute(sql`
+    delete from ${w} where ${w.ownerDid} = ${viewerDid} and ${w.word} = ${word}
+  `);
+  invalidateMuteCache(viewerDid);
 }
 
 function toIso(value: Date | string | null): string | null {

@@ -28,6 +28,10 @@ import { db } from "#/db";
 import * as schema from "#/db/schema";
 import { NETWORK_DOCUMENT_COUNT_KEY } from "#/db/schema/network-stats";
 import {
+  mutedWordPostgresPattern,
+  normalizeMutedWord,
+} from "#/lib/muted-words";
+import {
   BODY_POOL_CAP,
   documentMetaRankSql,
   documentMetaVectorSql,
@@ -54,6 +58,30 @@ const READER_DID =
  */
 const EXEC_TIME_BUDGET_MS = Number(process.env.FEED_PERF_EXEC_BUDGET_MS ?? 500);
 const PAGE_LIMIT = 22;
+
+/** A deliberately heavy muted-word list (cost is linear in word count). */
+const HEAVY_MUTED_WORDS = [
+  "politics",
+  "elections",
+  "president",
+  "elect*",
+  "white house",
+  "trump",
+  "biden",
+  "congress",
+  "senate",
+  "vote",
+  "ballot",
+  "democrat*",
+  "republican*",
+  "campaign",
+  "governor",
+  "parliament",
+  "brexit",
+  "tariff*",
+  "nato",
+  "putin",
+];
 const PAGE_OFFSET = 0;
 
 /**
@@ -149,7 +177,8 @@ describe.skipIf(!RUN)("follow-feed block filter — EXPLAIN", () => {
 
 /**
  * The mute filter on the follow feed — same shape and same hazard as the block
- * filter above: `notMutedByViewer` is up to three correlated `NOT EXISTS`
+ * filter above (requires migration 0052's `muted_words` to exist, since the
+ * predicate always carries the word branch): `notMutedByViewer` is up to three correlated `NOT EXISTS`
  * inside `baseWhere`, and it must not push the per-source laterals off their
  * `ORDER BY published_at DESC LIMIT k` index scans. As with blocks this is the
  * worst case by construction — `muteFilterDid` keeps the predicate out of the
@@ -180,6 +209,44 @@ describe.skipIf(!RUN)("follow-feed mute filter — EXPLAIN", () => {
     assertPerSourceIndexScans(plan);
     assertExecTimeUnder(plan, BLOCK_FILTER_BUDGET_MS);
   }, 30_000);
+});
+
+/**
+ * Muted words on the follow feed. The word branch of `notMutedByViewer` folds
+ * the reader's patterns into one uncorrelated scalar subquery — an InitPlan
+ * that must run once per query, never once per candidate row or per lateral
+ * loop — and leaves a plain `~*` filter on the rows the per-source index scans
+ * already visit. Regex cost is linear in word count (~0.5µs per row per word
+ * on prod data), so this seeds a heavy 20-word list.
+ */
+describe.skipIf(!RUN)("follow-feed muted-word filter — EXPLAIN", () => {
+  test("muted words stay on the index scans with a once-per-query pattern", async () => {
+    const plan = await withTempMutedWords(HEAVY_MUTED_WORDS, (tx) =>
+      explainCandidate(
+        {
+          unreadForDid: READER_DID,
+          countOldPostsAsUnread: true,
+          muterDid: READER_DID,
+        },
+        tx,
+      ),
+    );
+
+    assertNoSeqScanOnDocuments(plan);
+    assertPerSourceIndexScans(plan);
+    // The pattern lookup is the muted_words scan; it must never loop.
+    const looped = plan.split("\n").find((line) => {
+      const loops = /on muted_words\b.*\bloops=(\d+)/.exec(line)?.[1];
+      return loops != null && Number(loops) > 1;
+    });
+    if (looped) {
+      expect.fail(
+        `The muted-word pattern subquery runs more than once per query — it ` +
+          `became correlated. Offending line:\n${looped}\n\nFull plan:\n\n${plan}`,
+      );
+    }
+    assertExecTimeUnder(plan, BLOCK_FILTER_BUDGET_MS);
+  }, 60_000);
 });
 
 /**
@@ -420,19 +487,22 @@ describe.skipIf(!RUN)("article search — EXPLAIN", () => {
   }, 30_000);
 });
 
-async function explainCandidate({
-  unreadForDid,
-  countOldPostsAsUnread,
-  viewerDid,
-  muterDid,
-}: {
-  unreadForDid: string;
-  countOldPostsAsUnread: boolean | undefined;
-  /** Set to force the block predicate on — see the block-filter describe. */
-  viewerDid?: string;
-  /** Set to force the mute predicate on — see the mute-filter describe. */
-  muterDid?: string;
-}): Promise<string> {
+async function explainCandidate(
+  {
+    unreadForDid,
+    countOldPostsAsUnread,
+    viewerDid,
+    muterDid,
+  }: {
+    unreadForDid: string;
+    countOldPostsAsUnread: boolean | undefined;
+    /** Set to force the block predicate on — see the block-filter describe. */
+    viewerDid?: string;
+    /** Set to force the mute predicate on — see the mute-filter describe. */
+    muterDid?: string;
+  },
+  executor: Pick<typeof db, "execute"> = db,
+): Promise<string> {
   const [publicationUris, followedUserDids] = await Promise.all([
     selectFollowUris(db, schema, READER_DID),
     selectFollowedUserDids(db, schema, READER_DID),
@@ -458,12 +528,58 @@ async function explainCandidate({
     offset: PAGE_OFFSET,
   });
 
-  return explainSql(candidateSql);
+  return explainSql(candidateSql, executor);
+}
+
+/**
+ * Run `fn` in a transaction where `muted_words` is a TEMP table seeded with
+ * `words` for {@link READER_DID}, then roll back. The temp table shadows the
+ * real one (pg_temp is searched first), so this measures a reader with muted
+ * words against prod-scale documents without writing a row to prod — and works
+ * before migration 0052 has run there.
+ */
+async function withTempMutedWords<T>(
+  words: ReadonlyArray<string>,
+  fn: (tx: Pick<typeof db, "execute">) => Promise<T>,
+): Promise<T> {
+  let out: { value: T } | undefined;
+  try {
+    await db.transaction(async (tx) => {
+      await tx.execute(sql`
+        create temp table muted_words (
+          owner_did text not null,
+          word text not null,
+          pattern text not null,
+          created_at timestamptz not null default now(),
+          primary key (owner_did, word)
+        ) on commit drop
+      `);
+      for (const raw of words) {
+        const word = normalizeMutedWord(raw);
+        if (!word) continue;
+        await tx.execute(sql`
+          insert into muted_words (owner_did, word, pattern)
+          values (${READER_DID}, ${word}, ${mutedWordPostgresPattern(word)})
+        `);
+      }
+      out = { value: await fn(tx) };
+      tx.rollback();
+    });
+  } catch (error) {
+    if (!out) throw error;
+  }
+  if (!out) throw new Error("withTempMutedWords: fn never ran");
+  return out.value;
 }
 
 /** `EXPLAIN (ANALYZE, BUFFERS)` a query, flattened to one plan string. */
-async function explainSql(query: SQL): Promise<string> {
-  const result = await db.execute(sql`EXPLAIN (ANALYZE, BUFFERS) ${query}`);
+async function explainSql(
+  query: SQL,
+  executor: Pick<typeof db, "execute"> = db,
+): Promise<string> {
+  const result = await executor.execute(
+    sql`EXPLAIN (ANALYZE, BUFFERS) ${query}`,
+  );
   const rows = Array.isArray(result)
     ? (result as Array<{ "QUERY PLAN"?: string } | string>)
     : ((result as { rows?: Array<{ "QUERY PLAN"?: string } | string> }).rows ??

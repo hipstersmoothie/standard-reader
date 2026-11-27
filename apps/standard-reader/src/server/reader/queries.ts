@@ -593,6 +593,7 @@ export function buildFollowFeedCandidateSql(
         authorDidExpr: sql`${d.did}`,
         ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
         pubUriExpr: sql`${d.publicationUri}`,
+        textExprs: [sql`${d.title}`, sql`${d.description}`],
       }),
     );
   }
@@ -917,6 +918,7 @@ export async function selectArticleCards(
         authorDidExpr: sql`${d.did}`,
         ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
         pubUriExpr: sql`${d.publicationUri}`,
+        textExprs: [sql`${d.title}`, sql`${d.description}`],
       }),
     );
   }
@@ -1884,6 +1886,7 @@ function trendingArticleWhere(
         authorDidExpr: sql`${d.did}`,
         ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
         pubUriExpr: sql`${d.publicationUri}`,
+        textExprs: [sql`${d.title}`, sql`${d.description}`],
       }),
     );
   }
@@ -2604,6 +2607,7 @@ export async function discoverDirectoryPublications(
       notMutedByViewer(schema, muterDid, {
         authorDidExpr: sql`${p.did}`,
         pubUriExpr: sql`${p.uri}`,
+        textExprs: [sql`${p.name}`, sql`${p.description}`],
       }),
     );
   }
@@ -2975,6 +2979,7 @@ export async function tagDirectoryPublications(
       notMutedByViewer(schema, muterDid, {
         authorDidExpr: sql`${p.did}`,
         pubUriExpr: sql`${p.uri}`,
+        textExprs: [sql`${p.name}`, sql`${p.description}`],
       }),
     );
   }
@@ -3787,6 +3792,7 @@ export async function selectArticleCardsByUris(
                 authorDidExpr: sql`${d.did}`,
                 ownerDidExpr: atUriAuthoritySql(sql`${d.publicationUri}`),
                 pubUriExpr: sql`${d.publicationUri}`,
+                textExprs: [sql`${d.title}`, sql`${d.description}`],
               }),
             ]
           : []),

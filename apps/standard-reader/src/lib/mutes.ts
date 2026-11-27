@@ -11,6 +11,7 @@
  */
 
 import { STANDARD_NSID } from "#/lib/atproto/nsids";
+import type { MutedWordCard } from "#/lib/muted-words";
 
 /** A mute record subject, classified. */
 export type MuteSubject =
@@ -45,9 +46,10 @@ export function classifyMuteSubject(subject: unknown): MuteSubject | null {
 /**
  * A card that may be hidden by a mute. Extends the blockable shape with the
  * publication facts mutes match on: the card's publication URI (documents) or
- * its own URI (publication cards, where the card *is* the mute subject).
+ * its own URI (publication cards, where the card *is* the mute subject) — plus
+ * the title/name/description muted words are matched against.
  */
-export interface MutableCard {
+export interface MutableCard extends MutedWordCard {
   /** Author DID (documents) or owner DID (publications, profiles). */
   did?: string | null;
   /** Owner of the card's publication, when it differs from `did`. */

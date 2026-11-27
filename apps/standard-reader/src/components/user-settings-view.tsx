@@ -1273,7 +1273,7 @@ export function UserSettingsView() {
           <Separator />
           <SettingRow
             label={t`Muted`}
-            description={t`Muted people and publications stay subscribed but disappear from your feeds, search, and discovery. Only you can see your mutes' effect — nobody is notified.`}
+            description={t`Muted people, publications, and words disappear from your feeds, search, and discovery without unsubscribing you. Only you can see your mutes' effect — nobody is notified.`}
           >
             <ButtonLink to="/settings/muted" variant="secondary" size="sm">
               {muteCount == null ? (

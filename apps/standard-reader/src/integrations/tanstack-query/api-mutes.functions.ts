@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { hasMuteWriteScope } from "#/integrations/auth/scope";
+import { MAX_MUTED_WORD_LENGTH } from "#/lib/muted-words";
 import { classifyMuteSubject } from "#/lib/mutes";
 import {
   getAtprotoSessionForRequest,
@@ -19,19 +20,26 @@ import {
 } from "#/server/atproto/repo-records";
 import { upsertMute } from "#/server/ingest/handlers";
 import { ensureTracked } from "#/server/ingest/tracked-repos";
-import type { MutedPublicationRow, MutedUserRow } from "#/server/mutes/mutes";
+import type {
+  MutedPublicationRow,
+  MutedUserRow,
+  MutedWordRow,
+} from "#/server/mutes/mutes";
 import {
+  addMutedWord,
   countReaderMutes,
   invalidateMuteCache,
   isMutedForViewer,
   readerMutedPublications,
   readerMutedUsers,
+  readerMutedWords,
+  removeMutedWord,
 } from "#/server/mutes/mutes";
 import { observe } from "#/server/observability/log";
 
 import { dbMiddleware } from "./db-middleware";
 
-export type { MutedUserRow };
+export type { MutedUserRow, MutedWordRow };
 
 /** {@link MutedPublicationRow} with the icon blob resolved to a browser URL. */
 export interface MutedPublicationItem extends Omit<
@@ -74,12 +82,15 @@ export interface MutedSettings {
   users: Array<MutedUserRow>;
   /** Publications the reader mutes, newest first. */
   publications: Array<MutedPublicationItem>;
-  /** Total mutes across both kinds. */
+  /** Words the reader mutes, alphabetical. Private — never a repo record. */
+  words: Array<MutedWordRow>;
+  /** Total mutes across users, publications, and words. */
   count: number;
   /**
    * Whether the reader has granted write access to their mute records. When
-   * false the page is read-only: their mutes are still enforced, they just
-   * can't add or remove one without re-authorizing.
+   * false the user/publication lists are read-only: their mutes are still
+   * enforced, they just can't add or remove one without re-authorizing.
+   * Muted words are app-private, so they never need this.
    */
   canWrite: boolean;
 }
@@ -96,11 +107,12 @@ const getMutedSettings = createServerFn({ method: "GET" })
         if (!reader) return null;
         span.set("did", reader.did);
 
-        const [users, publications, count, account] = await Promise.all([
+        const [users, publications, words, count, account] = await Promise.all([
           readerMutedUsers(db, schema, reader.did, { limit: data.limit }),
           readerMutedPublications(db, schema, reader.did, {
             limit: data.limit,
           }),
+          readerMutedWords(db, schema, reader.did),
           countReaderMutes(db, schema, reader.did),
           db.query.account.findFirst({
             where: and(
@@ -123,6 +135,7 @@ const getMutedSettings = createServerFn({ method: "GET" })
                   : null,
             }),
           ),
+          words,
           count,
           canWrite: hasMuteWriteScope(account?.scope),
         };
@@ -325,6 +338,64 @@ const unmuteSubject = createServerFn({ method: "POST" })
     }),
   );
 
+// ── Muted words ─────────────────────────────────────────────────────────────
+//
+// Unlike user/publication mutes these never touch the PDS: a muted-word list is
+// app-private state (see `db/schema/mutes.ts#mutedWords`), so writes go
+// straight to our table and need no mute-write scope — only a signed-in
+// reader.
+
+const mutedWordInput = z.object({
+  // Generous on raw length: normalization (whitespace collapse) runs server
+  // side and enforces the real cap.
+  word: z
+    .string()
+    .min(1)
+    .max(MAX_MUTED_WORD_LENGTH * 4),
+});
+
+/** Thrown when a word normalizes to nothing matchable (e.g. `***`). */
+const INVALID_MUTED_WORD = "invalid-muted-word";
+/** Thrown when the reader is already at `MAX_MUTED_WORDS`. */
+const MUTED_WORD_LIMIT = "muted-word-limit";
+
+const muteWord = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .validator(mutedWordInput)
+  .handler(
+    observe("mutes.muteWord", async ({ data, context }, span) => {
+      const reader = await getReaderContextForRequest(getRequest());
+      if (!reader) throw new Error("Unauthorized");
+      span.set("did", reader.did);
+      const result = await addMutedWord(
+        context.db,
+        context.schema,
+        reader.did,
+        data.word,
+      );
+      if (!result.ok) {
+        span.set("rejected", result.reason);
+        throw new Error(
+          result.reason === "limit" ? MUTED_WORD_LIMIT : INVALID_MUTED_WORD,
+        );
+      }
+      return { word: result.word };
+    }),
+  );
+
+const unmuteWord = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .validator(mutedWordInput)
+  .handler(
+    observe("mutes.unmuteWord", async ({ data, context }, span) => {
+      const reader = await getReaderContextForRequest(getRequest());
+      if (!reader) throw new Error("Unauthorized");
+      span.set("did", reader.did);
+      await removeMutedWord(context.db, context.schema, reader.did, data.word);
+      return { word: data.word };
+    }),
+  );
+
 /**
  * Register the reader's own repo with tap (best-effort) so their mute records
  * flow back into the read-model. Idempotent; never fails the request.
@@ -361,7 +432,7 @@ function getMuteStateQueryOptions(subject: string) {
   });
 }
 
-export { NEEDS_MUTE_SCOPE };
+export { INVALID_MUTED_WORD, MUTED_WORD_LIMIT, NEEDS_MUTE_SCOPE };
 
 export const mutesApi = {
   getMutedSettings,
@@ -371,5 +442,7 @@ export const mutesApi = {
   getMuteState,
   getMuteStateQueryOptions,
   muteSubject,
+  muteWord,
   unmuteSubject,
+  unmuteWord,
 };
