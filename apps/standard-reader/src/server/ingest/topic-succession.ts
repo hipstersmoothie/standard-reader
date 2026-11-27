@@ -213,3 +213,96 @@ export function findSuccessors(
 
   return successors;
 }
+
+/** What {@link refineSuccessors} knows beyond tag similarity. */
+export interface SuccessorEvidence {
+  /** Topics merged away this sweep, and the topic each merged into. */
+  absorbedInto: ReadonlyMap<string, string>;
+  /** Slugs published this sweep. */
+  published: ReadonlySet<string>;
+  /**
+   * `[slug, slug, shared feed documents]` for pairs where the shared documents
+   * are most of the smaller feed — see `selectMemberships`.
+   */
+  sharedDocuments: Iterable<readonly [string, string, number]>;
+  /** Each topic's `superseded_by` as the previous sweep left it. */
+  previous: ReadonlyMap<string, string | null>;
+}
+
+/**
+ * Improve {@link findSuccessors}' answers with what the sweep measured, in
+ * place. In priority order:
+ *
+ * 1. **A merged topic goes to what absorbed it** — that is the page holding its
+ *    articles, whatever the signatures say.
+ * 2. **A topic with no tag-similar successor goes where its feed went**: the
+ *    published topic sharing the most of its feed documents. Without this, a
+ *    topic that fell below the bar lands on the index even when most of its
+ *    articles are on one live page.
+ * 3. **A redirect is never forgotten.** A topic merged away in an earlier sweep
+ *    is no longer measured, so the only fresh opinion on it is its stored
+ *    signature — which often resembles nothing, and would overwrite the
+ *    "absorbed into X" pointer with null the very next day. A null answer keeps
+ *    the previous pointer; the read path follows chains, so a pointer to a topic
+ *    that has since gone dark still resolves through that topic's own.
+ */
+export function refineSuccessors(
+  successors: Map<string, string | null>,
+  evidence: SuccessorEvidence,
+): void {
+  for (const [slug, target] of evidence.absorbedInto) {
+    successors.set(slug, target);
+  }
+
+  const byFeed = new Map<string, { slug: string; shared: number }>();
+  for (const [left, right, shared] of evidence.sharedDocuments) {
+    for (const [from, to] of [
+      [left, right],
+      [right, left],
+    ] as const) {
+      if (evidence.published.has(from) || !evidence.published.has(to)) {
+        continue;
+      }
+      if (successors.get(from)) continue;
+      const best = byFeed.get(from);
+      // Ties break on slug so a sweep that changes nothing rewrites nothing.
+      if (
+        !best ||
+        shared > best.shared ||
+        (shared === best.shared && to < best.slug)
+      ) {
+        byFeed.set(from, { shared, slug: to });
+      }
+    }
+  }
+  for (const [slug, { slug: target }] of byFeed) successors.set(slug, target);
+
+  for (const [slug, target] of successors) {
+    if (target) continue;
+    const previous = evidence.previous.get(slug);
+    if (previous && previous !== slug) successors.set(slug, previous);
+  }
+
+  // 4. **Point straight at the landing page.** Kept pointers can chain through
+  //    topics that have since gone dark, and two of them can point at each
+  //    other — prod carried 118 such cycles, which the read path's hop cap
+  //    turns into an index redirect anyway. So resolve every chain now: a
+  //    topic points directly at the published topic its chain reaches, or at
+  //    nothing when the chain loops or dead-ends.
+  const landing = (start: string): string | null => {
+    const seen = new Set<string>([start]);
+    let current = successors.get(start) ?? null;
+    while (current !== null) {
+      if (evidence.published.has(current)) return current;
+      if (seen.has(current)) return null;
+      seen.add(current);
+      current =
+        successors.get(current) ?? evidence.previous.get(current) ?? null;
+    }
+    return null;
+  };
+  const resolvedTargets = [...successors.keys()].map(
+    (slug) => [slug, landing(slug)] as const,
+  );
+  for (const [slug, target] of resolvedTargets) successors.set(slug, target);
+}

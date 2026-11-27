@@ -1331,10 +1331,52 @@ Build each on hip-ui components + StyleX tokens (no raw HTML/inline styles).
       unnecessary next time and let carry-forward reach back more than one sweep. Costs a few
       hundred thousand rows the read path never touches; the sweep currently truncates both
       membership tables every run, so this needs the delete to become per-slug.
-- [ ] **Topics — near-duplicate clusters** — some areas still split in two where a reader
-      sees one: "Decentralized Social Web" (431 pubs) sits next to "The Decentralized Social Web"
-      (79). Semantic edges reduced this a lot but did not remove it; the remaining fix is a merge
-      pass over cluster similarity, or the editorial overrides below.
+- [x] **Topics — near-duplicate clusters + weak membership** — user report (userinput.app,
+      bug): "a huge chunk of topic pages are essentially just duplicates of each other
+      (especially AI) and often contain posts with questionable relevance". Measured on prod,
+      Nov 2026: **830** published (up from 254 in August — carry-forward ratchets: the
+      reshuffled cluster publishes beside the carried topic and nothing reconciled them; 523
+      of the 830 were carried), 68 names used 2+ times (_Video Games_ ×20), 61 AI topics,
+      694 topics with another topic holding ≥80% of their publications. Membership was any
+      publication with one document carrying one topic tag: 49% of 62,817 memberships rested
+      on a single document, one blog sat in 761 topics. Fix (`topic-dedupe.ts` +
+      `recompute-topics.ts`): (1) membership needs ≥2 matching posts that are ≥10% of the
+      publication's tagged output, or ≥50 posts; (2) every sweep collapses duplicates across
+      fresh + carried topics by feed-document overlap (≥0.6 of the smaller feed, computed off
+      the existing membership scan — no extra corpus query) or tag containment (≥0.5), with a
+      1.5× reach advantage for already-published topics so survivors do not flap; absorbed
+      topics redirect to their survivor; (3) same-name topics merge after naming; (4) only
+      surviving published topics are sent to the naming model; (5) the `superseded_by` write is
+      one statement instead of one per unpublished row (~3k round trips across the region
+      gap); (6) redirects: a merged topic points at its survivor, a topic with no tag-similar
+      successor falls back to the published topic holding most of its feed, a later sweep no
+      longer nulls a pointer it has no opinion on, and every chain is resolved to its landing
+      page at write time (breaks the 118 A↔B pointer cycles prod carried). Before → after, measured by running the
+      sweep on a Neon branch of prod: **830 → 122** published (268 absorbed as duplicates,
+      4 by name), and **122 → 122** on three further sweeps with no slug churn (later sweeps
+      absorb ~37 re-derived duplicates each — the ratchet is closed); duplicate names 68 →
+      **0**; AI-named topics 61 → **7**; topic pairs where one holds ≥80% of the other's
+      publications 2,989 → **9**; largest feed overlap between any two surviving topics
+      **0.58**; memberships 62,817 → 4,124 (single-document memberships 49% → 0); the
+      most-shared publication sits in 62 topics instead of 761. Distinct articles reachable
+      from some topic 91,123 → 71,465 (78% kept) — before, each sat on ~7 topic pages, after
+      ~1.6; sampled losses are mostly misplacements (a Unison backup guide in _AI in
+      Business_), and every article stays on `/tag/$tag`. Of the 830 old URLs, 636 now land
+      on a published topic in one hop (the rest go to the index — never a 404); pointer
+      cycles 118 → 0. Sweep wall clock on the branch: 420s first run, ~280s steady state.
+- [ ] **Topics — generic tail tags still admit off-subject articles** — membership is
+      fixed, but a cluster can still carry broad tags (_The War in Ukraine_ has `defence`,
+      `land`, `safe`, `column`; _Canada US Trade War_ is really a Canada cluster), and the
+      feed admits any member-publication post carrying any member tag — so UK Lords debates
+      reach the Ukraine page and CFL scores reach the trade-war page. Options: prune
+      tags whose in-cluster weight is low relative to their global degree before persisting,
+      or precompute the feed (per-document match strength) instead of matching tags live.
+- [ ] **Topics — let a fresh cluster inherit an absorbed topic's slug** — when a new cluster
+      is clearly bigger than the established topic it duplicates, it currently wins under a
+      new slug and the old URL redirects to it. Inheriting the slug instead would keep the
+      established URL _and_ refresh its tag set (carried topics' tags are frozen at the sweep
+      that last derived them). Needs the absorbed row dropped from the upsert so two rows do
+      not claim one slug.
 - [ ] **Topics — sidebar entry** — deliberately deferred: needs a new `SidebarNavId`, which is
       persisted in readers' `sidebarPref` records and must stay stable, so it wants its own change.
 - [ ] **Topics — editorial overrides** — a `topic_overrides` table keyed by slug (rename,
