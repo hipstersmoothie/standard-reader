@@ -4,6 +4,7 @@ import {
   clearsEntryBar,
   clearsRetentionBar,
   findSuccessors,
+  refineSuccessors,
   shouldCarryForward,
   tagSetCoverage,
 } from "./topic-succession";
@@ -404,5 +405,117 @@ describe("clearsEntryBar", () => {
         ENTRY,
       ),
     ).toBe(true);
+  });
+});
+
+describe("refineSuccessors", () => {
+  const evidence = (
+    overrides: Partial<Parameters<typeof refineSuccessors>[1]> = {},
+  ): Parameters<typeof refineSuccessors>[1] => ({
+    absorbedInto: new Map(),
+    previous: new Map(),
+    published: new Set(["survivor", "other"]),
+    sharedDocuments: [],
+    ...overrides,
+  });
+
+  it("sends a merged topic to what absorbed it, over the nearest signature", () => {
+    const successors = new Map<string, string | null>([["dup", "other"]]);
+    refineSuccessors(
+      successors,
+      evidence({ absorbedInto: new Map([["dup", "survivor"]]) }),
+    );
+    expect(successors.get("dup")).toBe("survivor");
+  });
+
+  it("falls back to the published topic holding most of the feed", () => {
+    const successors = new Map<string, string | null>([["thin", null]]);
+    refineSuccessors(
+      successors,
+      evidence({
+        sharedDocuments: [
+          ["thin", "other", 40],
+          ["survivor", "thin", 70],
+        ],
+      }),
+    );
+    expect(successors.get("thin")).toBe("survivor");
+  });
+
+  it("does not override a signature successor with a feed one", () => {
+    const successors = new Map<string, string | null>([["thin", "other"]]);
+    refineSuccessors(
+      successors,
+      evidence({ sharedDocuments: [["thin", "survivor", 99]] }),
+    );
+    expect(successors.get("thin")).toBe("other");
+  });
+
+  it("never redirects a published topic", () => {
+    const successors = new Map<string, string | null>();
+    refineSuccessors(
+      successors,
+      evidence({ sharedDocuments: [["survivor", "other", 99]] }),
+    );
+    expect(successors.size).toBe(0);
+  });
+
+  it("keeps yesterday's merge pointer when today has no answer", () => {
+    // The regression this guards: a topic merged away in one sweep is not
+    // measured in the next, its stored signature matches nothing, and the
+    // pointer to its survivor was overwritten with null — a redirect that
+    // lasted one day.
+    const successors = new Map<string, string | null>([["merged", null]]);
+    refineSuccessors(
+      successors,
+      evidence({ previous: new Map([["merged", "survivor"]]) }),
+    );
+    expect(successors.get("merged")).toBe("survivor");
+  });
+
+  it("ignores a self-pointer left in the table", () => {
+    const successors = new Map<string, string | null>([["loop", null]]);
+    refineSuccessors(
+      successors,
+      evidence({ previous: new Map([["loop", "loop"]]) }),
+    );
+    expect(successors.get("loop")).toBeNull();
+  });
+
+  it("points a chain straight at the published topic it reaches", () => {
+    const successors = new Map<string, string | null>([
+      ["a", null],
+      ["b", null],
+    ]);
+    refineSuccessors(
+      successors,
+      evidence({
+        previous: new Map([
+          ["a", "b"],
+          ["b", "survivor"],
+        ]),
+      }),
+    );
+    expect(successors.get("a")).toBe("survivor");
+    expect(successors.get("b")).toBe("survivor");
+  });
+
+  it("breaks a cycle instead of preserving it", () => {
+    // Prod had 118 of these: two dark topics pointing at each other.
+    const successors = new Map<string, string | null>([
+      ["a", null],
+      ["b", null],
+    ]);
+    refineSuccessors(
+      successors,
+      evidence({
+        previous: new Map([
+          ["a", "b"],
+          ["b", "a"],
+        ]),
+      }),
+    );
+    expect(successors.get("a")).toBeNull();
+    expect(successors.get("b")).toBeNull();
   });
 });

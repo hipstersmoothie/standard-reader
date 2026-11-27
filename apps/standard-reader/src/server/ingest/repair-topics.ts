@@ -267,14 +267,13 @@ export async function planTopicRepair(): Promise<RepairPlan> {
       return false;
     });
 
-  const groups = groupMemberships(
-    await selectMemberships(
-      withTags.map((topic) => ({
-        key: topic.slug,
-        tags: signatureWeights(topic.tags),
-      })),
-    ),
+  const { rows: membershipRows } = await selectMemberships(
+    withTags.map((topic) => ({
+      key: topic.slug,
+      tags: signatureWeights(topic.tags),
+    })),
   );
+  const groups = groupMemberships(membershipRows);
 
   const candidates: Array<RepairCandidate> = [];
   for (const topic of withTags) {

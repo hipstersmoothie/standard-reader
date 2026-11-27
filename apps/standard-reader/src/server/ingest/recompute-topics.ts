@@ -14,6 +14,8 @@ import {
   tagSetSimilarity,
 } from "./tag-clustering.ts";
 import { isTagEmbeddingEnabled, semanticTagEdges } from "./tag-embeddings.ts";
+import type { DedupeThresholds, DedupeTopic } from "./topic-dedupe.ts";
+import { dedupeByName, dedupeTopics, pairKey } from "./topic-dedupe.ts";
 import {
   topicSlug,
   fallbackTopicName,
@@ -24,6 +26,7 @@ import {
   clearsEntryBar,
   clearsRetentionBar,
   findSuccessors,
+  refineSuccessors,
   shouldCarryForward,
 } from "./topic-succession.ts";
 
@@ -242,6 +245,43 @@ export const CARRY_FORWARD_MAX_COVERAGE = 0.75;
 /** Below this overlap with its stored fingerprint, a topic is re-named. */
 const RENAME_SIMILARITY = 0.8;
 
+/**
+ * What it takes for a publication to be *in* a topic.
+ *
+ * Membership used to be any publication with a single document carrying any
+ * one of the topic's tags, and a topic's Articles tab is "member publications'
+ * documents with a member tag" — so a stray tag let a publication's
+ * unrelated posts into the feed. Measured on the November 2026 set: **49%** of
+ * the 62,817 memberships rested on one document and 43% on under 5% of the
+ * publication's own posts, which is how a Docker-on-WSL post (`wsl` — the World
+ * Surf League) landed in Brazilian Sports and Vim tips in AI Governance, and
+ * how one generalist blog came to sit in 761 topics.
+ *
+ * So a publication now needs a body of work on the subject: at least
+ * {@link MEMBER_MIN_DOCUMENTS} matching posts, and those either a real share of
+ * what it writes ({@link MEMBER_MIN_SHARE}) or — for prolific generalists,
+ * whose share of anything is small — enough posts that the topic is plainly
+ * one of their beats ({@link MEMBER_DOCUMENTS_REGARDLESS_OF_SHARE}). On the
+ * same data this kept 24% of memberships but 78% of feed documents: it cuts the
+ * long tail of one-off matches, not the substance.
+ */
+export const MEMBER_MIN_DOCUMENTS = 2;
+export const MEMBER_MIN_SHARE = 0.1;
+export const MEMBER_DOCUMENTS_REGARDLESS_OF_SHARE = 50;
+
+/**
+ * Duplicate test for the published set; see `./topic-dedupe`. Tuned on the
+ * November 2026 set (830 published): at these values the AI area went from 61
+ * topics to 7 distinct ones and no surviving pair shared most of a feed, while
+ * looser values (0.5 / 0.4) started merging neighbours a reader would keep
+ * apart.
+ */
+export const DEDUPE_THRESHOLDS: DedupeThresholds = {
+  establishedAdvantage: 1.5,
+  minDocumentOverlap: 0.6,
+  minTagOverlap: 0.5,
+};
+
 /** Rows per insert statement when writing tags and memberships. */
 export const INSERT_CHUNK = 500;
 
@@ -258,6 +298,12 @@ export interface TopicsRecomputeSummary {
   droppedByAuthors: number;
   /** Rejected as one operator's publication fleet rather than a topic. */
   droppedByConcentration: number;
+  /**
+   * Topics that cleared the bar but duplicated a stronger one — by feed or
+   * tag overlap, or by ending up with the same name — and now redirect to it.
+   */
+  droppedAsDuplicates: number;
+  droppedAsDuplicateNames: number;
   /** Clusters sent to the naming model this sweep. */
   named: number;
   /**
@@ -302,6 +348,11 @@ interface Candidate {
   topAuthorShare: number;
   documentCount: number;
   published: boolean;
+  /**
+   * Set when the cluster cleared the bar but duplicates a stronger topic: the
+   * key of the candidate it would redirect to. Such a cluster is not published.
+   */
+  duplicateOf?: string;
 }
 
 /**
@@ -425,8 +476,37 @@ async function selectEdges(): Promise<Array<EdgeRow>> {
   return executeRows<EdgeRow>(result);
 }
 
+/** An `overlap` row: the left key rides in `cluster_key`, as for members. */
+interface OverlapRow {
+  kind: "overlap";
+  cluster_key: string;
+  right_key: string;
+  shared: number;
+}
+
+/** What {@link selectMemberships} measured. */
+export interface MembershipResult {
+  rows: Array<MembershipRow>;
+  /**
+   * Feed documents shared by each pair of clusters, keyed by `pairKey`. Only
+   * pairs sharing at least {@link DEDUPE_THRESHOLDS}' document share of the
+   * smaller feed are returned — the rest cannot make a duplicate.
+   */
+  sharedDocuments: Map<string, number>;
+}
+
 /**
- * Resolve each cluster's publications, authors, and document count in one pass.
+ * Resolve each cluster's publications, authors, document count, and how much
+ * of its feed it shares with every other cluster — in one pass.
+ *
+ * One statement because the cost is the corpus scan, not the cluster count
+ * (~32s however many clusters are mapped), so the overlap the dedupe pass needs
+ * is computed off the same scan rather than paying for a second one. The rows
+ * come back tagged by `kind`.
+ *
+ * Membership applies the bar described at {@link MEMBER_MIN_DOCUMENTS}, and
+ * everything downstream — document counts, overlap, the stored membership the
+ * feed is scoped to — is measured over members only.
  *
  * The tag→cluster mapping is handed to Postgres as a single JSON parameter
  * rather than a bound array: a JS array in a `sql` template binds as one scalar
@@ -437,7 +517,7 @@ export async function selectMemberships(
     key: string;
     tags: Array<{ tag: string; weight: number }>;
   }>,
-): Promise<Array<MembershipRow>> {
+): Promise<MembershipResult> {
   const mapping = clusters.flatMap((cluster) =>
     cluster.tags.map((member) => ({
       k: cluster.key,
@@ -445,7 +525,7 @@ export async function selectMemberships(
       w: member.weight,
     })),
   );
-  if (mapping.length === 0) return [];
+  if (mapping.length === 0) return { rows: [], sharedDocuments: new Map() };
 
   const result = await db.execute(sql`
     WITH mapping AS (
@@ -472,6 +552,13 @@ export async function selectMemberships(
         AND (ppr.handle IS NULL OR ppr.handle NOT ILIKE ${WEB_BRIDGE_HANDLE_PATTERN})
         AND btrim(t) <> ''
     ),
+    -- Everything a publication writes with a tag, the denominator of its
+    -- share in any one topic.
+    pub_documents AS (
+      SELECT publication_uri, count(DISTINCT doc_uri)::int AS n
+      FROM doc_tag
+      GROUP BY publication_uri
+    ),
     matched AS (
       SELECT m.cluster_key, dt.doc_uri, dt.publication_uri, dt.did, dt.tag, m.weight
       FROM doc_tag dt
@@ -487,17 +574,74 @@ export async function selectMemberships(
       FROM pub_tag
       GROUP BY cluster_key, publication_uri, did
     ),
-    doc_counts AS (
-      SELECT cluster_key, count(DISTINCT doc_uri)::int AS document_count
+    pub_matched_documents AS (
+      SELECT cluster_key, publication_uri, count(DISTINCT doc_uri)::int AS n
       FROM matched
+      GROUP BY cluster_key, publication_uri
+    ),
+    members AS (
+      SELECT pr.*
+      FROM pub_rows pr
+      JOIN pub_matched_documents pm
+        ON pm.cluster_key = pr.cluster_key
+       AND pm.publication_uri = pr.publication_uri
+      JOIN pub_documents pd ON pd.publication_uri = pr.publication_uri
+      WHERE pm.n >= ${MEMBER_MIN_DOCUMENTS}
+        AND (pm.n >= ${MEMBER_MIN_SHARE}::float8 * pd.n
+             OR pm.n >= ${MEMBER_DOCUMENTS_REGARDLESS_OF_SHARE})
+    ),
+    -- A cluster's feed as the topic page will serve it: member publications'
+    -- documents carrying a member tag.
+    member_docs AS MATERIALIZED (
+      SELECT DISTINCT m.cluster_key, m.doc_uri
+      FROM matched m
+      JOIN members mb
+        ON mb.cluster_key = m.cluster_key
+       AND mb.publication_uri = m.publication_uri
+    ),
+    doc_counts AS (
+      SELECT cluster_key, count(*)::int AS document_count
+      FROM member_docs
       GROUP BY cluster_key
+    ),
+    feed_overlaps AS (
+      SELECT a.cluster_key AS left_key, b.cluster_key AS right_key,
+             count(*)::int AS shared
+      FROM member_docs a
+      JOIN member_docs b
+        ON b.doc_uri = a.doc_uri AND a.cluster_key < b.cluster_key
+      GROUP BY 1, 2
     )
-    SELECT pr.cluster_key, pr.publication_uri, pr.did,
-           pr.matched_tag_count, pr.score, dc.document_count
-    FROM pub_rows pr
-    JOIN doc_counts dc ON dc.cluster_key = pr.cluster_key
+    SELECT 'member' AS kind, mb.cluster_key, mb.publication_uri, mb.did,
+           mb.matched_tag_count, mb.score, dc.document_count,
+           NULL::text AS right_key, NULL::int AS shared
+    FROM members mb
+    JOIN doc_counts dc ON dc.cluster_key = mb.cluster_key
+    UNION ALL
+    SELECT 'overlap', o.left_key, NULL, NULL, NULL, NULL, NULL,
+           o.right_key, o.shared
+    FROM feed_overlaps o
+    JOIN doc_counts l ON l.cluster_key = o.left_key
+    JOIN doc_counts r ON r.cluster_key = o.right_key
+    WHERE o.shared >= ${DEDUPE_THRESHOLDS.minDocumentOverlap}::float8
+                      * least(l.document_count, r.document_count)
   `);
-  return executeRows<MembershipRow>(result);
+
+  const rows: Array<MembershipRow> = [];
+  const sharedDocuments = new Map<string, number>();
+  for (const row of executeRows<
+    (MembershipRow & { kind: "member" }) | OverlapRow
+  >(result)) {
+    if (row.kind === "member") {
+      rows.push(row);
+    } else {
+      sharedDocuments.set(
+        pairKey(row.cluster_key, row.right_key),
+        Number(row.shared),
+      );
+    }
+  }
+  return { rows, sharedDocuments };
 }
 
 /** One cluster's resolved membership, before the quality bar is applied. */
@@ -697,6 +841,8 @@ export interface TopicDerivation {
   droppedByPublications: number;
   droppedByAuthors: number;
   droppedByConcentration: number;
+  /** Cleared the bar but duplicated a stronger cluster; see `./topic-dedupe`. */
+  droppedAsDuplicates: number;
   /**
    * Signatures of the clusters that never reached the membership query because
    * they were too small. Carried purely so the inspection script can show what
@@ -792,6 +938,8 @@ interface ResolvedCandidates {
   candidates: Array<Candidate>;
   /** Memberships for the carried-forward clusters passed alongside. */
   carriedGroups: Map<string, MembershipGroup>;
+  /** Feed overlap between every measured cluster pair; see `selectMemberships`. */
+  sharedDocuments: Map<string, number>;
   droppedByTags: number;
   droppedByPublications: number;
   droppedByAuthors: number;
@@ -816,9 +964,8 @@ async function resolveCandidates(
     tags: Array<{ tag: string; weight: number }>;
   }>,
 ): Promise<ResolvedCandidates> {
-  const groups = groupMemberships(
-    await selectMemberships([...sized, ...carried]),
-  );
+  const measured = await selectMemberships([...sized, ...carried]);
+  const groups = groupMemberships(measured.rows);
   const carriedGroups = new Map(
     carried.map((cluster) => [
       cluster.key,
@@ -878,6 +1025,7 @@ async function resolveCandidates(
   return {
     candidates,
     carriedGroups,
+    sharedDocuments: measured.sharedDocuments,
     droppedByAuthors,
     droppedByConcentration,
     droppedByPublications,
@@ -897,10 +1045,29 @@ async function resolveCandidates(
 export async function deriveTopics(): Promise<TopicDerivation> {
   const derivation = await deriveClusters();
   const resolved = await resolveCandidates(derivation.sized, []);
+
+  // Nothing is established in a read-only look, so this is the dedupe the
+  // sweep would run on a fresh table. Name collisions are not checked: they
+  // need the naming model, which this never calls.
+  const absorbed = dedupeTopics(
+    resolved.candidates
+      .filter((candidate) => candidate.published)
+      .map((candidate) => dedupeInput(candidate, candidate.key, false)),
+    resolved.sharedDocuments,
+    DEDUPE_THRESHOLDS,
+  );
+  const candidates = resolved.candidates.map((candidate) => {
+    const duplicateOf = absorbed.get(candidate.key);
+    return duplicateOf
+      ? { ...candidate, duplicateOf, published: false }
+      : candidate;
+  });
+
   return {
     belowTagBar: derivation.belowTagBar,
-    candidates: resolved.candidates,
+    candidates,
     clusters: derivation.clusters,
+    droppedAsDuplicates: absorbed.size,
     droppedByAuthors: resolved.droppedByAuthors,
     droppedByConcentration: resolved.droppedByConcentration,
     droppedByPublications: resolved.droppedByPublications,
@@ -908,6 +1075,24 @@ export async function deriveTopics(): Promise<TopicDerivation> {
     edges: derivation.edges,
     semanticEdges: derivation.semanticEdges,
     tags: derivation.tags,
+  };
+}
+
+/**
+ * A candidate as the dedupe pass sees it. `key` is the key the membership
+ * query measured it under, which is what its overlap figures are keyed by.
+ */
+function dedupeInput(
+  candidate: Candidate,
+  key: string,
+  established: boolean,
+): DedupeTopic {
+  return {
+    authorCount: candidate.authorCount,
+    documentCount: candidate.documentCount,
+    established,
+    key,
+    tags: candidate.tags.map((member) => member.tag),
   };
 }
 
@@ -1035,6 +1220,7 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
       nameModel: topics.nameModel,
       namedAt: topics.namedAt,
       published: topics.published,
+      supersededBy: topics.supersededBy,
     })
     .from(topics);
   const existingBySlug = new Map(existing.map((row) => [row.slug, row]));
@@ -1064,13 +1250,67 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
     candidates,
   );
 
-  // Name only what needs it: a brand-new cluster, one whose fingerprint drifted
-  // far enough that its old name may no longer fit, or one still carrying the
-  // deterministic fallback name from a sweep that ran without naming.
+  // Whether each fresh cluster would publish, before any naming. Hysteresis: a
+  // topic that has already been published keeps its place while it still
+  // clears the retention bar, so a marginal sweep does not take a live URL off
+  // the site. See RETENTION_FACTOR.
+  const priorOf = (candidate: Candidate) => {
+    const slug = matches.get(candidate.key);
+    return slug ? existingBySlug.get(slug) : undefined;
+  };
+  const clearsBar = new Map(
+    candidates.map((candidate) => [
+      candidate.key,
+      candidate.published ||
+        (priorOf(candidate)?.published === true &&
+          clearsRetentionBar(
+            {
+              tagCount: candidate.tags.length,
+              publicationCount: candidate.publications.length,
+              authorCount: candidate.authorCount,
+              topAuthorShare: candidate.topAuthorShare,
+            },
+            RETENTION_BAR,
+          )),
+    ]),
+  );
+
+  // Collapse duplicates across everything that would publish — fresh clusters
+  // and carried topics alike, since the carried ones are where duplicates come
+  // from. Keyed by the key each was measured under (a fresh cluster's index, a
+  // carried topic's slug), which is what the overlap figures use. This runs
+  // before naming so that nothing about to be merged away is sent to the
+  // model.
+  const absorbedByOverlap = dedupeTopics(
+    [
+      ...candidates
+        .filter((candidate) => clearsBar.get(candidate.key))
+        .map((candidate) =>
+          dedupeInput(
+            candidate,
+            candidate.key,
+            priorOf(candidate)?.published === true,
+          ),
+        ),
+      ...carried.map(({ slug, candidate }) =>
+        dedupeInput(candidate, slug, true),
+      ),
+    ],
+    resolvedCandidates.sharedDocuments,
+    DEDUPE_THRESHOLDS,
+  );
+  const survives = (measureKey: string, candidate: Candidate) =>
+    clearsBar.get(candidate.key) === true && !absorbedByOverlap.has(measureKey);
+
+  // Name only what will publish and needs it: a brand-new cluster, one whose
+  // fingerprint drifted far enough that its old name may no longer fit, or one
+  // still carrying the deterministic fallback name from a sweep that ran
+  // without naming. A cluster below the bar keeps the fallback name until it
+  // publishes, and is named then (the `nameModel` check below).
   const namingConfigured = isTopicNamingConfigured();
   const needsNaming = candidates.filter((candidate) => {
-    const slug = matches.get(candidate.key);
-    const prior = slug ? existingBySlug.get(slug) : undefined;
+    if (!survives(candidate.key, candidate)) return false;
+    const prior = priorOf(candidate);
     if (!prior) return true;
     if (namingConfigured && !prior.nameModel) return true;
     return (
@@ -1094,7 +1334,7 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
   const takenSlugs = new Set(existing.map((row) => row.slug));
   const resolved = candidates.map((candidate) => {
     const matchedSlug = matches.get(candidate.key);
-    const prior = matchedSlug ? existingBySlug.get(matchedSlug) : undefined;
+    const prior = priorOf(candidate);
     const naming = namingByKey.get(candidate.key);
     const name =
       naming?.name ??
@@ -1110,25 +1350,11 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
       matchedSlug ?? topicSlug(name, candidate.signature.join(" "), takenSlugs);
     takenSlugs.add(slug);
 
-    // Hysteresis: a topic that has already been published keeps its place
-    // while it still clears the retention bar, so a marginal sweep does not
-    // take a live URL off the site. See RETENTION_FACTOR.
-    const published =
-      candidate.published ||
-      (prior?.published === true &&
-        clearsRetentionBar(
-          {
-            tagCount: candidate.tags.length,
-            publicationCount: candidate.publications.length,
-            authorCount: candidate.authorCount,
-            topAuthorShare: candidate.topAuthorShare,
-          },
-          RETENTION_BAR,
-        ));
-
     return {
       candidate,
-      published,
+      established: prior?.published === true,
+      measureKey: candidate.key,
+      published: survives(candidate.key, candidate),
       slug,
       name,
       description,
@@ -1138,11 +1364,16 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
   });
 
   // Carried topics keep everything the sweep did not re-derive — name,
-  // description, and the namer that wrote them.
+  // description, and the namer that wrote them. One absorbed by a duplicate is
+  // simply not written: its row stays as it is, the unpublish below takes it
+  // off the site, and the redirect points it at what absorbed it.
   for (const { slug, candidate } of carried) {
+    if (absorbedByOverlap.has(slug)) continue;
     const prior = existingBySlug.get(slug);
     resolved.push({
       candidate,
+      established: true,
+      measureKey: slug,
       published: true,
       slug,
       name: prior?.name ?? fallbackTopicName(candidate.signature).name,
@@ -1150,6 +1381,21 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
       nameModel: prior?.nameModel ?? null,
       namedAt: prior?.namedAt ?? null,
     });
+  }
+
+  // Same-name topics read as duplicates however their tags differ; see
+  // `dedupeByName`. Run once names are final, over what is still published.
+  const absorbedByName = dedupeByName(
+    resolved
+      .filter((row) => row.published)
+      .map((row) => ({
+        ...dedupeInput(row.candidate, row.slug, row.established),
+        name: row.name,
+      })),
+    DEDUPE_THRESHOLDS.establishedAdvantage,
+  );
+  for (const row of resolved) {
+    if (absorbedByName.has(row.slug)) row.published = false;
   }
 
   const publishedSlugs = resolved
@@ -1164,6 +1410,36 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
     existing,
     SUPERSEDE_SIMILARITY,
   );
+
+  // Overlap and dedupe results are keyed by measurement key (a fresh cluster's
+  // index, a carried topic's slug); redirects are written by slug.
+  const slugByMeasureKey = new Map(
+    resolved.map((row) => [row.measureKey, row.slug]),
+  );
+  const slugOfKey = (key: string) =>
+    slugByMeasureKey.get(key) ?? (existingBySlug.has(key) ? key : undefined);
+
+  const absorbedInto = new Map(absorbedByName);
+  for (const [measureKey, survivorKey] of absorbedByOverlap) {
+    const absorbedSlug = slugOfKey(measureKey);
+    const survivorSlug = slugByMeasureKey.get(survivorKey);
+    if (absorbedSlug && survivorSlug) {
+      absorbedInto.set(absorbedSlug, survivorSlug);
+    }
+  }
+  const sharedBySlug: Array<[string, string, number]> = [];
+  for (const [key, shared] of resolvedCandidates.sharedDocuments) {
+    const [leftKey = "", rightKey = ""] = key.split("\u0000");
+    const left = slugOfKey(leftKey);
+    const right = slugOfKey(rightKey);
+    if (left && right) sharedBySlug.push([left, right, shared]);
+  }
+  refineSuccessors(successors, {
+    absorbedInto,
+    previous: new Map(existing.map((row) => [row.slug, row.supersededBy])),
+    published: new Set(publishedSlugs),
+    sharedDocuments: sharedBySlug,
+  });
 
   await db.transaction(async (tx) => {
     // One statement rather than a loop: the ingest worker and the database sit
@@ -1204,6 +1480,10 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
             documentCount: sql`excluded.document_count`,
             score: sql`excluded.score`,
             published: sql`excluded.published`,
+            // A published topic redirects nowhere; a pointer left from when it
+            // was dark is stale (and read as a cycle by anyone inspecting the
+            // table). If it goes dark again the sweep points it afresh.
+            supersededBy: sql`CASE WHEN excluded.published THEN NULL ELSE ${topics.supersededBy} END`,
             nameModel: sql`excluded.name_model`,
             namedAt: sql`excluded.named_at`,
             updatedAt: sql`now()`,
@@ -1229,11 +1509,24 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
     // URL redirects instead of 404ing. Recomputed each sweep rather than
     // written once: the successor may itself be unpublished later, and pointing
     // at whatever is closest *today* keeps the chain short.
-    for (const [slug, target] of successors) {
-      await tx
-        .update(topics)
-        .set({ supersededBy: target, updatedAt: new Date() })
-        .where(eq(topics.slug, slug));
+    //
+    // One statement, not one per topic: this covers every unpublished row
+    // (thousands), and at the ~230ms region round trip a per-row loop was
+    // most of the sweep's wall clock. Rows whose target did not change are
+    // left alone.
+    if (successors.size > 0) {
+      const pointers = [...successors].map(([slug, target]) => ({
+        slug,
+        target,
+      }));
+      await tx.execute(sql`
+        UPDATE topics t
+        SET superseded_by = v.target, updated_at = now()
+        FROM jsonb_to_recordset(${JSON.stringify(pointers)}::jsonb)
+          AS v(slug text, target text)
+        WHERE t.slug = v.slug
+          AND t.superseded_by IS DISTINCT FROM v.target
+      `);
     }
 
     // Tags and memberships are stored for published topics only — the
@@ -1281,8 +1574,12 @@ export async function recomputeTopics(): Promise<TopicsRecomputeSummary> {
     droppedByPublications: resolvedCandidates.droppedByPublications,
     droppedByAuthors: resolvedCandidates.droppedByAuthors,
     droppedByConcentration: resolvedCandidates.droppedByConcentration,
+    droppedAsDuplicates: absorbedByOverlap.size,
+    droppedAsDuplicateNames: absorbedByName.size,
     named: needsNaming.length,
-    carriedForward: carried.length,
+    // Carried topics still standing, not ones measured and then absorbed.
+    carriedForward: carried.filter(({ slug }) => !absorbedByOverlap.has(slug))
+      .length,
   };
   logEvent("ingest.recomputeTopics", { ...summary });
   return summary;

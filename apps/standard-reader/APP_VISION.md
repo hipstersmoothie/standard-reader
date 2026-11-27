@@ -114,8 +114,8 @@ to a granularity problem. The directory's tag chips rank a 450k-tag vocabulary b
 frequency,
 which puts the network's atproto-native topics (`atproto`, `bluesky`, `atmosphere`) on top
 of a page meant to represent the whole network. Clustering rebalances it: atproto becomes
-_one_ topic among ~45, next to Film and Festivals, Wildlife and Nature, Pacific
-Northwest Local News, Mental Health, and Brazilian Politics.
+_one_ topic among ~120, next to Film and TV, Books and Reading, Mental Health and
+Wellbeing, Recipes and Cooking, and Spanish Politics.
 
 Topics are **derived, never curated** — see
 [Topic derivation](#topic-derivation) for how.
@@ -140,7 +140,13 @@ Topics are **derived, never curated** — see
   cluster merges into a neighbour — and its tags and memberships go with it. Rather
   than 404, the sweep records the closest surviving topic by tag overlap in
   `superseded_by` and `/topics/$slug` redirects there (301), following the pointer
-  transitively since merges chain. Nothing close enough redirects to the index. Only a
+  transitively since merges chain. A duplicate redirects to the topic that absorbed it;
+  failing a tag match, a topic redirects to the published topic holding most of its feed.
+  A pointer is never dropped just because a later sweep has no opinion on a topic it no
+  longer measures, and every chain is resolved at write time to the published topic it
+  reaches — so redirects are one hop, and pointer cycles (prod had 118) are broken
+  rather than preserved.
+  Nothing close enough redirects to the index. Only a
   slug the table has never held is a genuine 404, so a typo still errors.
 - **Publication is sticky.** The quality bar is an _entry_ test; re-applying it
   unchanged every run would make a topic sitting near a threshold flap in and out,
@@ -170,7 +176,34 @@ Topics are **derived, never curated** — see
   cluster that published this sweep already contains three quarters of the topic, the
   cluster _is_ the topic re-derived, and carrying the old row forward would put two
   versions of one area on the site. A narrower cluster carved out of a broad topic is
-  not absorption — both are real, at different altitudes, and both stay.
+  not absorption on _that_ test — but see the next point.
+- **One area, one page.** Carry-forward has a cost: the reshuffled cluster that failed to
+  match a topic publishes beside it under a new slug, and nothing reconciled the two. The
+  published set ratcheted from 254 topics in August 2026 to **830** by November — 523 of
+  them carried forward, 68 names used more than once (_Video Games_ twenty times), and 61
+  topics about AI. So every sweep now collapses duplicates across everything that would
+  publish, fresh and carried alike: a topic whose **feed** is ≥60% inside a stronger
+  topic's feed, or whose tags are ≥50% inside its tags (both measured against the
+  smaller topic), is unpublished and redirects to the topic that absorbed it. Feed
+  overlap is the test because it is what a reader sees — two pages listing the same
+  articles are one page — and it is measured off the membership scan the sweep already
+  runs, so it costs no extra query. Topics already published get a 1.5× reach advantage
+  when choosing the survivor, so two near-equal duplicates do not trade places (and
+  URLs) whenever their author counts wobble; a clearly bigger newcomer still takes
+  over. Topics that end up with the same name are merged the same way, because a reader
+  cannot tell two _Video Games_ apart however different their tags are. Duplicates are
+  resolved before naming, so the model is never asked to name a topic about to be merged
+  away. See `src/server/ingest/topic-dedupe.ts`.
+- **Membership takes a body of work.** A publication used to join a topic with a single
+  document carrying a single topic tag, and the Articles tab serves members' documents —
+  so one stray tag let a publication's unrelated posts in (a Docker-on-WSL post reached
+  _Brazilian Sports_ through `wsl`, the World Surf League; Vim tips reached _AI
+  Governance_), and one generalist blog sat in 761 topics. Half of all memberships rested
+  on one document. A publication now needs at least two matching posts, and those must
+  be ≥10% of what it writes with tags — or, for prolific generalists whose share of
+  anything is small, at least 50 posts on the subject. On the November data that kept a
+  quarter of the memberships but 78% of the feed documents: it cuts the one-off matches,
+  not the substance.
 
 ### Search
 

@@ -35,7 +35,8 @@ console.log(
     `dropped    ${derivation.droppedByTags} too few tags, ` +
       `${derivation.droppedByPublications} too few publications, ` +
       `${derivation.droppedByAuthors} too few authors, ` +
-      `${derivation.droppedByConcentration} one-operator fleets`,
+      `${derivation.droppedByConcentration} one-operator fleets, ` +
+      `${derivation.droppedAsDuplicates} duplicates`,
     `published  ${published.length}`,
     `elapsed    ${(elapsed / 1000).toFixed(1)}s`,
   ].join("\n"),
