@@ -1852,6 +1852,11 @@ Bluesky badges (bsky.app + `social-app` forks Witchsky, Mu), options page. Backe
       toolbar badge, options page.
 - [x] **Extension privacy URL** — [`/privacy/extension`](src/routes/_layout.privacy.extension.tsx) with
       [`ExtensionPrivacyView`](src/components/reader/extension-privacy-view.tsx); cross-linked from site privacy policy.
+- [x] **Subscribe from the overlay** — the page chip on an article carries its publication's
+      subscribe toggle (same `follow` message → `/api/extension/follow` path as the popup), and for
+      articles that only render on their own site "Open" goes to the publication's Standard Reader
+      page instead of `/a/…`, which would just redirect back to the tab the reader is on. The popup's
+      "View in Reader" falls back the same way (shared rule: `src/lib/extension-open-target.ts`).
 - [ ] **Manual QA** — run checklist in [`apps/extension/README.md`](../extension/README.md) (dev + prod).
 - [ ] **Chrome Web Store publish** — follow [`apps/extension/store/DEPLOY.md`](../extension/store/DEPLOY.md) (prod API, privacy URL, QA, screenshots, upload).
 

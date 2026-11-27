@@ -35,6 +35,7 @@ import {
 
 import { formatReaders, initials } from "#/components/reader/format";
 import { ArticleEngagement } from "#/components/reader/primitives";
+import { articleOpenTarget } from "#/lib/extension-open-target";
 
 import type { ExtensionResolveArticle } from "../lib/types";
 import { PopupArticleDiscussion } from "./PopupArticleDiscussion";
@@ -179,7 +180,10 @@ export function PopupArticle({
   const readingLabel =
     result.readingMinutes == null ? null : `${result.readingMinutes} min read`;
   const followerCount = result.publicationSubscriberCount ?? 0;
-  const canOpenInReader = result.hasRenderableBody ?? true;
+  // An article that only renders on its own site falls back to its
+  // publication's reader page — `/a/…` would just bounce back to this tab.
+  const openTarget = articleOpenTarget(result);
+  const canOpenInReader = openTarget != null;
   const showPubRow = Boolean(result.publicationUri && result.publicationName);
   const hasEngagement = result.recommendCount > 0 || result.commentCount > 0;
   const showMeta = Boolean(readingLabel || hasEngagement);
@@ -188,11 +192,19 @@ export function PopupArticle({
     <Button
       variant="secondary"
       size="lg"
-      onPress={onOpenReader}
+      onPress={() => {
+        if (openTarget?.destination === "publication" && onOpenReaderUrl) {
+          onOpenReaderUrl(openTarget.url);
+          return;
+        }
+        onOpenReader();
+      }}
       isDisabled={!canOpenInReader}
       style={styles.actionButton}
     >
-      View in Reader
+      {openTarget?.destination === "publication"
+        ? "View publication"
+        : "View in Reader"}
       <ArrowRight size={16} />
     </Button>
   );

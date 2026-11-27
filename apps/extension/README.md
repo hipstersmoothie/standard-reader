@@ -89,6 +89,7 @@ Load unpacked from `extension/.output/chrome-mv3/` after `pnpm extension:build`.
 | Popup — article         | Open indexed article URL → click extension icon                                 | Title, Save, Follow, Open                           |
 | Popup — signed out save | Sign out → open popup on article → Save                                         | Login tab opens; save completes after sign-in       |
 | Overlay                 | Visit publication article URL (not SR app)                                      | Bottom-right chip; dismiss hides until page refresh |
+| Overlay — site-only     | Article whose body only renders on its own site → hover chip                    | Subscribe toggle; Open goes to the SR publication   |
 | Overlay off             | Disable in options → revisit site                                               | No chip                                             |
 | SR app excluded         | Visit `standard-reader.app` article                                             | No overlay                                          |
 | Context menu            | Right-click link to indexed article → Save                                      | Bookmark created (or login → retry)                 |
