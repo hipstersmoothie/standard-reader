@@ -35,7 +35,11 @@ import { listApi } from "#/integrations/tanstack-query/api-lists.functions";
 import { readerApi } from "#/integrations/tanstack-query/api-reader.functions";
 import { useLoginSearch } from "#/utils/use-login-search";
 
-import { BlockUserDialog, BlockUserMenuItem } from "./block-user-menu-item";
+import {
+  BlockUserDialog,
+  BlockUserMenuItem,
+  HideAgainMenuItem,
+} from "./block-user-menu-item";
 import { FollowUserButton } from "./follow-user-button";
 import { MuteDialog, MuteMenuItem } from "./mute-menu-item";
 import { NotifyButton } from "./notify-button";
@@ -169,6 +173,7 @@ export function AuthorActions({
   feedUrl,
   signedIn,
   isOwnProfile,
+  blockOverridden = false,
   user,
   embed,
   onOpenSettings,
@@ -181,6 +186,12 @@ export function AuthorActions({
   feedUrl: string;
   signedIn: boolean;
   isOwnProfile: boolean;
+  /**
+   * A block exists between the reader and this account, but their allowlist is
+   * setting it aside. The menu offers "Hide again" in place of Block — this
+   * account is already blocked, and a second block record would change nothing.
+   */
+  blockOverridden?: boolean;
   /** Byline for the optimistic sidebar "People" row when following. */
   user: FollowingUser;
   /**
@@ -339,11 +350,19 @@ export function AuthorActions({
                   iconSize={MENU_ICON}
                   onOpenDialog={() => setMuteOpen(true)}
                 />
-                <BlockUserMenuItem
-                  name={user.displayName ?? handle}
-                  iconSize={MENU_ICON}
-                  onPress={() => setBlockOpen(true)}
-                />
+                {blockOverridden ? (
+                  <HideAgainMenuItem
+                    did={did}
+                    name={user.displayName ?? handle}
+                    iconSize={MENU_ICON}
+                  />
+                ) : (
+                  <BlockUserMenuItem
+                    name={user.displayName ?? handle}
+                    iconSize={MENU_ICON}
+                    onPress={() => setBlockOpen(true)}
+                  />
+                )}
               </>
             )}
           </Menu>

@@ -3,6 +3,7 @@ import {
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
@@ -204,6 +205,47 @@ export const blockSyncState = pgTable("block_sync_state", {
     .defaultNow(),
 });
 
+/**
+ * Block allowlist — accounts a reader has chosen to see in Standard Reader
+ * despite a block between them.
+ *
+ * One row per `(owner, subject)` pair. An allowlisted account is exempt from
+ * every block direction for that reader — their own block, a moderation list
+ * they subscribe to, and blocks made against them — so the account's writing
+ * shows in feeds, search, discussion and their pages exactly as it would for a
+ * signed-out visitor. It changes nothing on the network: the block records stay
+ * in their repos and keep applying on Bluesky. That is the point of it — "keep
+ * them blocked on the microblogging side, but let me read their blog".
+ *
+ * **Deliberately app-local, not a record.** Unlike mutes
+ * (`app.standard-reader.graph.mute`) this is not written to the reader's repo.
+ * A public record saying "I blocked this person but I still read them" is a
+ * statement about attention nobody opts into broadcasting — the same reasoning
+ * that keeps `reading_progress` private — and, aimed at someone who blocked
+ * *you*, it would publish "I'm reading you anyway" to the very person who asked
+ * not to be. It is also meaningless to any other app: it only exists to override
+ * how Standard Reader enforces blocks, like its sibling `user.respect_blocks`.
+ * So no lexicon, no ingest handler, no OAuth scope, and nothing to backfill.
+ */
+export const blockAllowlist = pgTable(
+  "block_allowlist",
+  {
+    /** DID of the reader who made the exemption. */
+    ownerDid: text("owner_did").notNull(),
+    /** DID of the account they want to see despite the block. */
+    subjectDid: text("subject_did").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    // Serves both reads: the per-candidate "is this blocked account allowed"
+    // probe in `notBlockedByViewer` / `blockEdgeSql`, and — on its `owner_did`
+    // prefix — the settings listing.
+    primaryKey({ columns: [table.ownerDid, table.subjectDid] }),
+  ],
+);
+
 export type Block = typeof blocks.$inferSelect;
 export type NewBlock = typeof blocks.$inferInsert;
 export type BlockList = typeof blockLists.$inferSelect;
@@ -212,3 +254,4 @@ export type BlockListItem = typeof blockListItems.$inferSelect;
 export type NewBlockListItem = typeof blockListItems.$inferInsert;
 export type BlockListSyncState = typeof blockListSyncState.$inferSelect;
 export type BlockSyncState = typeof blockSyncState.$inferSelect;
+export type BlockAllowlistEntry = typeof blockAllowlist.$inferSelect;

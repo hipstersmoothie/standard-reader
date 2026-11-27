@@ -4,6 +4,7 @@ import { articleReaderUrl } from "#/components/reader/format";
 
 import { db } from "../../db/index.ts";
 import {
+  blockAllowlist,
   blockListItems,
   blockLists,
   blocks,
@@ -216,7 +217,8 @@ export async function resolveTargets(
  * content whichever way it runs. Recipients who turned blocks off
  * (`user.respect_blocks = false`) are dropped first: this probes the block
  * tables directly rather than through `readerHasBlocks`, so it has to honour
- * that switch itself.
+ * that switch itself — and the reader's block allowlist, for the same reason:
+ * an exempted account's posts notify as if there were no block.
  */
 async function blockedRecipients(
   targets: Array<PushTarget>,
@@ -233,54 +235,117 @@ async function blockedRecipients(
   const owners = recipients.filter((did) => !optedOutDids.has(did));
   if (owners.length === 0) return new Set();
 
-  const [blocking, blockedBy, listBlocking, listBlockedBy] = await Promise.all([
-    db
-      .selectDistinct({ did: blocks.blockerDid })
-      .from(blocks)
-      .where(
-        and(
-          eq(blocks.deleted, false),
-          inArray(blocks.blockerDid, owners),
-          inArray(blocks.subjectDid, subjectDids),
+  // Each query yields (recipient, subject) pairs rather than bare recipients:
+  // an allowlist exemption is per pair, so a recipient who allowlisted the
+  // author but not the publication's owner is still blocked from the post.
+  const [blocking, blockedBy, listBlocking, listBlockedBy, allowed] =
+    await Promise.all([
+      db
+        .selectDistinct({
+          recipient: blocks.blockerDid,
+          subject: blocks.subjectDid,
+        })
+        .from(blocks)
+        .where(
+          and(
+            eq(blocks.deleted, false),
+            inArray(blocks.blockerDid, owners),
+            inArray(blocks.subjectDid, subjectDids),
+          ),
         ),
-      ),
-    db
-      .selectDistinct({ did: blocks.subjectDid })
-      .from(blocks)
-      .where(
-        and(
-          eq(blocks.deleted, false),
-          inArray(blocks.subjectDid, owners),
-          inArray(blocks.blockerDid, subjectDids),
+      db
+        .selectDistinct({
+          recipient: blocks.subjectDid,
+          subject: blocks.blockerDid,
+        })
+        .from(blocks)
+        .where(
+          and(
+            eq(blocks.deleted, false),
+            inArray(blocks.subjectDid, owners),
+            inArray(blocks.blockerDid, subjectDids),
+          ),
         ),
-      ),
-    db
-      .selectDistinct({ did: blockLists.blockerDid })
-      .from(blockLists)
-      .innerJoin(blockListItems, eq(blockListItems.listUri, blockLists.listUri))
-      .where(
-        and(
-          eq(blockLists.deleted, false),
-          inArray(blockLists.blockerDid, owners),
-          inArray(blockListItems.subjectDid, subjectDids),
+      db
+        .selectDistinct({
+          recipient: blockLists.blockerDid,
+          subject: blockListItems.subjectDid,
+        })
+        .from(blockLists)
+        .innerJoin(
+          blockListItems,
+          eq(blockListItems.listUri, blockLists.listUri),
+        )
+        .where(
+          and(
+            eq(blockLists.deleted, false),
+            inArray(blockLists.blockerDid, owners),
+            inArray(blockListItems.subjectDid, subjectDids),
+          ),
         ),
-      ),
-    db
-      .selectDistinct({ did: blockListItems.subjectDid })
-      .from(blockLists)
-      .innerJoin(blockListItems, eq(blockListItems.listUri, blockLists.listUri))
-      .where(
-        and(
-          eq(blockLists.deleted, false),
-          inArray(blockListItems.subjectDid, owners),
-          inArray(blockLists.blockerDid, subjectDids),
+      db
+        .selectDistinct({
+          recipient: blockListItems.subjectDid,
+          subject: blockLists.blockerDid,
+        })
+        .from(blockLists)
+        .innerJoin(
+          blockListItems,
+          eq(blockListItems.listUri, blockLists.listUri),
+        )
+        .where(
+          and(
+            eq(blockLists.deleted, false),
+            inArray(blockListItems.subjectDid, owners),
+            inArray(blockLists.blockerDid, subjectDids),
+          ),
         ),
-      ),
-  ]);
+      db
+        .select({
+          recipient: blockAllowlist.ownerDid,
+          subject: blockAllowlist.subjectDid,
+        })
+        .from(blockAllowlist)
+        .where(
+          and(
+            inArray(blockAllowlist.ownerDid, owners),
+            inArray(blockAllowlist.subjectDid, subjectDids),
+          ),
+        ),
+    ]);
 
+  return blockedRecipientsFromPairs(
+    [...blocking, ...blockedBy, ...listBlocking, ...listBlockedBy],
+    allowed,
+  );
+}
+
+/** One block between a push recipient and one of a document's accounts. */
+export interface RecipientSubjectPair {
+  recipient: string;
+  subject: string;
+}
+
+/**
+ * The recipients left blocked once their allowlist exemptions are applied.
+ *
+ * A recipient is blocked from a document when *any* block pair between them and
+ * the document's accounts survives — allowlisting the author does not exempt a
+ * guest post in a publication whose owner is still blocked, matching
+ * `notBlockedByViewer`'s author-and-owner check.
+ */
+export function blockedRecipientsFromPairs(
+  blockedPairs: ReadonlyArray<RecipientSubjectPair>,
+  allowlisted: ReadonlyArray<RecipientSubjectPair>,
+): Set<string> {
+  const exempt = new Set(
+    allowlisted.map((pair) => `${pair.recipient}\u0000${pair.subject}`),
+  );
   const blocked = new Set<string>();
-  for (const rows of [blocking, blockedBy, listBlocking, listBlockedBy]) {
-    for (const row of rows) blocked.add(row.did);
+  for (const pair of blockedPairs) {
+    if (!exempt.has(`${pair.recipient}\u0000${pair.subject}`)) {
+      blocked.add(pair.recipient);
+    }
   }
   return blocked;
 }

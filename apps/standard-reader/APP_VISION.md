@@ -1448,6 +1448,27 @@ A reader's blocks follow them here, in both directions, with no setup and no imp
   cached guard every other block helper and the feed predicate already sit behind, answers "no"
   for an opted-out reader in the same round trip — so no surface has to know the setting exists.
   Push fan-out is the one path that probes the block tables directly and checks the column itself.
+- **Per-account exemptions: the allowlist.** A reader can keep someone blocked on Bluesky and still
+  read their writing here. "Show here anyway" on any blocked page, or Settings → Blocked accounts →
+  "Shown despite blocks" (by handle or DID), adds the account to `block_allowlist` (migration
+  `0051`). An allowlisted account is exempt in **all four directions** for that reader — their own
+  block, a list's, or one made against them — the same reach as the global switch above, one
+  account at a time. It lands in the two SQL shapes every surface already goes through:
+  `blockEdgeSql` drops allowlisted accounts from the edge set (so every post-filter, notice and the
+  digest see no block), and `notBlockedByViewer` gains an `or exists(allowlist)` tail that is only
+  probed for a row that is actually blocked. Author and publication owner are exempted separately,
+  so allowlisting a guest author does not unhide a blocked owner's publication. Push fan-out works
+  in (recipient, subject) pairs and subtracts exempt pairs itself. A profile shown despite a block
+  offers "Hide again" in place of Block, which would only write a duplicate record.
+  - **App-local, deliberately not a record.** Mutes are a public repo record and that's a fair
+    trade for them; an exemption isn't. "I blocked this person but I still read them" is a
+    statement about attention nobody opts into broadcasting (the `reading_progress` reasoning), and
+    aimed at someone who blocked _you_ it would publish "I'm reading you anyway" to the very person
+    who asked not to be. It is also meaningless to any other app — it only overrides how Standard
+    Reader enforces blocks, like its sibling `user.respect_blocks`. So: no lexicon, no ingest
+    handler, no OAuth scope, no backfill, and the list is visible only to its owner. The trade is
+    portability: the allowlist doesn't follow the reader to another client, which is correct for a
+    per-app viewing preference.
 - **Settings → Blocked accounts** pages through the reader's own blocks and lists their subscribed
   block lists, saying in words when a list is larger than we mirror. It only offers Unblock for
   blocks they made: someone else's decision is not theirs to undo, and a button that pretended

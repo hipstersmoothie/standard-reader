@@ -1,3 +1,4 @@
+import { isDid } from "@atcute/lexicons/syntax";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
@@ -5,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { hasBskyBlockWriteScope } from "#/integrations/auth/scope";
+import { normalizeAuthorRef } from "#/lib/author-profile";
 import type { BlockEdge } from "#/lib/blocks";
 import {
   getAtprotoSessionForRequest,
@@ -16,12 +18,20 @@ import {
   putBskyBlockRecord,
   putBskyListBlockRecord,
 } from "#/server/atproto/repo-records";
-import type { BlockListRow, BlockedAccountRow } from "#/server/blocks/blocks";
+import { resolveHandleToDid } from "#/server/atproto/resolve-author-ref";
+import type {
+  BlockAllowlistRow,
+  BlockListRow,
+  BlockedAccountRow,
+} from "#/server/blocks/blocks";
 import {
+  addToBlockAllowlist,
   blockEdgeFor,
   countReaderBlockedAccounts,
+  readerBlockAllowlist,
   readerBlockLists,
   readerBlockedAccounts,
+  removeFromBlockAllowlist,
 } from "#/server/blocks/blocks";
 import {
   refreshOutgoingBlocks,
@@ -33,7 +43,7 @@ import { observe } from "#/server/observability/log";
 
 import { dbMiddleware } from "./db-middleware";
 
-export type { BlockListRow, BlockedAccountRow };
+export type { BlockAllowlistRow, BlockListRow, BlockedAccountRow };
 export type { BlockDirection, BlockEdge } from "#/lib/blocks";
 
 /**
@@ -408,6 +418,88 @@ const refreshBlocks = createServerFn({ method: "POST" }).handler(async () => {
   return { started: true };
 });
 
+// ── Allowlist ───────────────────────────────────────────────────────────────
+//
+// Accounts the reader sees here despite a block. App-local rows, not repo
+// records (see `blockAllowlist` in `db/schema/blocks.ts` for why), so these
+// write to our own table directly and need no PDS client or OAuth scope — only
+// a signed-in reader, which the cheap DB-only reader context answers.
+
+const allowlistAddInput = z.object({
+  /** A handle (with or without `@`) or a DID. */
+  actor: z.string().trim().min(1).max(253),
+});
+
+/** Why adding to the allowlist failed, so the UI can say so in words. */
+export type AllowlistAddError = "not-found" | "self" | "full";
+
+export type AllowlistAddResponse =
+  | { ok: true; did: string }
+  | { ok: false; error: AllowlistAddError };
+
+const getBlockAllowlist = createServerFn({ method: "GET" })
+  .middleware([dbMiddleware])
+  .handler(
+    observe(
+      "blocks.getAllowlist",
+      async ({ context }, span): Promise<Array<BlockAllowlistRow> | null> => {
+        const reader = await getReaderContextForRequest(getRequest());
+        if (!reader) return null;
+        const rows = await readerBlockAllowlist(
+          context.db,
+          context.schema,
+          reader.did,
+        );
+        span.set("count", rows.length);
+        return rows;
+      },
+    ),
+  );
+
+const allowBlockedAccount = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .validator(allowlistAddInput)
+  .handler(
+    observe(
+      "blocks.allow",
+      async ({ data, context }, span): Promise<AllowlistAddResponse> => {
+        const reader = await getReaderContextForRequest(getRequest());
+        if (!reader) throw new Error("Unauthorized");
+
+        const ref = normalizeAuthorRef(data.actor);
+        const did = isDid(ref)
+          ? ref
+          : await resolveHandleToDid(ref.toLowerCase());
+        if (!did) return { ok: false, error: "not-found" };
+        span.set("subject", did);
+
+        const result = await addToBlockAllowlist(
+          context.db,
+          context.schema,
+          reader.did,
+          did,
+        );
+        if (!result.ok) return { ok: false, error: result.reason };
+        return { ok: true, did };
+      },
+    ),
+  );
+
+const disallowBlockedAccount = createServerFn({ method: "POST" })
+  .middleware([dbMiddleware])
+  .validator(blockInput)
+  .handler(async ({ data, context }) => {
+    const reader = await getReaderContextForRequest(getRequest());
+    if (!reader) throw new Error("Unauthorized");
+    await removeFromBlockAllowlist(
+      context.db,
+      context.schema,
+      reader.did,
+      data.did,
+    );
+    return { allowed: false };
+  });
+
 function getBlocksSettingsQueryOptions({
   limit = 50,
   offset = 0,
@@ -435,6 +527,14 @@ function getBlockStateQueryOptions(did: string) {
   });
 }
 
+function getBlockAllowlistQueryOptions() {
+  return queryOptions({
+    queryKey: ["blocks", "allowlist"] as const,
+    queryFn: async () => getBlockAllowlist(),
+    staleTime: 30_000,
+  });
+}
+
 export { NEEDS_BLOCK_SCOPE };
 
 export const blocksApi = {
@@ -450,4 +550,8 @@ export const blocksApi = {
   blockList,
   unblockList,
   refreshBlocks,
+  getBlockAllowlist,
+  getBlockAllowlistQueryOptions,
+  allowBlockedAccount,
+  disallowBlockedAccount,
 };

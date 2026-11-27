@@ -2378,6 +2378,17 @@ A reader's Bluesky blocks apply here, in both directions, with no setup. See
       existing cached query, so every feed predicate, post-filter, blocked-page notice and the
       digest drop out at once. Push fan-out checks the column itself. Covers all four directions;
       the records themselves are untouched and `/settings/blocks` says they aren't enforced.
+- [x] **Block allowlist** (migration `0051`, table `block_allowlist`) — per-account exemptions from
+      block enforcement, all four directions, while the block stays on Bluesky. "Show here anyway"
+      on blocked-page notices; Settings → Blocked accounts → "Shown despite blocks" adds by handle
+      or DID and lists each entry with the block it overrides; "Hide again" replaces Block in a
+      shown-despite-block profile's menu. Folded into `blockEdgeSql` + `notBlockedByViewer`; push
+      fan-out subtracts exempt (recipient, subject) pairs. App-local, not a lexicon (see
+      APP_VISION). Gated real-Postgres test: `src/server/blocks/allowlist.db.test.ts`, run with
+      `BLOCKS_DB_TEST_URL` set to a scratch database.
+- [ ] **Re-run `pnpm perf:explain` against prod data after the allowlist ships** — the
+      `notBlockedByViewer` predicate gained an `or exists(block_allowlist)` tail; it should only be
+      probed for blocked rows, but the per-source laterals are the shape that regressed before.
 - [ ] **Mutes** — `app.bsky.graph.muteActor` / mute lists are a separate, softer signal (hide from
       feeds but keep the profile reachable) and are not mirrored yet.
 - [ ] **Full mirror for large blocklists** — lists past `MAX_LIST_PAGES` are stored truncated and

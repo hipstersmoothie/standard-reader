@@ -34,6 +34,7 @@ import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
 import { useFormatters } from "#/lib/use-formatters";
 import { useRespectBlocks } from "#/lib/use-respect-blocks";
 
+import { BlockAllowlistSection } from "./block-allowlist-section";
 import { FeedLoadMore } from "./reader/feed-load-more";
 import { Masthead, ReaderContent } from "./reader/primitives";
 
@@ -390,6 +391,8 @@ export function BlocksSettingsView() {
           </ul>
         )}
       </section>
+
+      <BlockAllowlistSection />
     </ReaderContent>
   );
 }

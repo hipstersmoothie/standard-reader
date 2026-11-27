@@ -755,6 +755,7 @@ function AuthorProfileContent({
               feedUrl={authorFeedUrl(getPublicUrlClient(), did)}
               signedIn={session?.user?.did != null}
               isOwnProfile={isOwnProfile}
+              blockOverridden={initialPage.blockOverridden != null}
               user={{
                 did,
                 handle: profile.handle,

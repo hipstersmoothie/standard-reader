@@ -25,6 +25,14 @@
  * and a reader who blocked someone on Bluesky last year expects them to still
  * be gone here.
  *
+ * **The allowlist is the one exception, and it lives here too.** A reader can
+ * exempt specific accounts (`block_allowlist`, Settings → Blocked accounts): an
+ * allowlisted account is not blocked for that reader in *any* direction, while
+ * the block records stay untouched and keep applying on Bluesky. Both the edge
+ * query ({@link blockEdgesAmong}) and the feed predicate
+ * ({@link notBlockedByViewer}) fold the exemption into the same SQL, so every
+ * surface built on them honours it without knowing it exists.
+ *
  * **Bounded by the candidate set, never by the block set.** A reader who
  * subscribes to a large moderation blocklist blocks tens of thousands of
  * accounts, so "load the reader's blocks and filter in JS" is not an option.
@@ -82,12 +90,23 @@ function blockEdgeSql(
   schema: Schema,
   viewerDid: string,
   dids: ReadonlyArray<string>,
+  {
+    includeAllowlisted = false,
+  }: {
+    /**
+     * Return edges for allowlisted accounts too. Only the settings listing wants
+     * this — to say which block an exemption is overriding. Every enforcement
+     * path leaves it off, so an allowlisted account simply has no edge.
+     */
+    includeAllowlisted?: boolean;
+  } = {},
 ): ReturnType<typeof sql> {
   const b = schema.blocks;
   const bl = schema.blockLists;
   const bli = schema.blockListItems;
+  const a = schema.blockAllowlist;
   const mutable = [...dids];
-  return sql`
+  const edges = sql`
     select ${b.subjectDid} as did, 'blocking' as direction, null as list_uri
       from ${b}
       where ${b.blockerDid} = ${viewerDid}
@@ -113,6 +132,17 @@ function blockEdgeSql(
       where ${bli.subjectDid} = ${viewerDid}
         and ${bl.deleted} = false
         and ${inArray(bl.blockerDid, mutable)}
+  `;
+  if (includeAllowlisted) return edges;
+  // One primary-key probe per *blocked* candidate, never per candidate: the
+  // union above has already narrowed to the accounts that are blocked.
+  return sql`
+    select edge.did, edge.direction, edge.list_uri
+    from (${edges}) as edge
+    where not exists(
+      select 1 from ${a}
+      where ${a.ownerDid} = ${viewerDid} and ${a.subjectDid} = edge.did
+    )
   `;
 }
 
@@ -318,6 +348,60 @@ export async function firstBlockAmong(
   return null;
 }
 
+/**
+ * The block between the viewer and one account, split by whether the viewer's
+ * allowlist overrides it — one round trip for both.
+ *
+ * `block` is what enforcement sees (null when allowlisted); `overridden` is the
+ * block an allowlist entry is currently setting aside, so a profile can offer
+ * "Hide again" rather than a Block button that would write a second record for
+ * an account that is already blocked.
+ *
+ * Gated like every other helper here: a reader with no blocks in effect (or
+ * with enforcement off) gets nulls without a query.
+ */
+export async function blockStateFor(
+  db: Db,
+  schema: Schema,
+  viewerDid: string | null | undefined,
+  did: string,
+): Promise<{ block: BlockEdge | null; overridden: BlockEdge | null }> {
+  const none = { block: null, overridden: null };
+  if (!viewerDid || did === viewerDid || !did.startsWith("did:")) return none;
+  if (!(await readerHasBlocks(db, schema, viewerDid))) return none;
+
+  const a = schema.blockAllowlist;
+  const result = await db.execute(sql`
+    select
+      edge.did,
+      edge.direction,
+      edge.list_uri,
+      exists(
+        select 1 from ${a}
+        where ${a.ownerDid} = ${viewerDid} and ${a.subjectDid} = edge.did
+      ) as allowed
+    from (${blockEdgeSql(schema, viewerDid, [did], { includeAllowlisted: true })}) as edge
+  `);
+  const rows = executeRows<{
+    did: string;
+    direction: BlockDirection;
+    list_uri: string | null;
+    allowed: boolean;
+  }>(result);
+  const edge = mergeBlockEdges(
+    rows.map((row) => ({
+      did: row.did,
+      direction: row.direction,
+      listUri: row.list_uri,
+    })),
+  ).get(did);
+  if (!edge) return none;
+  // One account, so the exemption is all-or-nothing across its edges.
+  return rows[0]?.allowed
+    ? { block: null, overridden: edge }
+    : { block: edge, overridden: null };
+}
+
 /** Whether the viewer and this account are blocked from each other. */
 export async function isBlockedForViewer(
   db: Db,
@@ -364,7 +448,8 @@ export async function filterBlockedDids(
 
 /**
  * `NOT EXISTS` predicate excluding accounts blocked for `viewerDid`, for use
- * inside a paginated query.
+ * inside a paginated query. Accounts on the viewer's allowlist pass it, block
+ * or no block.
  *
  * Post-filtering a page is fine for a rail (see {@link filterBlockedCards}) but
  * wrong for a feed: dropping rows *after* `LIMIT` shortens the page and, on a
@@ -401,7 +486,11 @@ export function notBlockedByViewer(
   const b = schema.blocks;
   const bl = schema.blockLists;
   const bli = schema.blockListItems;
-  return sql`not (
+  const a = schema.blockAllowlist;
+  // The allowlist branch sits *after* the block check in the `or`, so it is
+  // only probed for a row that is actually blocked — the common unblocked row
+  // short-circuits on the first operand and pays nothing extra.
+  return sql`(not (
     exists(
       select 1 from ${b}
       where ${b.deleted} = false
@@ -424,7 +513,10 @@ export function notBlockedByViewer(
         and ${bl.deleted} = false
         and ${bl.blockerDid} = ${didExpr}
     )
-  )`;
+  ) or exists(
+    select 1 from ${a}
+    where ${a.ownerDid} = ${viewerDid} and ${a.subjectDid} = ${didExpr}
+  ))`;
 }
 
 // ── Settings surfaces ───────────────────────────────────────────────────────
@@ -512,9 +604,14 @@ export async function readerBlockedAccounts(
  * matching `resolveAuthorProfile`: these are accounts we deliberately don't
  * index, and a block shouldn't quietly enrol one into the read-model.
  */
-async function hydrateBlockedAccounts(
-  rows: Array<BlockedAccountRow>,
-): Promise<Array<BlockedAccountRow>> {
+async function hydrateBlockedAccounts<
+  T extends {
+    did: string;
+    handle: string | null;
+    displayName: string | null;
+    avatarUrl: string | null;
+  },
+>(rows: Array<T>): Promise<Array<T>> {
   const missing = rows.filter(
     (row) => !row.handle && !row.displayName && !row.avatarUrl,
   );
@@ -537,6 +634,165 @@ async function hydrateBlockedAccounts(
       avatarUrl: row.avatarUrl ?? profile.avatarUrl,
     };
   });
+}
+
+// ── Allowlist ───────────────────────────────────────────────────────────────
+
+/**
+ * Cap on the allowlist, per reader. Generous for its purpose — a handful of
+ * writers someone still wants to read — while keeping the settings listing a
+ * single unpaginated read and the table from becoming somebody's scratchpad.
+ */
+export const BLOCK_ALLOWLIST_MAX = 500;
+
+/** An allowlisted account as rendered in the moderation settings. */
+export interface BlockAllowlistRow {
+  did: string;
+  handle: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+  createdAt: string | null;
+  /**
+   * The block this exemption is currently overriding, or null when there is
+   * none any more (the block was undone, or the account was allowlisted ahead
+   * of one). Said in the row so the reader knows what they're overriding —
+   * especially for list and incoming blocks, which they never made themselves.
+   */
+  block: BlockEdge | null;
+}
+
+/** The reader's allowlist, newest first, with the block each entry overrides. */
+export async function readerBlockAllowlist(
+  db: Db,
+  schema: Schema,
+  viewerDid: string,
+): Promise<Array<BlockAllowlistRow>> {
+  const a = schema.blockAllowlist;
+  const p = schema.profiles;
+  const result = await db.execute(sql`
+    select
+      ${a.subjectDid} as did,
+      ${a.createdAt} as created_at,
+      ${p.handle} as handle,
+      ${p.displayName} as display_name,
+      ${p.avatarUrl} as avatar_url
+    from ${a}
+    left join ${p} on ${p.did} = ${a.subjectDid}
+    where ${a.ownerDid} = ${viewerDid}
+    order by ${a.createdAt} desc, ${a.subjectDid}
+    limit ${BLOCK_ALLOWLIST_MAX}
+  `);
+  const rows = executeRows<{
+    did: string;
+    created_at: Date | string | null;
+    handle: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+  }>(result);
+  if (rows.length === 0) return [];
+
+  const edgeResult = await db.execute(
+    blockEdgeSql(
+      schema,
+      viewerDid,
+      rows.map((row) => row.did),
+      { includeAllowlisted: true },
+    ),
+  );
+  const edges = mergeBlockEdges(
+    executeRows<{
+      did: string;
+      direction: BlockDirection;
+      list_uri: string | null;
+    }>(edgeResult).map((row) => ({
+      did: row.did,
+      direction: row.direction,
+      listUri: row.list_uri,
+    })),
+  );
+
+  return hydrateBlockedAccounts(
+    rows.map((row) => ({
+      did: row.did,
+      handle: row.handle,
+      displayName: row.display_name,
+      avatarUrl: row.avatar_url,
+      createdAt: toIso(row.created_at),
+      block: edges.get(row.did) ?? null,
+    })),
+  );
+}
+
+/** Whether the reader has allowlisted this account. */
+export async function isBlockAllowlisted(
+  db: Db,
+  schema: Schema,
+  viewerDid: string,
+  did: string,
+): Promise<boolean> {
+  const a = schema.blockAllowlist;
+  const result = await db.execute(sql`
+    select exists(
+      select 1 from ${a}
+      where ${a.ownerDid} = ${viewerDid} and ${a.subjectDid} = ${did}
+    ) as allowed
+  `);
+  return executeRows<{ allowed: boolean }>(result)[0]?.allowed ?? false;
+}
+
+/** Why an allowlist add was refused. */
+export type AllowlistAddResult =
+  | { ok: true }
+  | { ok: false; reason: "self" | "full" };
+
+/**
+ * Exempt `did` from the reader's blocks. Idempotent: allowing an account twice
+ * leaves one row and the original `created_at`.
+ *
+ * No cache to drop: {@link readerHasBlocks} answers "does this reader have any
+ * blocks", which an exemption doesn't change — the exemption is applied inside
+ * the edge query and the feed predicate, which aren't cached across requests.
+ */
+export async function addToBlockAllowlist(
+  db: Db,
+  schema: Schema,
+  viewerDid: string,
+  did: string,
+): Promise<AllowlistAddResult> {
+  if (did === viewerDid) return { ok: false, reason: "self" };
+  const a = schema.blockAllowlist;
+  // Counted rather than enforced by a constraint: the cap is product policy,
+  // and a racing double-add past it by one is harmless.
+  const countResult = await db.execute(sql`
+    select count(*)::int as count from ${a} where ${a.ownerDid} = ${viewerDid}
+  `);
+  const count = executeRows<{ count: number }>(countResult)[0]?.count ?? 0;
+  if (
+    count >= BLOCK_ALLOWLIST_MAX &&
+    !(await isBlockAllowlisted(db, schema, viewerDid, did))
+  ) {
+    return { ok: false, reason: "full" };
+  }
+
+  await db
+    .insert(a)
+    .values({ ownerDid: viewerDid, subjectDid: did })
+    .onConflictDoNothing();
+  return { ok: true };
+}
+
+/** Put `did` back under the reader's blocks. A no-op if it wasn't allowlisted. */
+export async function removeFromBlockAllowlist(
+  db: Db,
+  schema: Schema,
+  viewerDid: string,
+  did: string,
+): Promise<void> {
+  const a = schema.blockAllowlist;
+  await db.execute(sql`
+    delete from ${a}
+    where ${a.ownerDid} = ${viewerDid} and ${a.subjectDid} = ${did}
+  `);
 }
 
 /** How many accounts the reader blocks directly. */

@@ -15,6 +15,7 @@ import { resolveSifaProfileUrl } from "#/server/atproto/sifa-profile";
 import {
   blockEdgeFor,
   blockFilterDid,
+  blockStateFor,
   filterBlockedCards,
 } from "#/server/blocks/blocks";
 import { revalidateProfile } from "#/server/ingest/profile-refresh";
@@ -130,6 +131,12 @@ export interface AuthorProfile {
    * Null for signed-out viewers and for everyone not blocked.
    */
   block: BlockEdge | null;
+  /**
+   * The block the viewer's allowlist is setting aside for this account, when
+   * there is one — the profile renders normally, and the overflow menu offers
+   * "Hide again" instead of a Block that would duplicate the existing record.
+   */
+  blockOverridden: BlockEdge | null;
   stats: {
     publicationCount: number;
     documentCount: number;
@@ -335,14 +342,22 @@ const getAuthorProfile = createServerFn({ method: "GET" })
         // majority of readers — everyone who blocks nobody — it answers from an
         // in-process cache and no query runs at all, so the profile fan-out
         // below starts without waiting on a round trip.
-        const block = (await blockFilterDid(db, schema, viewerDid))
-          ? await blockEdgeFor(db, schema, viewerDid, did)
-          : null;
+        //
+        // `blockStateFor` is the same gate plus the allowlist split, in the
+        // same single query `blockEdgeFor` would have run.
+        const { block, overridden: blockOverridden } = await blockStateFor(
+          db,
+          schema,
+          viewerDid,
+          did,
+        );
+        if (blockOverridden) span.set("blockOverridden", true);
         if (block) {
           span.set("blocked", block.direction);
           return {
             profile: await resolveAuthorProfile(db, schema, did),
             block,
+            blockOverridden: null,
             stats: {
               publicationCount: 0,
               documentCount: 0,
@@ -475,6 +490,7 @@ const getAuthorProfile = createServerFn({ method: "GET" })
         return {
           profile,
           block: null,
+          blockOverridden,
           stats,
           publications,
           publicationsNextOffset:

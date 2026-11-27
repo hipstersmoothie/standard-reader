@@ -25,6 +25,7 @@ import { ButtonLink } from "#/components/router-links";
 import { blocksApi } from "#/integrations/tanstack-query/api-blocks.functions";
 import type { BlockEdge } from "#/lib/blocks";
 import { blockIsFromList, blockIsOutgoing } from "#/lib/blocks";
+import { useAllowBlockedAccount } from "#/lib/use-block-allowlist";
 
 /**
  * Why a page is withheld, and what (if anything) the reader can do about it.
@@ -34,6 +35,12 @@ import { blockIsFromList, blockIsOutgoing } from "#/lib/blocks";
  * is somebody else's decision, and offering a button would be a lie. A block
  * that came from a moderation list is undone by leaving the list, not by
  * unblocking one account, so it points at settings instead.
+ *
+ * Every direction gets **Show here anyway**, which adds the account to the
+ * reader's allowlist: the block stays in force on Bluesky, but this account's
+ * writing shows in Standard Reader. It is the only thing a reader can do about
+ * a block someone else made, and the lighter alternative to unblocking one of
+ * their own.
  */
 export function BlockedNotice({
   block,
@@ -71,6 +78,31 @@ export function BlockedNotice({
       });
     },
   });
+
+  const allow = useAllowBlockedAccount();
+  const showAnyway = () => {
+    allow.mutate(block.did, {
+      // Success needs no toast: the invalidation re-renders this page as the
+      // account's real page, which says it louder than a toast could.
+      onSuccess: (result) => {
+        if (!result.ok) {
+          toasts.add({
+            description:
+              result.error === "full"
+                ? t`Your list of accounts shown despite blocks is full. Remove one in Settings to add another.`
+                : t`We couldn't find this account to add it. Try again?`,
+            title: t`Couldn't show this account`,
+          });
+        }
+      },
+      onError: () => {
+        toasts.add({
+          description: t`We couldn't save that change. Try again?`,
+          title: t`Something went wrong`,
+        });
+      },
+    });
+  };
 
   const direct =
     blockIsOutgoing(block.direction) && !blockIsFromList(block.direction);
@@ -149,10 +181,24 @@ export function BlockedNotice({
             <Trans>Unblock</Trans>
           </Button>
         ) : null}
+        <Button
+          variant="secondary"
+          size="sm"
+          isPending={allow.isPending}
+          onPress={showAnyway}
+        >
+          <Trans>Show here anyway</Trans>
+        </Button>
         <ButtonLink to="/settings/blocks" variant="tertiary" size="sm">
           <Trans>Manage blocks</Trans>
         </ButtonLink>
       </div>
+      <p {...stylex.props(styles.hint)}>
+        <Trans>
+          Show here anyway keeps the block on Bluesky and only lets you read{" "}
+          {who} in Standard Reader.
+        </Trans>
+      </p>
     </div>
   );
 }
@@ -207,6 +253,14 @@ const styles = stylex.create({
   actions: {
     gap: gap.sm,
     display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "center",
     marginBlockStart: verticalSpace.sm,
+  },
+  hint: {
+    color: uiColor.text2,
+    fontSize: fontSize.xs,
+    marginBlock: spacing["0"],
+    maxWidth: "34rem",
   },
 });
