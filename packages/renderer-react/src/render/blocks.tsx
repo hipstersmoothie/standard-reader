@@ -70,7 +70,7 @@ function RenderBlock({ node }: { node: BlockNode }) {
     }
     case "heading": {
       return (
-        <shared.Heading level={node.level}>
+        <shared.Heading level={node.level} plaintext={node.text.plaintext}>
           <shared.FacetText
             plaintext={node.text.plaintext}
             facets={node.text.facets}

@@ -1749,6 +1749,10 @@ msgstr ""
 msgid "Conventions"
 msgstr ""
 
+#: src/components/reader/article-table-of-contents.tsx
+msgid "Table of contents"
+msgstr ""
+
 #: src/components/block-allowlist-section.tsx
 msgid "Everyone your blocks cover is hidden here. Add an account above, or choose Show here anyway on a blocked page."
 msgstr ""
@@ -7209,6 +7213,7 @@ msgstr ""
 #~ msgid "Search by name or topic…"
 #~ msgstr ""
 
+#: src/components/reader/article-table-of-contents.tsx
 #: src/magazine/Magazine.tsx
 msgid "Contents"
 msgstr "目次"
@@ -8305,6 +8310,10 @@ msgstr ""
 
 #: src/components/docs/introduction-docs-page.tsx
 msgid "Standard is an open reading network built on the AT Protocol. Publications live as records in their author's repository, and anyone can read, index, or render them. These docs cover the surfaces you build against."
+msgstr ""
+
+#: src/components/reader/article-table-of-contents.tsx
+msgid "{count, plural, one {# section} other {# sections}}"
 msgstr ""
 
 #: src/components/guide/pages/everywhere-guide-page.tsx

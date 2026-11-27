@@ -80,6 +80,7 @@ import {
   LEAFLET_DOCUMENT_FORMAT,
   leafletDocumentContent,
 } from "#/lib/document/content-formats";
+import { articleHeadingOutline } from "#/lib/document/heading-outline";
 import { documentImages } from "#/lib/document/images";
 import { resolveArticleHeroImage } from "#/lib/document/lead-image";
 import { leafletHasRootCanvas } from "#/lib/leaflet/blocks";
@@ -95,6 +96,7 @@ import { prefetchCollectionMagazine } from "#/magazine/load-magazine-data";
 
 import { AccountLabelsForDid } from "./account-labels";
 import { ArticleBelowFold } from "./article-below-fold";
+import { ArticleTableOfContentsButton } from "./article-table-of-contents";
 import { FollowButton } from "./cards";
 import { ArticleContent } from "./content/article-content";
 import { articleMeasureStyle } from "./content/body-styles";
@@ -103,6 +105,7 @@ import {
   articleReadingText,
   articleSpeechText,
 } from "./content/extract-text";
+import { HeadingAnchorProvider } from "./content/heading-anchors";
 import { canvasSizes } from "./content/renderers/leaflet-canvas.stylex";
 import { MarkdownArticle } from "./content/renderers/shared/markdown-article";
 import { DocumentShareMenu } from "./document-share-menu";
@@ -1088,6 +1091,17 @@ function ArticleViewBody({
   // reader is moving forward, leaving only the progress track on screen.
   const stickyChromeRef = useRef<HTMLDivElement>(null);
   const setTopBarNode = useTopBarHeight(stickyChromeRef);
+  // One outline feeds both the top bar's table of contents and the headings'
+  // anchor ids, so a TOC link and the heading it targets can never disagree.
+  const headingOutline = useMemo(
+    () =>
+      articleHeadingOutline({
+        contentFormat: article.contentFormat,
+        contentJson: article.contentJson,
+        description: article.description,
+      }),
+    [article.contentFormat, article.contentJson, article.description],
+  );
   const [showMagazineIntro, setShowMagazineIntro] = useState(
     () => Boolean(article.collection) && !hasSeenCollectionMagazineIntro(),
   );
@@ -1339,6 +1353,9 @@ function ArticleViewBody({
           </div>
 
           <div {...stylex.props(styles.topActs)}>
+            {/* Kept out of the overflow menu on mobile: it's how a reader moves
+                around a long piece, so it stays one tap away at every width. */}
+            <ArticleTableOfContentsButton outline={headingOutline} />
             <TopListenButton article={article} />
 
             {/* Secondary actions: individual buttons on desktop… */}
@@ -1670,13 +1687,15 @@ function ArticleViewBody({
             </div>
           </div>
 
-          {linkParams ? (
-            <QuoteShareLayer article={article} sharedQuote={sharedQuote}>
+          <HeadingAnchorProvider outline={headingOutline}>
+            {linkParams ? (
+              <QuoteShareLayer article={article} sharedQuote={sharedQuote}>
+                <ArticleContent article={article} />
+              </QuoteShareLayer>
+            ) : (
               <ArticleContent article={article} />
-            </QuoteShareLayer>
-          ) : (
-            <ArticleContent article={article} />
-          )}
+            )}
+          </HeadingAnchorProvider>
 
           {article.collection?.colophon?.body ? (
             <CollectionColophon body={article.collection.colophon.body} />

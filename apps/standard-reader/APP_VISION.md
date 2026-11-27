@@ -253,6 +253,20 @@ Topics are **derived, never curated** — see
   image alt text surfaced inside the lightbox and prev/next navigation across a gallery's images.
   Magazine editions are the one exception: they bind their own lightbox to the rendered `<img>`
   elements.
+- **Table of contents:** an article with three or more headings gets a **Contents** button in the
+  sticky top bar (at every width — it is not folded into the mobile overflow menu). It opens a
+  popover listing every h1–h6, nested by level, with the section currently being read marked.
+  It lives in the chrome rather than in the article: it's reachable from anywhere in a long
+  piece, and the outline stays hidden until asked for, since heading text can spoil a story. The
+  outline is derived per format from the same parse each renderer walks (`articleHeadingOutline`
+  in `src/lib/document/heading-outline.ts`: Leaflet, pckt, Offprint, the structured formats,
+  `renderer-core` markdown/Markpub/mochott, and sanitized HTML-in-record). Headings get
+  GitHub-style slug ids (`-2`, `-3` for repeats) in the server-rendered HTML, matched back by text
+  through a `HeadingAnchorProvider`, so a TOC link and its target can't disagree and
+  `/a/…#section` links work on a hard load. Canvas headings and headings inside collapsed page
+  embeds stay out of the outline. Picking a section closes the popover, scrolls the reader's own
+  scroller (`scroll-margin-top` clears the sticky chrome), moves focus to the heading and
+  _replaces_ the hash in place — no history entry, no router navigation.
 - **Bluesky web-client links resolve to their records.** `bsky.app` and the clients forked from
   its `social-app` codebase — Witchsky, Mu, deer.social, Blacksky — share one URL grammar and
   address the same AT Protocol records, so a link to any of them is a link to the _record_, not

@@ -10,7 +10,6 @@ import type {
   FacetTextProps,
   FootnoteItemProps,
   FootnotesProps,
-  HeadingProps,
   HtmlProps,
   IframeProps,
   ImageCollectionProps,
@@ -36,13 +35,13 @@ import type {
   WebsiteProps,
 } from "@standard-reader/renderer-react";
 import * as stylex from "@stylexjs/stylex";
-import { createElement } from "react";
 
 import type { ArticleDetail } from "#/integrations/tanstack-query/api-publication.functions";
 import { sanitizeArticleHtml } from "#/lib/markdown/sanitize-html";
 import type { CodeHighlightsByScheme } from "#/lib/theme";
 
 import { articleBodyStyles } from "./body-styles";
+import { ArticleHeading } from "./heading-anchors";
 import { LeafletPollBlockView } from "./renderers/leaflet-poll";
 import { LeafletSeparatorView } from "./renderers/leaflet-separator";
 import { LeafletSignupBlockView } from "./renderers/leaflet-signup";
@@ -112,16 +111,7 @@ export function buildStandardReaderComponents({
           {children}
         </p>
       ),
-      Heading: ({ level, children }: HeadingProps) =>
-        createElement(
-          `h${Math.min(6, Math.max(1, level))}`,
-          stylex.props(
-            level <= 1
-              ? articleBodyStyles.heading1
-              : articleBodyStyles.heading2,
-          ),
-          children,
-        ),
+      Heading: ArticleHeading,
       Blockquote: ({ children }: BlockquoteProps) => (
         <blockquote {...stylex.props(articleBodyStyles.pullquote)}>
           {children}

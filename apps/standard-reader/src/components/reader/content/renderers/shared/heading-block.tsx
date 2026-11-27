@@ -8,6 +8,7 @@ import { useQuoteHighlightTracker } from "#/components/reader/quote-highlight-tr
 import type { LeafletFacet } from "#/lib/leaflet/types";
 
 import { articleBodyStyles } from "../../body-styles";
+import { useHeadingAnchorId } from "../../heading-anchor-registry";
 import { canvasBlockStyles } from "../leaflet-canvas-styles";
 import { HighlightedFacetedPlaintext } from "./faceted-text";
 
@@ -27,6 +28,9 @@ export function HeadingBlockView({
 }) {
   const tracker = useQuoteHighlightTracker();
   const highlightRange = tracker?.consume(plaintext.length) ?? null;
+  // Canvas and page-embed headings aren't in the article outline (see
+  // `articleHeadingOutline`), so they never take an anchor.
+  const anchorId = useHeadingAnchorId(embedded || canvas ? null : plaintext);
 
   if (!plaintext) return null;
   const clamped = Math.min(6, Math.max(1, level));
@@ -36,8 +40,10 @@ export function HeadingBlockView({
   return createElement(
     `h${clamped}`,
     {
+      id: anchorId,
       ...stylex.props(
         style,
+        anchorId != null && articleBodyStyles.headingAnchor,
         embedded && articleBodyStyles.pageEmbedBlockSpacing,
         canvas &&
           (clamped <= 1

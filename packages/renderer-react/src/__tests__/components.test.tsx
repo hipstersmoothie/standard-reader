@@ -57,6 +57,24 @@ describe("component customization", () => {
     expect(heading?.textContent).toBe("Styled");
   });
 
+  it("hands a custom Heading the heading's plaintext", () => {
+    const { container } = render(
+      <StandardDocumentRenderer
+        document={leafletDoc([leaflet.header("Getting started", 2)])}
+        components={{
+          shared: {
+            Heading: ({ plaintext, children }) => (
+              <h2 data-plaintext={plaintext}>{children}</h2>
+            ),
+          },
+        }}
+      />,
+    );
+    expect(container.querySelector<HTMLElement>("h2")?.dataset.plaintext).toBe(
+      "Getting started",
+    );
+  });
+
   it("renders data-backed platform blocks as nothing by default", () => {
     const { container } = render(
       <StandardDocumentRenderer

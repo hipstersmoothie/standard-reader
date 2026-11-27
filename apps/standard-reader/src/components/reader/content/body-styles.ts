@@ -354,6 +354,15 @@ export const articleBodyStyles = stylex.create({
     marginBottom: spacing["4"],
     marginTop: spacing["10"],
   },
+  /**
+   * A heading the table of contents can jump to. The article's sticky chrome
+   * (and, on mobile, the app navbar above it, published as
+   * `--app-navbar-offset`) overlays the top of the scroller, so a heading
+   * scrolled to the very top would land underneath it.
+   */
+  headingAnchor: {
+    scrollMarginTop: `calc(var(--app-navbar-offset, 0px) + ${spacing["24"]})`,
+  },
   heading2: {
     color: uiColor.text2,
     fontFamily: fontFamily.serif,

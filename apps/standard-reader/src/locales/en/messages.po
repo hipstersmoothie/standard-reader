@@ -1749,6 +1749,10 @@ msgstr "One column, the publication's own type, and a progress line under the to
 msgid "Conventions"
 msgstr "Conventions"
 
+#: src/components/reader/article-table-of-contents.tsx
+msgid "Table of contents"
+msgstr "Table of contents"
+
 #: src/components/block-allowlist-section.tsx
 msgid "Everyone your blocks cover is hidden here. Add an account above, or choose Show here anyway on a blocked page."
 msgstr "Everyone your blocks cover is hidden here. Add an account above, or choose Show here anyway on a blocked page."
@@ -7209,6 +7213,7 @@ msgstr "Some people would rather read on the publication's own site, with its ow
 #~ msgid "Search by name or topic…"
 #~ msgstr "Search by name or topic…"
 
+#: src/components/reader/article-table-of-contents.tsx
 #: src/magazine/Magazine.tsx
 msgid "Contents"
 msgstr "Contents"
@@ -8306,6 +8311,10 @@ msgstr "On <0>bsky.app</0>, quiet badges mark the accounts whose long-form writi
 #: src/components/docs/introduction-docs-page.tsx
 msgid "Standard is an open reading network built on the AT Protocol. Publications live as records in their author's repository, and anyone can read, index, or render them. These docs cover the surfaces you build against."
 msgstr "Standard is an open reading network built on the AT Protocol. Publications live as records in their author's repository, and anyone can read, index, or render them. These docs cover the surfaces you build against."
+
+#: src/components/reader/article-table-of-contents.tsx
+msgid "{count, plural, one {# section} other {# sections}}"
+msgstr "{count, plural, one {# section} other {# sections}}"
 
 #: src/components/guide/pages/everywhere-guide-page.tsx
 #: src/lib/guide/navigation.ts

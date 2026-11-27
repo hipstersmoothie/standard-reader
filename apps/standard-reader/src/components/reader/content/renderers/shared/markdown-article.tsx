@@ -29,7 +29,7 @@ import * as stylex from "@stylexjs/stylex";
 import type { ComponentProps } from "react";
 import { createElement, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import type { Components } from "react-markdown";
+import type { Components, ExtraProps } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
@@ -38,6 +38,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 
 import { SmartArticleLink } from "#/components/reader/content/smart-article-link";
+import { hastText } from "#/lib/document/heading-outline";
 import { stripLeadingMarkupImage } from "#/lib/document/lead-image";
 import { normalizeImageAlt } from "#/lib/document/structured-content/image";
 import { articleMarkdownSanitizeSchema } from "#/lib/markdown/article-sanitize-schema";
@@ -48,6 +49,7 @@ import { useReadingTypography } from "#/lib/use-reading-typography";
 import "katex/dist/katex.min.css";
 
 import { articleBodyStyles, readingDropCapStyleProps } from "../../body-styles";
+import { useHeadingAnchorId } from "../../heading-anchor-registry";
 import type { ContentRendererProps } from "../../types";
 import { ArticleBody } from "./article-body";
 import { Callout } from "./callout";
@@ -173,6 +175,30 @@ function MarkdownImage({
   );
 }
 
+type MarkdownHeadingProps = ComponentProps<"h1"> & ExtraProps;
+
+/**
+ * An `h1`–`h6` from the sanitized markdown/HTML pipeline. Its anchor id comes
+ * from the outline (`articleHeadingOutline`), matched on the heading's text.
+ */
+function MarkdownHeading({
+  level,
+  node,
+  children,
+}: MarkdownHeadingProps & { level: 1 | 2 | 3 | 4 | 5 | 6 }) {
+  const anchorId = useHeadingAnchorId(node ? hastText(node) : null);
+  return createElement(
+    `h${level.toString()}`,
+    {
+      id: anchorId,
+      ...stylex.props(
+        level <= 1 ? articleBodyStyles.heading1 : articleBodyStyles.heading2,
+        anchorId != null && articleBodyStyles.headingAnchor,
+      ),
+    },
+    children,
+  );
+}
 function useMarkdownComponents(
   codeHighlights: ContentRendererProps["codeHighlights"],
   bodyText: string,
@@ -197,42 +223,12 @@ function useMarkdownComponents(
 
   return useMemo(
     () => ({
-      h1: ({ children }) =>
-        createElement(
-          "h1",
-          { ...stylex.props(articleBodyStyles.heading1) },
-          children,
-        ),
-      h2: ({ children }) =>
-        createElement(
-          "h2",
-          { ...stylex.props(articleBodyStyles.heading2) },
-          children,
-        ),
-      h3: ({ children }) =>
-        createElement(
-          "h3",
-          { ...stylex.props(articleBodyStyles.heading2) },
-          children,
-        ),
-      h4: ({ children }) =>
-        createElement(
-          "h4",
-          { ...stylex.props(articleBodyStyles.heading2) },
-          children,
-        ),
-      h5: ({ children }) =>
-        createElement(
-          "h5",
-          { ...stylex.props(articleBodyStyles.heading2) },
-          children,
-        ),
-      h6: ({ children }) =>
-        createElement(
-          "h6",
-          { ...stylex.props(articleBodyStyles.heading2) },
-          children,
-        ),
+      h1: (props) => <MarkdownHeading level={1} {...props} />,
+      h2: (props) => <MarkdownHeading level={2} {...props} />,
+      h3: (props) => <MarkdownHeading level={3} {...props} />,
+      h4: (props) => <MarkdownHeading level={4} {...props} />,
+      h5: (props) => <MarkdownHeading level={5} {...props} />,
+      h6: (props) => <MarkdownHeading level={6} {...props} />,
       p: ({ children, node }) => {
         // A paragraph that is nothing but a lone image renders as a semantic
         // <figure>. The Markdown title (`![alt](url "title")`) becomes the
