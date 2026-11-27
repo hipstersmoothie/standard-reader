@@ -1,6 +1,6 @@
 {
   "name": "@standard-reader/converter",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Convert Standard Site document content between the Leaflet, Offprint, pckt and Markpub formats, reporting what each conversion costs.",
   "license": "MIT",
   "type": "module",
