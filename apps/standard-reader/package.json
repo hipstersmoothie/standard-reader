@@ -66,6 +66,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "db:check-ledger": "tsx --env-file=.env scripts/check-migration-ledger.ts",
     "lex:lint": "node scripts/goat-lex.mjs lex lint lexicons/app/standard-reader",
     "lex:status": "node scripts/goat-lex.mjs lex status",
     "atproto:publish-lexicons": "node scripts/goat-lex.mjs lex publish --update",

@@ -235,6 +235,13 @@ read when data exists in the DB.**
   couple of times to converge on large objects.
 - `pnpm db:generate` / `db:migrate` / `db:push` / `db:studio` — Drizzle Kit (schema in
   `src/db/schema.ts`, migrations in `drizzle/`).
+- `pnpm db:check-ledger` — read-only diff of `drizzle/meta/_journal.json` against the
+  database's `drizzle.__drizzle_migrations` (`scripts/check-migration-ledger.ts`). Drizzle only
+  runs entries whose `when` is past the ledger's latest `created_at`, so a migration renumbered
+  in a rebase that keeps its old `when` is **silently skipped** on prod — `drizzle-kit check` and
+  the CI apply step both pass. After rebasing a migration, regenerate it with `pnpm db:generate`
+  rather than renaming the file; `src/db/migration-ledger.test.ts` fails on a new out-of-order
+  journal entry.
 - `pnpm lex:lint` / `pnpm atproto:publish-lexicons` — validate / publish the app-owned
   `app.standard-reader.*` lexicons in `./lexicons/` via the `goat` CLI
   (`scripts/goat-lex.mjs`; needs `LEXICON_PUBLISH_*` creds + `_lexicon.*` DNS).
